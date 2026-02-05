@@ -1,24 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send } from 'lucide-react';
+import { shoutoutService } from '../services/shoutoutService';
+import { categoryService } from '../services/categoryService';
 
 const CreateShoutoutPage = () => {
   const [formData, setFormData] = useState({
     recipient: '',
     message: '',
-    category: 'teamwork',
+    category: '',
   });
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const categories = [
-    { value: 'teamwork', label: 'Teamwork' },
-    { value: 'innovation', label: 'Innovation' },
-    { value: 'leadership', label: 'Leadership' },
-    { value: 'helpfulness', label: 'Helpfulness' },
-    { value: 'excellence', label: 'Excellence' },
-  ];
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-  const handleSubmit = (e) => {
+  const fetchCategories = async () => {
+    try {
+      const data = await categoryService.getCategories();
+      setCategories(data);
+      if (data.length > 0) {
+        setFormData(prev => ({ ...prev, category: data[0].value }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+      const defaultCategories = [
+        { value: 'teamwork', label: 'Teamwork' },
+        { value: 'innovation', label: 'Innovation' },
+        { value: 'leadership', label: 'Leadership' },
+        { value: 'helpfulness', label: 'Helpfulness' },
+        { value: 'excellence', label: 'Excellence' },
+      ];
+      setCategories(defaultCategories);
+      setFormData(prev => ({ ...prev, category: 'teamwork' }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Shoutout creation will be implemented!');
+    setError('');
+    setSuccess(false);
+    setLoading(true);
+
+    try {
+      await shoutoutService.createShoutout(formData);
+      setSuccess(true);
+      setFormData({
+        recipient: '',
+        message: '',
+        category: categories[0]?.value || 'teamwork',
+      });
+    } catch (err) {
+      setError(err.detail || 'Failed to create shoutout');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,10 +68,22 @@ const CreateShoutoutPage = () => {
       </div>
 
       <div className="bg-white rounded-lg p-8 shadow-md border-2 border-accent2 max-w-2xl">
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+            Shoutout sent successfully! 🎉
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-primary mb-2">
-              Who do you want to recognize?
+              Who do you want to recognize? *
             </label>
             <input
               type="text"
@@ -46,12 +97,13 @@ const CreateShoutoutPage = () => {
 
           <div>
             <label className="block text-sm font-medium text-primary mb-2">
-              Category
+              Category *
             </label>
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               className="w-full px-4 py-3 border-2 border-accent2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent1"
+              required
             >
               {categories.map((cat) => (
                 <option key={cat.value} value={cat.value}>
@@ -63,12 +115,13 @@ const CreateShoutoutPage = () => {
 
           <div>
             <label className="block text-sm font-medium text-primary mb-2">
-              Your Message
+              Your Message *
             </label>
             <textarea
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               rows="6"
+              maxLength="500"
               className="w-full px-4 py-3 border-2 border-accent2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent1 resize-none"
               placeholder="Write something nice about this person..."
               required
@@ -78,10 +131,11 @@ const CreateShoutoutPage = () => {
 
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-2 bg-primary text-secondary py-3 px-6 rounded-lg hover:bg-accent1 transition-colors font-semibold"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-secondary py-3 px-6 rounded-lg hover:bg-accent1 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-5 h-5" />
-            Send Shoutout
+            {loading ? 'Sending...' : 'Send Shoutout'}
           </button>
         </form>
       </div>

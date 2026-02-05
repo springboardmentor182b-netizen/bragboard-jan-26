@@ -6,11 +6,10 @@ import FeedPage from './FeedPage';
 import MyShoutoutsPage from './MyShoutoutsPage';
 import LeaderboardPage from './LeaderboardPage';
 import ProfilePage from './ProfilePage';
-import { authService, dashboardService } from '../features/authentication/services/authService';
+import { dashboardService } from '../services/dashboardService';
 
-const Dashboard = ({ onLogout }) => {
+const Dashboard = ({ onLogout, user }) => {
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,14 +19,10 @@ const Dashboard = ({ onLogout }) => {
 
   const fetchData = async () => {
     try {
-      const [userRes, dashboardRes] = await Promise.all([
-        authService.getMe(),
-        dashboardService.getDashboard()
-      ]);
-      setUser(userRes.data);
-      setStats(dashboardRes.data);
+      const dashboardData = await dashboardService.getDashboard();
+      setStats(dashboardData);
     } catch (err) {
-      console.error('Error fetching data:', err);
+      console.error('Error fetching dashboard:', err);
     } finally {
       setLoading(false);
     }

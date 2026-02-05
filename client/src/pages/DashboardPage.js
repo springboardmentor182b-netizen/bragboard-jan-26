@@ -23,7 +23,7 @@ const DashboardPage = ({ stats }) => {
     },
     {
       label: 'Team Members',
-      value: 24,
+      value: stats?.team_member_count || 24,
       icon: Users,
       color: 'bg-primary',
     },
@@ -55,9 +55,23 @@ const DashboardPage = ({ stats }) => {
 
       <div className="bg-white rounded-lg p-6 shadow-md border-2 border-accent2">
         <h2 className="text-xl font-bold text-primary mb-4">Recent Activity</h2>
-        <div className="text-center py-12">
-          <p className="text-accent1">No recent shoutouts yet. Start recognizing your colleagues!</p>
-        </div>
+        {stats?.recent_shoutouts && stats.recent_shoutouts.length > 0 ? (
+          <div className="space-y-4">
+            {stats.recent_shoutouts.slice(0, 5).map((shoutout) => (
+              <div key={shoutout.id} className="border-b border-accent2 pb-3">
+                <p className="text-primary font-medium">{shoutout.sender?.name}</p>
+                <p className="text-sm text-accent1 truncate">{shoutout.message}</p>
+                <p className="text-xs text-accent2 mt-1">
+                  {new Date(shoutout.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-accent1">No recent shoutouts yet. Start recognizing your colleagues!</p>
+          </div>
+        )}
       </div>
     </div>
   );
