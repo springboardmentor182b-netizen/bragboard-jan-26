@@ -1,4 +1,14 @@
 export const authHeader = () => {
   const token = localStorage.getItem("token");
-  return token ? { Authorization: Bearer ${token} } : {};
+
+  if (token) {
+    return {
+      Authorization: Bearer ${token},
+      "Content-Type": "application/json",
+    };
+  }
+
+  return {
+    "Content-Type": "application/json",
+  };
 };
