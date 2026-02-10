@@ -27,10 +27,16 @@ function AdminRoute({ children }) {
   return children;
 }
 
-// Public Route Component (redirects to dashboard if already logged in)
+// Public Route Component (redirects to appropriate dashboard if already logged in)
 function PublicRoute({ children }) {
-  const { isAuthenticated } = useAuth();
-  return !isAuthenticated() ? children : <Navigate to="/dashboard" />;
+  const { isAuthenticated, user } = useAuth();
+  
+  if (!isAuthenticated()) {
+    return children;
+  }
+  
+  // Redirect based on user role
+  return user?.role === 'admin' ? <Navigate to="/admin-dashboard" /> : <Navigate to="/dashboard" />;
 }
 
 function AppRoutes() {

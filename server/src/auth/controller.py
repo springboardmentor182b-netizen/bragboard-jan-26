@@ -55,7 +55,7 @@ def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
             "name": new_user.name,
             "email": new_user.email,
             "department": new_user.department,
-            "role": new_user.role
+            "role": new_user.role.value  # Convert Enum to string
         }
     }
 
@@ -96,7 +96,7 @@ def login_user(credentials: UserLogin, db: Session = Depends(get_db)):
             "name": user.name,
             "email": user.email,
             "department": user.department,
-            "role": user.role
+            "role": user.role.value  # Convert Enum to string
         }
     }
 
