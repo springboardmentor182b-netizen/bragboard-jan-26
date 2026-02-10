@@ -1,42 +1,31 @@
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from src.entities.user import User
+from src.database.core import SessionLocal
 from src.auth.models import RegisterRequest, LoginRequest
-from passlib.context import CryptContext
+from src.auth.service import register_user, login_user
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def hash_password(password: str):
-    return pwd_context.hash(password)
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-def verify_password(plain, hashed):
-    return pwd_context.verify(plain, hashed)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-def register_user(db: Session, data: RegisterRequest):
-    existing = db.query(User).filter(User.email == data.email).first()
-    if existing:
-        raise Exception("Email already registered")
-
-    user = User(
-        full_name=data.full_name,
-        email=data.email,
-        password=hash_password(data.password),
-        role=data.role,
-    )
-
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    return {"message": "User registered successfully"}
+@router.post("/register")
+def register(data: RegisterRequest, db: Session = Depends(get_db)):
+    try:
+        return register_user(db, data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-def login_user(db: Session, data: LoginRequest):
-    user = db.query(User).filter(User.email == data.email).first()
-
-    if not user or not verify_password(data.password, user.password):
-        raise Exception("Invalid email or password")
-
-    return {"message": "Login successful"}
+@router.post("/login")
+def login(data: LoginRequest, db: Session = Depends(get_db)):
+    try:
+        return login_user(db, data)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
