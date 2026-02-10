@@ -10,6 +10,15 @@ const Login = () => {
     console.log({ role, email, password });
   };
 
+  // ✅ Social login handlers
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8000/auth/google/login";
+  };
+
+  const handleGithubLogin = () => {
+    window.location.href = "http://localhost:8000/auth/github/login";
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form
@@ -26,9 +35,9 @@ const Login = () => {
           <button
             type="button"
             onClick={() => setRole("employee")}
-            className={flex-1 py-2 rounded ${
+            className={`flex-1 py-2 rounded ${
               role === "employee" ? "bg-blue-500 text-white" : "bg-gray-200"
-            }}
+            }`}
           >
             Employee Login
           </button>
@@ -36,9 +45,9 @@ const Login = () => {
           <button
             type="button"
             onClick={() => setRole("admin")}
-            className={flex-1 py-2 rounded ${
+            className={`flex-1 py-2 rounded ${
               role === "admin" ? "bg-blue-500 text-white" : "bg-gray-200"
-            }}
+            }`}
           >
             Admin Login
           </button>
@@ -50,6 +59,7 @@ const Login = () => {
           placeholder="Email"
           className="w-full p-2 border rounded mb-3"
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
         {/* Password */}
@@ -58,6 +68,7 @@ const Login = () => {
           placeholder="Password"
           className="w-full p-2 border rounded mb-2"
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
         <p className="text-sm text-right text-blue-500 cursor-pointer mb-4">
@@ -69,13 +80,27 @@ const Login = () => {
         </button>
 
         <p className="text-center text-sm mb-3">
-          Don’t have an account? <span className="text-blue-500">Sign up</span>
+          Don’t have an account?{" "}
+          <span className="text-blue-500 cursor-pointer">Sign up</span>
         </p>
 
         {/* Social login */}
         <div className="flex gap-2">
-          <button className="flex-1 border py-2 rounded">Google</button>
-          <button className="flex-1 border py-2 rounded">GitHub</button>
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="flex-1 border py-2 rounded"
+          >
+            Google
+          </button>
+
+          <button
+            type="button"
+            onClick={handleGithubLogin}
+            className="flex-1 border py-2 rounded"
+          >
+            GitHub
+          </button>
         </div>
       </form>
     </div>
