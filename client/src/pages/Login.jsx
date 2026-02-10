@@ -22,7 +22,13 @@ function Login() {
       const { access_token, user } = response.data;
       
       login(user, access_token);
-      navigate('/dashboard');
+      
+      // Role-based redirect
+      if (user.role === 'admin') {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Invalid email or password. Please try again.');
     } finally {

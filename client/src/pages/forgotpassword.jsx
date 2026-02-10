@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
-import axios from 'axios';
 
 function ForgotPassword() {
   const [step, setStep] = useState(1); // 1 = email, 2 = security question
@@ -22,10 +21,7 @@ function ForgotPassword() {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/auth/forgot-password', {
-        email: email
-      });
-      
+      const response = await authAPI.forgotPassword(email);
       setSecurityQuestion(response.data.security_question);
       setStep(2);
     } catch (err) {
@@ -42,7 +38,7 @@ function ForgotPassword() {
     setLoading(true);
 
     try {
-      await axios.post('http://127.0.0.1:8000/auth/reset-password', {
+      await authAPI.resetPassword({
         email: email,
         security_answer: securityAnswer,
         new_password: newPassword
