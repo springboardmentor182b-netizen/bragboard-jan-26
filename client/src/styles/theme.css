@@ -1,0 +1,52 @@
+/* BragBoard Theme - from Figma design tokens */
+:root {
+  --background: #F1F5F9;
+  --foreground: #0f172a;
+  --card: #FFFFFF;
+  --card-foreground: #0f172a;
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --primary-foreground: #FFFFFF;
+  --accent: #10B981;
+  --accent-hover: #059669;
+  --accent-foreground: #FFFFFF;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --muted: #F1F5F9;
+  --muted-foreground: #717182;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-solid: #E5E7EB;
+  --input-bg: #FAFBFC;
+  --ring: #4F46E5;
+  --radius: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --sidebar-bg: #FFFFFF;
+  --sidebar-border: #E5E7EB;
+  --sidebar-active-bg: #EEF2FF;
+  --sidebar-active-text: #4F46E5;
+  --sidebar-text: #6B7280;
+  --sidebar-text-hover: #1F2937;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-primary: 0 4px 12px rgba(79, 70, 229, 0.25);
+  --shadow-accent: 0 4px 12px rgba(16, 185, 129, 0.2);
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* {
+  font-family: var(--font-sans);
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  margin: 0;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a5b4fc; }
