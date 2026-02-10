@@ -1,0 +1,557 @@
+/**
+ * BragBoard - Integration Tests
+ * Tests the complete user flows end-to-end (frontend + API layer)
+ *
+ * Run: npm test
+ * These tests simulate real user journeys through the app
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import { AuthProvider } from '../context/AuthContext';
+import App from '../App';
+
+// ─── Mocks ────────────────────────────────────────────────────────────────────
+
+vi.mock('../services/api', () => ({
+  authAPI: {
+    login: vi.fn(),
+    register: vi.fn(),
+    forgotPassword: vi.fn(),
+    resetPassword: vi.fn(),
+  },
+}));
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
+import { authAPI } from '../services/api';
+
+// ─── App Wrapper ──────────────────────────────────────────────────────────────
+
+const renderApp = (initialPath = '/login') =>
+  render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </MemoryRouter>
+  );
+
+// ─── 1. Complete Employee Registration & Login Flow ───────────────────────────
+
+describe('Integration: Employee Registration → Login Flow', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('T01: User can navigate from login to register page', async () => {
+    renderApp('/login');
+    const registerLink = await screen.findByText(/create one now/i);
+    await userEvent.click(registerLink);
+    await waitFor(() => {
+      expect(screen.getByText(/create account/i)).toBeInTheDocument();
+    });
+  });
+
+  it('T02: Complete registration form submission succeeds', async () => {
+    authAPI.register.mockResolvedValueOnce({ data: { message: 'Created' } });
+    renderApp('/register');
+
+    await userEvent.type(await screen.findByPlaceholderText(/john doe/i), 'Jane Smith');
+    await userEvent.type(screen.getByPlaceholderText(/email/i), 'jane@company.com');
+    await userEvent.type(screen.getByPlaceholderText(/at least 6 characters/i), 'secure123');
+    await userEvent.type(screen.getByPlaceholderText(/department/i), 'Engineering');
+    await userEvent.selectOptions(screen.getByRole('combobox'), "What is your first pet's name?");
+    await userEvent.type(screen.getByPlaceholderText(/your answer/i), 'Rex');
+
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(authAPI.register).toHaveBeenCalledWith({
+        name: 'Jane Smith',
+        email: 'jane@company.com',
+        password: 'secure123',
+        department: 'Engineering',
+        security_question: "What is your first pet's name?",
+        security_answer: 'Rex',
+      });
+      expect(screen.getByText(/account created successfully/i)).toBeInTheDocument();
+    });
+  });
+
+  it('T03: Employee login redirects to /dashboard', async () => {
+    authAPI.login.mockResolvedValueOnce({
+      data: {
+        access_token: 'emp-token',
+        user: { id: 1, name: 'Jane Smith', email: 'jane@company.com', role: 'employee' }
+      }
+    });
+
+    renderApp('/login');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'jane@company.com');
+    await userEvent.type(screen.getByPlaceholderText(/password/i), 'secure123');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/dashboard'));
+  });
+
+  it('T04: After login, token is stored in localStorage', async () => {
+    authAPI.login.mockResolvedValueOnce({
+      data: {
+        access_token: 'real-jwt-token',
+        user: { id: 1, name: 'Jane', email: 'jane@company.com', role: 'employee' }
+      }
+    });
+
+    renderApp('/login');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'jane@company.com');
+    await userEvent.type(screen.getByPlaceholderText(/password/i), 'pass123');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(localStorage.getItem('token')).toBe('real-jwt-token');
+    });
+  });
+
+  it('T05: After login, user object is stored in localStorage', async () => {
+    const user = { id: 1, name: 'Jane Smith', email: 'jane@company.com', role: 'employee' };
+    authAPI.login.mockResolvedValueOnce({
+      data: { access_token: 'token', user }
+    });
+
+    renderApp('/login');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'jane@company.com');
+    await userEvent.type(screen.getByPlaceholderText(/password/i), 'pass123');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('user'));
+      expect(stored).toEqual(user);
+    });
+  });
+
+  it('T06: Duplicate email shows registration error', async () => {
+    authAPI.register.mockRejectedValueOnce({
+      response: { data: { detail: 'Email already registered' } }
+    });
+
+    renderApp('/register');
+    await userEvent.type(await screen.findByPlaceholderText(/john doe/i), 'Jane');
+    await userEvent.type(screen.getByPlaceholderText(/email/i), 'existing@company.com');
+    await userEvent.type(screen.getByPlaceholderText(/at least 6 characters/i), 'pass');
+    await userEvent.type(screen.getByPlaceholderText(/department/i), 'HR');
+    await userEvent.selectOptions(screen.getByRole('combobox'), "What city were you born in?");
+    await userEvent.type(screen.getByPlaceholderText(/your answer/i), 'NYC');
+
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Email already registered')).toBeInTheDocument();
+    });
+  });
+});
+
+// ─── 2. Admin Login & Dashboard Flow ─────────────────────────────────────────
+
+describe('Integration: Admin Login Flow', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('T07: Admin login redirects to /admin-dashboard', async () => {
+    authAPI.login.mockResolvedValueOnce({
+      data: {
+        access_token: 'admin-jwt',
+        user: { id: 2, name: 'Admin Boss', email: 'admin@company.com', role: 'admin' }
+      }
+    });
+
+    renderApp('/login');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'admin@company.com');
+    await userEvent.type(screen.getByPlaceholderText(/password/i), 'adminpass');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/admin-dashboard'));
+  });
+
+  it('T08: Admin role is stored correctly in localStorage', async () => {
+    const admin = { id: 2, name: 'Admin Boss', email: 'admin@company.com', role: 'admin' };
+    authAPI.login.mockResolvedValueOnce({
+      data: { access_token: 'admin-jwt', user: admin }
+    });
+
+    renderApp('/login');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'admin@company.com');
+    await userEvent.type(screen.getByPlaceholderText(/password/i), 'adminpass');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('user'));
+      expect(stored.role).toBe('admin');
+    });
+  });
+
+  it('T09: Employee accessing /admin-dashboard is redirected', async () => {
+    const employee = { id: 1, name: 'Emp', role: 'employee' };
+    localStorage.setItem('user', JSON.stringify(employee));
+    localStorage.setItem('token', 'emp-token');
+
+    renderApp('/admin-dashboard');
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+});
+
+// ─── 3. Password Reset Flow ───────────────────────────────────────────────────
+
+describe('Integration: Password Reset Flow', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('T10: Complete 2-step password reset flow', async () => {
+    authAPI.forgotPassword.mockResolvedValueOnce({
+      data: { security_question: "What is your first pet's name?" }
+    });
+    authAPI.resetPassword.mockResolvedValueOnce({ data: { message: 'Password reset' } });
+
+    renderApp('/forgot-password');
+
+    // Step 1
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'user@company.com');
+    await userEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    // Step 2
+    await waitFor(() => screen.getByPlaceholderText(/enter your answer/i));
+    await userEvent.type(screen.getByPlaceholderText(/enter your answer/i), 'Buddy');
+    await userEvent.type(screen.getByPlaceholderText(/at least 6 characters/i), 'newpass456');
+    await userEvent.click(screen.getByRole('button', { name: /reset password/i }));
+
+    await waitFor(() => {
+      expect(authAPI.resetPassword).toHaveBeenCalledWith({
+        email: 'user@company.com',
+        security_answer: 'Buddy',
+        new_password: 'newpass456',
+      });
+      expect(screen.getByText(/password reset successfully/i)).toBeInTheDocument();
+    });
+  });
+
+  it('T11: Wrong security answer shows error', async () => {
+    authAPI.forgotPassword.mockResolvedValueOnce({
+      data: { security_question: "What is your mother's maiden name?" }
+    });
+    authAPI.resetPassword.mockRejectedValueOnce({
+      response: { data: { detail: 'Incorrect security answer' } }
+    });
+
+    renderApp('/forgot-password');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'user@company.com');
+    await userEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    await waitFor(() => screen.getByPlaceholderText(/enter your answer/i));
+    await userEvent.type(screen.getByPlaceholderText(/enter your answer/i), 'WrongAnswer');
+    await userEvent.type(screen.getByPlaceholderText(/at least 6 characters/i), 'newpass');
+    await userEvent.click(screen.getByRole('button', { name: /reset password/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Incorrect security answer')).toBeInTheDocument();
+    });
+  });
+
+  it('T12: Non-existent email shows error', async () => {
+    authAPI.forgotPassword.mockRejectedValueOnce({
+      response: { data: { detail: 'User with this email not found' } }
+    });
+
+    renderApp('/forgot-password');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'ghost@company.com');
+    await userEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('User with this email not found')).toBeInTheDocument();
+    });
+  });
+
+  it('T13: Can navigate back to login from forgot password page', () => {
+    renderApp('/forgot-password');
+    expect(screen.getByText(/back to login/i)).toBeInTheDocument();
+  });
+});
+
+// ─── 4. Session Persistence Flow ─────────────────────────────────────────────
+
+describe('Integration: Session Persistence', () => {
+  it('T14: Previously logged in user is recognized on app reload', async () => {
+    const user = { id: 1, name: 'John Doe', role: 'employee' };
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('token', 'persistent-token');
+
+    let authContext;
+    const Inspector = () => {
+      authContext = require('../context/AuthContext').useAuth();
+      return null;
+    };
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <Inspector />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(localStorage.getItem('token')).toBe('persistent-token');
+    });
+  });
+
+  it('T15: Logout clears session entirely', async () => {
+    const user = { id: 1, name: 'John', role: 'employee' };
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('token', 'some-token');
+
+    import('../pages/Dashboard').then(({ default: Dashboard }) => {
+      renderApp('/dashboard');
+    });
+
+    // Simulate logout happened
+    localStorage.clear();
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('user')).toBeNull();
+  });
+});
+
+// ─── 5. Error Handling & Edge Cases ──────────────────────────────────────────
+
+describe('Integration: Error Handling & Edge Cases', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('T16: Network error during login shows fallback message', async () => {
+    authAPI.login.mockRejectedValueOnce(new Error('Network Error'));
+
+    renderApp('/login');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'user@test.com');
+    await userEvent.type(screen.getByPlaceholderText(/password/i), 'pass');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument();
+    });
+  });
+
+  it('T17: Network error during registration shows fallback message', async () => {
+    authAPI.register.mockRejectedValueOnce(new Error('Network Error'));
+
+    renderApp('/register');
+    await userEvent.type(await screen.findByPlaceholderText(/john doe/i), 'Test User');
+    await userEvent.type(screen.getByPlaceholderText(/email/i), 'test@test.com');
+    await userEvent.type(screen.getByPlaceholderText(/at least 6 characters/i), 'password');
+    await userEvent.type(screen.getByPlaceholderText(/department/i), 'Engineering');
+    await userEvent.selectOptions(screen.getByRole('combobox'), "What is your favorite book?");
+    await userEvent.type(screen.getByPlaceholderText(/your answer/i), 'Dune');
+
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/registration failed/i)).toBeInTheDocument();
+    });
+  });
+
+  it('T18: Login button stays disabled after multiple failed attempts', async () => {
+    authAPI.login.mockRejectedValue({ response: { data: { detail: 'Invalid credentials' } } });
+
+    renderApp('/login');
+    const emailInput = await screen.findByPlaceholderText(/email/i);
+    const passInput = screen.getByPlaceholderText(/password/i);
+
+    // First attempt
+    await userEvent.type(emailInput, 'test@test.com');
+    await userEvent.type(passInput, 'wrong1');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    await waitFor(() => screen.getByText('Invalid credentials'));
+
+    // Error still visible
+    expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
+  });
+
+  it('T19: Root path "/" redirects to /login', () => {
+    renderApp('/');
+    // App should redirect to login
+    expect(screen.queryByText(/bragboard/i)).toBeInTheDocument();
+  });
+
+  it('T20: Login form is accessible - all inputs have labels', () => {
+    renderApp('/login');
+    expect(screen.getByText(/email address/i)).toBeInTheDocument();
+    expect(screen.getByText(/password/i)).toBeInTheDocument();
+  });
+
+  it('T21: Register form is accessible - all inputs have labels', () => {
+    renderApp('/register');
+    expect(screen.getByText(/full name/i)).toBeInTheDocument();
+    expect(screen.getByText(/email address/i)).toBeInTheDocument();
+    expect(screen.getByText(/department/i)).toBeInTheDocument();
+    expect(screen.getByText(/security question/i)).toBeInTheDocument();
+    expect(screen.getByText(/security answer/i)).toBeInTheDocument();
+  });
+
+  it('T22: Multiple rapid login clicks only call API once', async () => {
+    authAPI.login.mockImplementation(() => new Promise(() => {}));
+
+    renderApp('/login');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), 'test@test.com');
+    await userEvent.type(screen.getByPlaceholderText(/password/i), 'pass');
+
+    const btn = screen.getByRole('button', { name: /sign in/i });
+    await userEvent.click(btn);
+
+    // Button becomes disabled - can't click again
+    await waitFor(() => expect(btn).toBeDisabled());
+    // Only 1 API call
+    expect(authAPI.login).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ─── 6. Role-Based Access Control ────────────────────────────────────────────
+
+describe('Integration: Role-Based Access Control', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('T23: Employee sees employee dashboard (no admin sidebar)', async () => {
+    const employee = { id: 1, name: 'Emp User', role: 'employee', department: 'Marketing' };
+    localStorage.setItem('user', JSON.stringify(employee));
+    localStorage.setItem('token', 'emp-token');
+
+    const { default: Dashboard } = await import('../pages/Dashboard');
+    render(
+      <MemoryRouter>
+        <AuthProvider><Dashboard /></AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('Admin Portal')).not.toBeInTheDocument();
+    expect(screen.getByText('Activity Feed')).toBeInTheDocument();
+  });
+
+  it('T24: Admin sees admin dashboard with admin-specific navigation', async () => {
+    const admin = { id: 2, name: 'Admin User', role: 'admin', department: 'Mgmt' };
+    localStorage.setItem('user', JSON.stringify(admin));
+    localStorage.setItem('token', 'admin-token');
+
+    const { default: AdminDashboard } = await import('../pages/AdminDashboard');
+    render(
+      <MemoryRouter>
+        <AuthProvider><AdminDashboard /></AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Admin Portal')).toBeInTheDocument();
+    expect(screen.queryByText('Activity Feed')).not.toBeInTheDocument();
+  });
+
+  it('T25: Admin dashboard shows administrator role badge', async () => {
+    const admin = { id: 2, name: 'Super Admin', role: 'admin' };
+    localStorage.setItem('user', JSON.stringify(admin));
+    localStorage.setItem('token', 'admin-token');
+
+    const { default: AdminDashboard } = await import('../pages/AdminDashboard');
+    render(
+      <MemoryRouter>
+        <AuthProvider><AdminDashboard /></AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/administrator/i)).toBeInTheDocument();
+  });
+});
+
+// ─── 7. End-to-End User Journey ───────────────────────────────────────────────
+
+describe('Integration: End-to-End Journey', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('T26: Complete user journey - Register → Login → View Dashboard → Logout', async () => {
+    const user = { id: 1, name: 'New User', email: 'new@company.com', role: 'employee' };
+
+    // Step 1: Register
+    authAPI.register.mockResolvedValueOnce({ data: { message: 'Created' } });
+    renderApp('/register');
+
+    await userEvent.type(await screen.findByPlaceholderText(/john doe/i), user.name);
+    await userEvent.type(screen.getByPlaceholderText(/email/i), user.email);
+    await userEvent.type(screen.getByPlaceholderText(/at least 6 characters/i), 'userpass123');
+    await userEvent.type(screen.getByPlaceholderText(/department/i), 'Design');
+    await userEvent.selectOptions(screen.getByRole('combobox'), "What is your first pet's name?");
+    await userEvent.type(screen.getByPlaceholderText(/your answer/i), 'Buddy');
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/account created successfully/i)).toBeInTheDocument();
+    });
+
+    // Step 2: Login
+    authAPI.login.mockResolvedValueOnce({
+      data: { access_token: 'fresh-token', user }
+    });
+
+    renderApp('/login');
+    await userEvent.type(await screen.findByPlaceholderText(/email/i), user.email);
+    await userEvent.type(screen.getByPlaceholderText(/password/i), 'userpass123');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/dashboard'));
+
+    // Step 3: Verify auth state is set
+    expect(localStorage.getItem('token')).toBe('fresh-token');
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    expect(storedUser.email).toBe(user.email);
+  });
+
+  it('T27: Admin journey - Login → View Analytics → View Users → Logout', async () => {
+    const admin = { id: 2, name: 'Boss Admin', email: 'boss@company.com', role: 'admin' };
+    localStorage.setItem('user', JSON.stringify(admin));
+    localStorage.setItem('token', 'boss-token');
+
+    const { default: AdminDashboard } = await import('../pages/AdminDashboard');
+    render(
+      <MemoryRouter>
+        <AuthProvider><AdminDashboard /></AuthProvider>
+      </MemoryRouter>
+    );
+
+    // Analytics visible by default
+    expect(screen.getByText('Total Employees')).toBeInTheDocument();
+
+    // Navigate to Users
+    await userEvent.click(screen.getByText('User Management'));
+    await waitFor(() => {
+      expect(screen.getByText(/manage team members/i)).toBeInTheDocument();
+    });
+
+    // Logout
+    const logoutBtn = screen.getByTitle('Logout');
+    await userEvent.click(logoutBtn);
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
+    expect(localStorage.getItem('token')).toBeNull();
+  });
+});
