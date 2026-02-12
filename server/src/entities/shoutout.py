@@ -59,3 +59,4 @@ class Shoutout(Base):
     
     def __repr__(self):
         return f"<Shoutout(id={self.id}, author_id={self.author_id}, recipient='{self.recipient_name}')>"
+

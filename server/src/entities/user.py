@@ -4,19 +4,13 @@ from datetime import datetime
 from ..database.connection import Base
 import enum
 
-# Define the role types as an Enum
 class UserRole(str, enum.Enum):
+    """User roles enumeration"""
     employee = "employee"
     admin = "admin"
 
-# User table definition
 class User(Base):
-    """
-    Represents the Users table in the database
-    """
-    __tablename__ = "users"  # Name of the table in PostgreSQL
-    
-    # Primary key - unique ID for each user
+    __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     
     # User information
@@ -41,3 +35,4 @@ class User(Base):
     def __repr__(self):
         """String representation of User object (for debugging)"""
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
+
