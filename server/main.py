@@ -1,9 +1,9 @@
 from fastapi import FastAPI
-from src.api import api_router
-from src.database.core import Base, engine
+from src.core.database import Base, engine
+from src.users.api import router as user_router
+
+app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="BragBoard Backend")
-
-app.include_router(api_router)
+app.include_router(user_router)
