@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Enum
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..database.connection import Base
 import enum
@@ -33,6 +34,9 @@ class User(Base):
     
     # Timestamp - automatically set when user is created
     joined_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    shoutouts = relationship("Shoutout", back_populates="author")
     
     def __repr__(self):
         """String representation of User object (for debugging)"""
