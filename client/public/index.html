@@ -30,11 +30,42 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const API_URL = "http://127.0.0.1:8000"; // Connects to your Python Backend
+
+        // --- 1. LOCAL DATABASE (Mock Data) ---
+        // This replaces the need for a backend server for now.
+        const mockDB = {
+            analytics: {
+                stats: [
+                    { title: "Total Shoutouts", value: "1,284" },
+                    { title: "Active Comments", value: "8,432" },
+                    { title: "Engagement Rate", value: "89%" }
+                ],
+                top_employees: [
+                    { rank: 1, name: "Sarah Johnson", count: "142 shoutouts" },
+                    { rank: 2, name: "Mike Chen", count: "98 shoutouts" },
+                    { rank: 3, name: "Jessica Williams", count: "87 shoutouts" },
+                ],
+                top_categories: [
+                    { rank: 1, name: "Teamwork", count: "450" },
+                    { rank: 2, name: "Innovation", count: "320" },
+                    { rank: 3, name: "Leadership", count: "210" },
+                ]
+            },
+            users: [
+                { id: 1, name: "Sarah Johnson", email: "sarah@company.com", dept: "Marketing", role: "employee", initial: "S", color: "bg-pink-500", joined: "Jan 10, 2024" },
+                { id: 2, name: "Mike Chen", email: "mike@company.com", dept: "Engineering", role: "admin", initial: "M", color: "bg-blue-500", joined: "Feb 14, 2024" },
+                { id: 3, name: "Alex Rossi", email: "alex@company.com", dept: "Sales", role: "employee", initial: "A", color: "bg-purple-500", joined: "Mar 01, 2024" },
+            ],
+            logs: [
+                { id: 1, title: "User Login", badge: "Info", time: "10:42 AM", desc: "Admin User logged into the system.", user: "admin@company.com", ip: "192.168.1.1", type: "info" },
+                { id: 2, title: "Failed Login", badge: "Warning", time: "10:30 AM", desc: "Multiple failed attempts detected.", user: "unknown", ip: "10.0.0.55", type: "warning" },
+                { id: 3, title: "Profile Updated", badge: "Success", time: "09:15 AM", desc: "Sarah updated her profile picture.", user: "sarah@company.com", ip: "192.168.1.4", type: "success" }
+            ]
+        };
 
         // --- ICONS ---
         const Icons = {
-            Analytics: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>,
+            Analytics: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
             Users: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
             Queue: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
             Logs: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
@@ -70,7 +101,8 @@
                         <div><div className="font-bold text-gray-900 leading-tight">BragBoard</div><div className="text-xs text-gray-500">Admin Portal</div></div>
                     </div>
                     <div className="flex-1 px-3 space-y-1 mt-2">
-                        <MenuItem id="analytics" label="Analytics Overview" icon={Icons.Analytics} />
+                        {/* CHANGED: Renamed ID and Label to 'Dashboard' */}
+                        <MenuItem id="dashboard" label="Dashboard" icon={Icons.Analytics} />
                         <MenuItem id="users" label="User Management" icon={Icons.Users} />
                         <MenuItem id="queue" label="Moderation Queue" icon={Icons.Queue} />
                         <MenuItem id="logs" label="System Logs" icon={Icons.Logs} />
@@ -127,18 +159,19 @@
             );
         };
 
-        // --- PAGE: ANALYTICS (CONNECTED TO BACKEND) ---
-        const AnalyticsPage = () => {
+        // --- PAGE: DASHBOARD (WAS ANALYTICS) ---
+        const DashboardPage = () => {
             const [data, setData] = useState(null);
 
             useEffect(() => {
-                fetch(`${API_URL}/api/analytics`)
-                    .then(res => res.json())
-                    .then(setData)
-                    .catch(err => console.error("Error fetching analytics:", err));
+                // SIMULATED DATABASE FETCH
+                // Instead of fetch(), we just use the local mockDB
+                setTimeout(() => {
+                    setData(mockDB.analytics); 
+                }, 500); // Small delay to simulate "loading" feeling
             }, []);
 
-            if (!data) return <div className="p-10 text-center">Loading Analytics...</div>;
+            if (!data) return <div className="p-10 text-center text-gray-500">Loading Dashboard...</div>;
 
             return (
                 <div className="space-y-6">
@@ -190,15 +223,13 @@
             );
         };
 
-        // --- PAGE: USER MANAGEMENT (CONNECTED TO BACKEND) ---
+        // --- PAGE: USER MANAGEMENT ---
         const UserManagementPage = () => {
             const [users, setUsers] = useState([]);
 
             useEffect(() => {
-                fetch(`${API_URL}/api/users`)
-                    .then(res => res.json())
-                    .then(setUsers)
-                    .catch(err => console.error("Error fetching users:", err));
+                // SIMULATED DATABASE FETCH
+                setUsers(mockDB.users);
             }, []);
 
             return (
@@ -215,15 +246,13 @@
             );
         };
 
-        // --- PAGE: SYSTEM LOGS (CONNECTED TO BACKEND) ---
+        // --- PAGE: SYSTEM LOGS ---
         const LogsPage = () => {
             const [logs, setLogs] = useState([]);
 
             useEffect(() => {
-                fetch(`${API_URL}/api/logs`)
-                    .then(res => res.json())
-                    .then(setLogs)
-                    .catch(err => console.error("Error fetching logs:", err));
+                // SIMULATED DATABASE FETCH
+                setLogs(mockDB.logs);
             }, []);
 
             const getTypeStyles = (type) => {
@@ -281,14 +310,16 @@
 
         // --- APP SHELL ---
         const App = () => {
-            const [activePage, setActivePage] = useState('analytics');
+            // CHANGED: Default page is now 'dashboard' (matches the new ID in sidebar)
+            const [activePage, setActivePage] = useState('dashboard');
+            
             const renderContent = () => {
                 switch(activePage) {
-                    case 'analytics': return <AnalyticsPage />;
+                    case 'dashboard': return <DashboardPage />;
                     case 'users': return <UserManagementPage />;
                     case 'queue': return <ModerationPage />;
                     case 'logs': return <LogsPage />;
-                    default: return <AnalyticsPage />;
+                    default: return <DashboardPage />;
                 }
             };
             return (
