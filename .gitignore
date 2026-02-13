@@ -17,3 +17,9 @@ build/
 .vscode/
 .DS_Store
 Thumbs.db
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
