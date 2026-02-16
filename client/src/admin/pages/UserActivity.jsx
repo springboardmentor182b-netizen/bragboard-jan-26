@@ -6,11 +6,11 @@ export default function UserActivity() {
 
       <div className="bg-white rounded-xl shadow p-6">
         <ul className="space-y-3">
-          <li>Jordan posted a shoutout • 2 mins ago</li>
-          <li>Sarah logged in • 15 mins ago</li>
-          <li>Marcus updated profile • 1 hour ago</li>
+          <li>Jordan posted a shoutout - 2 mins ago</li>
+          <li>Sarah logged in - 15 mins ago</li>
+          <li>Marcus updated profile - 1 hour ago</li>
           <li className="text-red-500">
-            David failed login attempt • 4 hours ago
+            David failed login attempt - 4 hours ago
           </li>
         </ul>
       </div>
