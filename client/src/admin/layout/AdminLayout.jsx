@@ -1,10 +1,13 @@
-const AdminLayout = ({ children }) => {
+import Sidebar from './Sidebar';
+import { Outlet } from 'react-router-dom';
+
+export default function AdminLayout() {
   return (
-    <div style={{ display: "flex" }}>
-      <aside style={{ width: "220px" }}>Sidebar</aside>
-      <main style={{ padding: "20px" }}>{children}</main>
+    <div className='flex min-h-screen'>
+      <Sidebar />
+      <main className='flex-1 p-8'>
+        <Outlet />
+      </main>
     </div>
   );
-};
-
-export default AdminLayout;
+}
