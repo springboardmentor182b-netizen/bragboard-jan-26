@@ -1,2 +1,2 @@
 # bragboard-jan-26
-Design Link : https://www.figma.com/design/3ZaeJZKNsY6RWq73atpPxF/BRAGBOARD?node-id=0-1&t=8VuQ3sxPM3YTGZGU-1
+Design Link : https://www.figma.com/make/FYzEXatKfEk7aUuKZdojt7/BragBoard-Login-Page-Design?t=PLV1KNIchRaUHLTY-1
