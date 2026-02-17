@@ -5,7 +5,7 @@ import datetime
 import enum
 
 
-class UserRole(enum.Enum):
+class UserRole(enum.Enum):        # ← this is what's missing
     employee = "employee"
     admin = "admin"
 

@@ -12,34 +12,24 @@ router = APIRouter(prefix="/leaderboard", tags=["Leaderboard"])
 
 @router.get("/top-contributors")
 def leaderboard_top_contributors(
-    limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
+    limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db)
 ):
-    """
-    Get users who sent the most shout-outs
-    
-    Returns leaderboard of top contributors sorted by number of shout-outs sent
-    """
+    """Get users who sent the most shout-outs."""
     return get_top_contributors(db, limit)
 
 
-@router.get("/top-appreciated")
+@router.get("/most-appreciated")  # ← matches what frontend calls
+@router.get("/top-appreciated")   # ← keep old name too for backwards compat
 def leaderboard_most_appreciated(
-    limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
+    limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db)
 ):
-    """
-    Get users who received the most shout-outs
-    
-    Returns leaderboard of most appreciated employees sorted by shout-outs received
-    """
+    """Get users who received the most shout-outs."""
     return get_most_appreciated(db, limit)
+
 
 @router.get("/departments")
 def leaderboard_departments(db: Session = Depends(get_db)):
-    """
-    Get engagement statistics by department
-    
-    Returns shout-out counts and engagement metrics for each department
-    """
+    """Get engagement statistics by department."""
     return get_department_stats(db)

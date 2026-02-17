@@ -295,7 +295,7 @@ function CreateShoutoutModal({ onClose, currentUser, onSuccess }) {
 
   // Load all users to pick recipient from
   useEffect(() => {
-    fetch(`${API_URL}/users`, {
+    fetch(`${API_URL}/users/`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
       .then(res => res.json())
@@ -579,9 +579,9 @@ function LeaderboardView() {
   const medals = ['🥇', '🥈', '🥉'];
 
   useEffect(() => {
-    fetch(`${API_URL}/leaderboard/most-appreciated`)
+    fetch(`${API_URL}/leaderboard/most-appreciated`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
       .then(res => res.json())
-      .then(data => { setLeaders(data); setLoading(false); })
+      .then(data => { setLeaders(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(err => { console.error('Leaderboard fetch failed:', err); setLoading(false); });
   }, []);
 
@@ -642,7 +642,7 @@ function DepartmentsView() {
   useEffect(() => {
     fetch(`${API_URL}/leaderboard/departments`)
       .then(res => res.json())
-      .then(data => { setDepts(data); setLoading(false); })
+      .then(data => { setDepts(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(err => { console.error('Departments fetch failed:', err); setLoading(false); });
   }, []);
 
@@ -713,7 +713,16 @@ function Dashboard() {
         </div>
       </main>
 
-      {showModal && <CreateShoutoutModal onClose={() => setShowModal(false)} />}
+      {showModal && (
+        <CreateShoutoutModal
+          onClose={() => setShowModal(false)}
+          currentUser={user}
+          onSuccess={() => {
+            setShowModal(false);
+            setCurrentView('feed');
+          }}
+        />
+      )}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
