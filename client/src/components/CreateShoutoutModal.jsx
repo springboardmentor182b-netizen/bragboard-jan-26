@@ -7,22 +7,31 @@ const CreateShoutoutModal = ({ isOpen, onClose, onPost, currentUser }) => {
   const [message, setMessage] = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
+  
+  // 1. STATE FOR DATA
   const [users, setUsers] = useState([]); 
+  const [availableTags, setAvailableTags] = useState([]); // <--- NEW STATE FOR TAGS
 
-  // Fetch users when modal opens
+  // 2. FETCH DATA (Users AND Tags)
   useEffect(() => {
     if (isOpen) {
+        // Fetch Users
         fetch(`${API_URL}/users`)
             .then(res => res.json())
             .then(data => {
-                // Filter out yourself so you don't shoutout yourself (optional)
                 if (currentUser) {
                     setUsers(data.filter(u => u.id !== currentUser.id));
                 } else {
                     setUsers(data);
                 }
             })
-            .catch(err => console.error("Failed to load colleagues", err));
+            .catch(err => console.error("Failed to load users", err));
+
+        // Fetch Tags from Backend <--- NEW FETCH
+        fetch(`${API_URL}/shoutouts/tags`)
+            .then(res => res.json())
+            .then(data => setAvailableTags(data))
+            .catch(err => console.error("Failed to load tags", err));
     }
   }, [isOpen, currentUser]);
 
@@ -38,14 +47,11 @@ const CreateShoutoutModal = ({ isOpen, onClose, onPost, currentUser }) => {
         tags: selectedTags 
     });
     
-    // Reset form
     onClose();
     setMessage(''); 
     setSelectedTags([]); 
     setSelectedRecipient('');
   };
-
-  const availableTags = ['Teamwork', 'Innovation', 'Leadership', 'Bug Hunter', 'Problem Solving'];
 
   const toggleTag = (tag) => {
       if (selectedTags.includes(tag)) {
@@ -88,16 +94,21 @@ const CreateShoutoutModal = ({ isOpen, onClose, onPost, currentUser }) => {
             />
         </div>
 
-        {/* TAGS */}
+        {/* TAGS SECTION */}
         <div className="mb-6">
             <label className="block text-sm font-medium mb-2 text-gray-700">Tags</label>
             <div className="flex gap-2 flex-wrap">
-                {availableTags.map(tag => (
-                    <button key={tag} onClick={() => toggleTag(tag)}
-                        className={`px-3 py-1 rounded-full text-sm border transition-all ${selectedTags.includes(tag) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'}`}>
-                        {tag}
-                    </button>
-                ))}
+                {/* 3. MAP OVER DYNAMIC TAGS */}
+                {availableTags.length > 0 ? (
+                    availableTags.map(tag => (
+                        <button key={tag} onClick={() => toggleTag(tag)}
+                            className={`px-3 py-1 rounded-full text-sm border transition-all ${selectedTags.includes(tag) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'}`}>
+                            {tag}
+                        </button>
+                    ))
+                ) : (
+                    <p className="text-gray-400 text-sm">Loading tags...</p>
+                )}
             </div>
         </div>
 

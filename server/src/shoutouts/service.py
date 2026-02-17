@@ -85,3 +85,15 @@ def like_shoutout(db: Session, shoutout_id: int):
         db.commit()
         db.refresh(shoutout)
     return shoutout
+# ... (keep existing imports and functions)
+
+def get_tags():
+    return [
+        "Teamwork", 
+        "Innovation", 
+        "Leadership", 
+        "Bug Hunter", 
+        "Problem Solving",
+        "Going Above & Beyond",
+        "Mentorship"
+    ]
