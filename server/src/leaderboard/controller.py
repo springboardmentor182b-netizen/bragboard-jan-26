@@ -4,7 +4,6 @@ from ..database.connection import get_db
 from .service import (
     get_top_contributors,
     get_most_appreciated,
-    get_top_reactors,
     get_department_stats
 )
 
@@ -35,20 +34,6 @@ def leaderboard_most_appreciated(
     Returns leaderboard of most appreciated employees sorted by shout-outs received
     """
     return get_most_appreciated(db, limit)
-
-
-@router.get("/top-reactors")
-def leaderboard_top_reactors(
-    limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
-    db: Session = Depends(get_db)
-):
-    """
-    Get users who gave the most reactions
-    
-    Returns leaderboard of most engaged users sorted by reactions given
-    """
-    return get_top_reactors(db, limit)
-
 
 @router.get("/departments")
 def leaderboard_departments(db: Session = Depends(get_db)):
