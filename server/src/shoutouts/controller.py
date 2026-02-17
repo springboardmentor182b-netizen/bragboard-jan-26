@@ -31,3 +31,6 @@ def read_departments(db: Session = Depends(get_db)):
 @router.put("/{id}/like", response_model=models.ShoutoutResponse)
 def like_shoutout(id: int, db: Session = Depends(get_db)):
     return service.like_shoutout(db, id)
+@router.get("/tags", response_model=List[str])
+def get_tags():
+    return service.get_tags()
