@@ -464,7 +464,8 @@ function MyShoutoutsView({ user }) {
   );
 }
 
-// ─── Leaderboard View ─────────────────────────────────────────────────────────
+
+// ─── Leaderboard View ─────────────────────────────────────────────────────
 function LeaderboardView() {
   const leaders = [
     { rank: 1, name: 'Sarah Johnson', dept: 'Engineering', count: 12, medal: '🥇' },
