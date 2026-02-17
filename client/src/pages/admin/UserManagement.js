@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Filter, Download, UserPlus, Shield, Users as UsersIcon } from 'lucide-react';
+import axios from 'axios';
+import { Search, Filter, Download, UserPlus, Users as UsersIcon } from 'lucide-react';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([
@@ -48,22 +49,63 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('All Roles');
 
+  // ✅ Backend Connected Add User
+  const handleAddUser = async () => {
+    try {
+      const response = await axios.post(
+        'http://127.0.0.1:8000/api/users/',
+        {
+          name: "Test User",
+          email: `test${users.length + 1}@mail.com`,
+          password: "123456",
+          department: "IT",
+          role: "employee"
+        }
+      );
+
+      const newUser = {
+        id: response.data.id,
+        name: response.data.name,
+        initials: response.data.name
+          .split(" ")
+          .map(word => word[0])
+          .join("")
+          .toUpperCase(),
+        email: response.data.email,
+        role: response.data.role,
+        department: response.data.department,
+        status: "Active",
+        color: "bg-gray-600"
+      };
+
+      setUsers([...users, newUser]);
+
+    } catch (error) {
+      console.error("Error adding user:", error);
+      alert("Failed to add user. Check backend.");
+    }
+  };
+
   const stats = [
-    { label: 'Total Users', value: 10, color: 'bg-blue-100', iconColor: 'text-blue-600' },
-    { label: 'Active', value: 9, color: 'bg-green-100', iconColor: 'text-green-600' },
-    { label: 'Admins', value: 2, color: 'bg-red-100', iconColor: 'text-red-600' },
-    { label: 'Managers', value: 3, color: 'bg-purple-100', iconColor: 'text-purple-600' }
+    { label: 'Total Users', value: users.length, color: 'bg-blue-100', iconColor: 'text-blue-600' },
+    { label: 'Active', value: users.length, color: 'bg-green-100', iconColor: 'text-green-600' },
+    { label: 'Admins', value: users.filter(u => u.role === 'Admin').length, color: 'bg-red-100', iconColor: 'text-red-600' },
+    { label: 'Managers', value: users.filter(u => u.role === 'Manager').length, color: 'bg-purple-100', iconColor: 'text-purple-600' }
   ];
 
   return (
     <div className="space-y-6">
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
           <p className="text-gray-600 mt-1">Manage user accounts, roles, and permissions</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium">
+        <button
+          onClick={handleAddUser}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium"
+        >
           <UserPlus className="w-5 h-5" />
           Add New User
         </button>
@@ -99,6 +141,7 @@ const UserManagement = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <select
@@ -112,6 +155,7 @@ const UserManagement = () => {
               <option>Employee</option>
             </select>
           </div>
+
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
             <Download className="w-5 h-5" />
             Export
@@ -125,10 +169,10 @@ const UserManagement = () => {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-lg font-bold text-gray-900">All Users</h3>
-              <p className="text-sm text-gray-600">10 users found</p>
+              <p className="text-sm text-gray-600">{users.length} users found</p>
             </div>
             <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-              10 Total
+              {users.length} Total
             </span>
           </div>
         </div>
@@ -137,23 +181,14 @@ const UserManagement = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Department
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Status
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Department</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-gray-200">
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
@@ -168,21 +203,21 @@ const UserManagement = () => {
                       </div>
                     </div>
                   </td>
+
                   <td className="px-6 py-4">
                     <p className="text-gray-700">{user.email}</p>
                   </td>
+
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      user.role === 'Admin' ? 'bg-red-100 text-red-700' :
-                      user.role === 'Manager' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
+                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
                       {user.role}
                     </span>
                   </td>
+
                   <td className="px-6 py-4">
                     <p className="text-gray-700">{user.department}</p>
                   </td>
+
                   <td className="px-6 py-4">
                     <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
                       {user.status}
@@ -191,9 +226,11 @@ const UserManagement = () => {
                 </tr>
               ))}
             </tbody>
+
           </table>
         </div>
       </div>
+
     </div>
   );
 };
