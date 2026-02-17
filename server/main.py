@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """
 BragBoard API - Main Entry Point
 FastAPI backend for employee recognition platform
@@ -64,3 +65,14 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+=======
+from fastapi import FastAPI
+from src.core.database import Base, engine
+from src.users.api import router as user_router
+
+app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
+
+app.include_router(user_router)
+>>>>>>> ff6b9ac298133bc779a2d2610a3f4eda536800c3

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """
 Auth Models
 Authentication and authorization models for admin dashboard
@@ -61,3 +62,21 @@ def can_delete_shoutouts(user_role: str) -> bool:
 def can_view_reports(user_role: str) -> bool:
     """Check if user can view flagged content"""
     return is_manager_or_admin(user_role)
+=======
+from pydantic import BaseModel, EmailStr
+
+class RegisterRequest(BaseModel):
+    full_name: str
+    email: EmailStr
+    password: str
+    role: str
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class AuthResponse(BaseModel):
+    message: str
+>>>>>>> ff6b9ac298133bc779a2d2610a3f4eda536800c3
