@@ -2,13 +2,35 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
+<<<<<<< HEAD
 
 from src.database.core import Base
 
+=======
+from src.database.connection import Base
+import datetime
+
+
+class Shoutout(Base):
+    __tablename__ = "shoutouts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    message = Column(Text, nullable=False)
+    tags = Column(String)
+    likes = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Relationships
+    sender = relationship("User", foreign_keys=[sender_id], backref="sent_shoutouts")
+    recipients = relationship("ShoutoutRecipient", back_populates="shoutout", cascade="all, delete-orphan")
+
+>>>>>>> origin/main-group-D
 
 class ShoutoutRecipient(Base):
     """Association table linking shoutouts to their recipients."""
     __tablename__ = "shoutout_recipients"
+<<<<<<< HEAD
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     shoutout_id = Column(Integer, ForeignKey("shoutouts.id", ondelete="CASCADE"), nullable=False)
@@ -37,3 +59,12 @@ class Shoutout(Base):
     comments = relationship("Comment", back_populates="shoutout", cascade="all, delete-orphan")
     reactions = relationship("Reaction", back_populates="shoutout", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="shoutout", cascade="all, delete-orphan")
+=======
+
+    id = Column(Integer, primary_key=True, index=True)
+    shoutout_id = Column(Integer, ForeignKey("shoutouts.id", ondelete="CASCADE"), nullable=False)
+    recipient_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    shoutout = relationship("Shoutout", back_populates="recipients")
+    recipient = relationship("User", foreign_keys=[recipient_id])
+>>>>>>> origin/main-group-D

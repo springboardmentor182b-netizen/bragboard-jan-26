@@ -4,26 +4,59 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
+
+# ── Request schemas ─────────────────────────────────────────────────────────
+
 class ShoutoutCreate(BaseModel):
     message: str
     recipient_ids: List[int]
     tags: Optional[List[str]] = []
 
 
+
+# ── Nested summary schemas ───────────────────────────────────────────────────
+
 class UserSummary(BaseModel):
     id: int
     name: str
     department: Optional[str] = "General"
-
-
-class ShoutoutRecipientResponse(BaseModel):
-    id: int
-    recipient_id: int
+<<<<<<< HEAD
+=======
 
     class Config:
         from_attributes = True
 
 
+class RecipientSummary(BaseModel):
+    id: int
+    recipient: UserSummary
+
+    class Config:
+        from_attributes = True
+
+
+# ── Response schemas ─────────────────────────────────────────────────────────
+>>>>>>> origin/main-group-D
+
+
+class ShoutoutRecipientResponse(BaseModel):
+    id: int
+<<<<<<< HEAD
+    recipient_id: int
+=======
+    sender: UserSummary
+    message: str
+    tags: Optional[str] = None
+    likes: Optional[int] = 0
+    created_at: datetime
+    recipients: Optional[List[RecipientSummary]] = []
+>>>>>>> origin/main-group-D
+
+    class Config:
+        from_attributes = True
+
+
+<<<<<<< HEAD
 class ShoutoutResponse(BaseModel):
     id: int
     sender_id: int
@@ -38,10 +71,14 @@ class ShoutoutResponse(BaseModel):
         from_attributes = True
 
 
+=======
+# ── Leaderboard & department schemas ────────────────────────────────────────
+
+>>>>>>> origin/main-group-D
 class LeaderboardEntry(BaseModel):
     id: int
     name: str
-    department: str
+    department: Optional[str] = "General"
     score: int
 
 
