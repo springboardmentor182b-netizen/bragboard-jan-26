@@ -60,8 +60,12 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const isAuthenticated = () => {
+        return !!user && !!localStorage.getItem('token');
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, logout, loading, isAuthenticated }}>
             {children}
         </AuthContext.Provider>
     );
