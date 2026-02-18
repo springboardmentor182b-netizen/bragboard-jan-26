@@ -16,6 +16,8 @@ class User(Base):
     department = Column(String, nullable=True)
     role = Column(String, nullable=False, default="user")
     joined_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    security_question = Column(String, nullable=True)
+    security_answer = Column(String, nullable=True)  # stored as bcrypt hash
 
     # Relationships
     sent_shoutouts = relationship("Shoutout", back_populates="sender")

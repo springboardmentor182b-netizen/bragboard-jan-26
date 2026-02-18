@@ -10,6 +10,8 @@ from src.auth.service import (
     create_access_token,
     get_current_user,
     register_new_user,
+    hash_password,
+    verify_password,
 )
 from src.auth.models import (
     Token,
@@ -67,15 +69,48 @@ def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-# --- NEW PASSWORD RECOVERY ROUTES ---
+# --- PASSWORD RECOVERY ROUTES ---
 
 @router.post("/forgot-password")
 def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    # Placeholder for actual logic from main-group-D
-    return {"message": "If the email exists, security questions will be retrieved."}
+    """Look up user by email and return their security question."""
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with this email address.",
+        )
+    if not user.security_question:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No security question set for this account.",
+        )
+    return {"security_question": user.security_question}
 
 
-@router.post("/verify-security-answer")
-def verify_security_answer(request: VerifySecurityAnswerRequest, db: Session = Depends(get_db)):
-    # Placeholder for actual logic from main-group-D
-    return {"message": "Password reset logic would go here."}
+@router.post("/reset-password")
+def reset_password(request: VerifySecurityAnswerRequest, db: Session = Depends(get_db)):
+    """Verify the security answer and reset the user's password."""
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with this email address.",
+        )
+    if not user.security_answer:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No security answer set for this account.",
+        )
+    
+    # Verify the security answer
+    if not verify_password(request.security_answer, user.security_answer):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect security answer.",
+        )
+    
+    # Update the password
+    user.password = hash_password(request.new_password)
+    db.commit()
+    return {"message": "Password reset successfully."}

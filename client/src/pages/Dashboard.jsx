@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import ShoutoutCard from '../components/ShoutoutCard';
 import CreateShoutoutModal from '../components/CreateShoutoutModal';
 import Leaderboard from '../components/Leaderboard';
 import Departments from '../components/Departments';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = '/api';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('feed');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -18,14 +20,28 @@ const Dashboard = () => {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [deptData, setDeptData] = useState([]);
 
+  // Helper: authenticated fetch that redirects to login on 401
+  const authFetch = async (url) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return null;
+    }
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.status === 401) {
+      localStorage.removeItem('token');
+      navigate('/login');
+      return null;
+    }
+    if (!res.ok) return null;
+    return res.json();
+  };
+
   // 1. Load User & Initial Data
   useEffect(() => {
-    fetch(`${API_URL}/auth/me`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-      .then(res => res.json())
+    authFetch(`${API_URL}/auth/me`)
       .then(user => {
         if (user && user.id) {
           setCurrentUser(user);
@@ -36,17 +52,14 @@ const Dashboard = () => {
 
   // 2. Load Tab Data
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const headers = { 'Authorization': `Bearer ${token}` };
-
     if (activeTab === 'feed') {
-      fetch(`${API_URL}/shoutouts`, { headers }).then(res => res.json()).then(setFeedData).catch(console.error);
+      authFetch(`${API_URL}/shoutouts/`).then(data => { if (Array.isArray(data)) setFeedData(data); }).catch(console.error);
     } else if (activeTab === 'my-shoutouts' && currentUser) {
-      fetch(`${API_URL}/shoutouts/my/${currentUser.id}`, { headers }).then(res => res.json()).then(setMyShoutouts).catch(console.error);
+      authFetch(`${API_URL}/shoutouts/my/${currentUser.id}`).then(data => { if (Array.isArray(data)) setMyShoutouts(data); }).catch(console.error);
     } else if (activeTab === 'leaderboard') {
-      fetch(`${API_URL}/shoutouts/leaderboard`, { headers }).then(res => res.json()).then(setLeaderboardData).catch(console.error);
+      authFetch(`${API_URL}/shoutouts/leaderboard`).then(data => { if (Array.isArray(data)) setLeaderboardData(data); }).catch(console.error);
     } else if (activeTab === 'departments') {
-      fetch(`${API_URL}/shoutouts/departments`, { headers }).then(res => res.json()).then(setDeptData).catch(console.error);
+      authFetch(`${API_URL}/shoutouts/departments`).then(data => { if (Array.isArray(data)) setDeptData(data); }).catch(console.error);
     }
   }, [activeTab, currentUser]);
 
@@ -73,9 +86,8 @@ const Dashboard = () => {
 
       if (response.ok) {
         // Refresh feed
-        const res = await fetch(`${API_URL}/shoutouts`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const newData = await res.json();
-        setFeedData(newData);
+        const newData = await authFetch(`${API_URL}/shoutouts/`);
+        if (Array.isArray(newData)) setFeedData(newData);
         setActiveTab('feed');
         setIsModalOpen(false);
       }

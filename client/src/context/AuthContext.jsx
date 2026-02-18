@@ -28,8 +28,22 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const login = async (email, password) => {
-        const response = await api.post('/auth/login', { email, password });
+    // login can be called two ways:
+    //   login(email, password)  – calls API, stores token, fetches user
+    //   login(userObj, token)   – directly sets user & token (used by Login.jsx)
+    const login = async (emailOrUser, passwordOrToken) => {
+        // If first arg is an object, the caller already did the API call
+        if (typeof emailOrUser === 'object' && emailOrUser !== null) {
+            localStorage.setItem('token', passwordOrToken);
+            setUser(emailOrUser);
+            return { user: emailOrUser, access_token: passwordOrToken };
+        }
+
+        // Otherwise, do the API call ourselves
+        const response = await api.post('/auth/login', {
+            email: emailOrUser,
+            password: passwordOrToken,
+        });
         const { access_token } = response.data;
         localStorage.setItem('token', access_token);
         await checkAuth();

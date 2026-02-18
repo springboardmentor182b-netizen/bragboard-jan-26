@@ -71,11 +71,19 @@ def register_new_user(db: Session, user_data: UserRegister) -> User:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
+
+    # Hash security answer if provided
+    hashed_answer = None
+    if hasattr(user_data, "security_answer") and user_data.security_answer:
+        hashed_answer = hash_password(user_data.security_answer)
+
     user = User(
         name=user_data.name,
         email=user_data.email,
         password=hash_password(user_data.password),
         department=user_data.department,
+        security_question=getattr(user_data, "security_question", None),
+        security_answer=hashed_answer,
     )
     db.add(user)
     db.commit()
