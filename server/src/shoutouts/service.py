@@ -1,3 +1,5 @@
+import json
+import os
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc
 from src.entities.shoutout import Shoutout, ShoutoutRecipient
@@ -85,15 +87,19 @@ def like_shoutout(db: Session, shoutout_id: int):
         db.commit()
         db.refresh(shoutout)
     return shoutout
-# ... (keep existing imports and functions)
 
 def get_tags():
-    return [
-        "Teamwork", 
-        "Innovation", 
-        "Leadership", 
-        "Bug Hunter", 
-        "Problem Solving",
-        "Going Above & Beyond",
-        "Mentorship"
-    ]
+    # 1. Find the exact folder where this service.py file lives
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    
+    # 2. Build the full path to the tags.json file
+    file_path = os.path.join(current_directory, "tags.json")
+    
+    # 3. Open the file and load the data
+    try:
+        with open(file_path, "r") as file:
+            tags = json.load(file)
+            return tags
+    except FileNotFoundError:
+        # Fallback just in case the file is missing
+        return ["Tags unavailable"]
