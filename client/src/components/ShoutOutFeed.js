@@ -3,20 +3,23 @@ import axios from 'axios';
 import { MessageCircle, Flag, ThumbsUp, Heart, Trophy } from 'lucide-react';
 import CommentSection from './CommentSection';
 import ReportModal from './Modals/ReportModal';
+import { useAuth } from '../context/AuthContext';
 
 const ShoutOutFeed = ({ userId = null }) => {
     const [shoutouts, setShoutouts] = useState([]);
     const [activeCommentId, setActiveCommentId] = useState(null);
     const [reportModalData, setReportModalData] = useState({ isOpen: false, shoutoutId: null });
+    const { user, apiUrl } = useAuth();
 
     useEffect(() => {
         fetchShoutouts();
-    }, [userId]);
+    }, [userId, apiUrl]);
 
     const fetchShoutouts = async () => {
         try {
-            let url = 'http://localhost:8000/shoutouts/';
+            let url = `${apiUrl}/shoutouts/`;
             if (userId) {
+                // If userId prop is passed (e.g. from MyShoutOuts), filter by that sender
                 url += `?sender_id=${userId}`;
             }
             const response = await axios.get(url);
@@ -78,16 +81,29 @@ const ShoutOutFeed = ({ userId = null }) => {
                 {shoutouts.map((shoutout) => (
                     <div key={shoutout.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold">
-                                S
+                            <div className="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold overflow-hidden border border-gray-100">
+                                {shoutout.sender?.profile_picture ? (
+                                    <img src={shoutout.sender.profile_picture} alt={shoutout.sender.full_name} className="w-full h-full object-cover" />
+                                ) : (
+                                    shoutout.sender?.full_name?.charAt(0) || 'U'
+                                )}
                             </div>
                             <div>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-bold text-gray-900">User {shoutout.sender_id}</span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-gray-900">{shoutout.sender?.full_name || 'Unknown'}</span>
                                     <span className="text-gray-400">→</span>
-                                    <span className="bg-brand-light-bg px-3 py-0.5 rounded-full text-sm font-medium text-gray-700 border border-orange-100">
-                                        User {shoutout.recipient_id}
-                                    </span>
+                                    <div className="flex items-center gap-2 bg-brand-light-bg px-3 py-0.5 rounded-full border border-orange-100">
+                                        <div className="w-5 h-5 rounded-full bg-brand-orange text-white flex items-center justify-center text-xs font-bold overflow-hidden">
+                                            {shoutout.recipient?.profile_picture ? (
+                                                <img src={shoutout.recipient.profile_picture} alt={shoutout.recipient.full_name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                shoutout.recipient?.full_name?.charAt(0) || 'U'
+                                            )}
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-700">
+                                            {shoutout.recipient?.full_name || 'Unknown'}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="text-xs text-gray-400 mt-0.5">
                                     {new Date(shoutout.created_at).toLocaleDateString()}
@@ -95,15 +111,21 @@ const ShoutOutFeed = ({ userId = null }) => {
                             </div>
                         </div>
 
-                        <p className="text-gray-700 mb-6 leading-relaxed">
-                            {shoutout.content} 🚀
+                        <p className="text-gray-700 mb-6 leading-relaxed whitespace-pre-wrap">
+                            {shoutout.content}
                         </p>
 
                         <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                             <div className="flex gap-2">
-                                <ReactionButton icon={ThumbsUp} count={12} color="#FBBF24" />
-                                <ReactionButton icon={Heart} count={6} color="#EC4899" />
-                                <ReactionButton icon={Trophy} count={3} color="#D97706" />
+                                {Object.entries(shoutout.reactions || {}).map(([emoji, count]) => (
+                                    <button key={emoji} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 hover:bg-orange-100 transition-colors text-sm font-medium text-gray-700">
+                                        <span>{emoji}</span>
+                                        <span>{count}</span>
+                                    </button>
+                                ))}
+                                {(Object.keys(shoutout.reactions || {}).length === 0) && (
+                                    <span className="text-sm text-gray-400 italic">No reactions yet</span>
+                                )}
                             </div>
                             <div className="flex gap-4 text-gray-400">
                                 <button
@@ -128,6 +150,7 @@ const ShoutOutFeed = ({ userId = null }) => {
                                 shoutoutId={shoutout.id}
                                 comments={shoutout.comments}
                                 onCommentAdded={(newComment) => handleCommentAdded(shoutout.id, newComment)}
+                                userId={user?.id}
                             />
                         )}
                     </div>
@@ -144,6 +167,7 @@ const ShoutOutFeed = ({ userId = null }) => {
                 isOpen={reportModalData.isOpen}
                 shoutoutId={reportModalData.shoutoutId}
                 onClose={closeReportModal}
+                userId={user?.id}
             />
         </div>
     );

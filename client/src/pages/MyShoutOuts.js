@@ -1,9 +1,11 @@
 import React from 'react';
 import ShoutOutFeed from '../components/ShoutOutFeed';
+import { useAuth } from '../context/AuthContext';
 
 const MyShoutOuts = () => {
-    // Hardcoded current user ID = 1
-    const currentUserId = 1;
+    const { user } = useAuth();
+
+    if (!user) return <div>Please log in.</div>;
 
     return (
         <div>
@@ -12,7 +14,7 @@ const MyShoutOuts = () => {
                 <p className="text-gray-500 mt-1">Shout-outs sent by you</p>
             </div>
 
-            <ShoutOutFeed userId={currentUserId} />
+            <ShoutOutFeed userId={user.id} />
         </div>
     );
 };
