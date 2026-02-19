@@ -13,6 +13,10 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     job_title: Optional[str] = None

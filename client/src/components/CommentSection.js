@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Send, Smile } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-const CommentSection = ({ shoutoutId, comments = [], onCommentAdded, userId = 1 }) => {
+const CommentSection = ({ shoutoutId, comments = [], onCommentAdded, userId }) => {
     const [newComment, setNewComment] = useState('');
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [loading, setLoading] = useState(false);
+    const { apiUrl } = useAuth();
 
     const commonEmojis = ['👍', '🎉', '❤️', '🔥', '👏', '🚀', '🤩', '💯', '🙌', '✨', '💪', '🥳'];
 
@@ -20,7 +22,7 @@ const CommentSection = ({ shoutoutId, comments = [], onCommentAdded, userId = 1 
 
         setLoading(true);
         try {
-            const response = await axios.post(`http://localhost:8000/comments/?user_id=${userId}`, {
+            const response = await axios.post(`${apiUrl}/comments/?user_id=${userId}`, {
                 content: newComment,
                 shoutout_id: shoutoutId
             });

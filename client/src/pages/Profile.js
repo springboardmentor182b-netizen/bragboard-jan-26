@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Mail, Briefcase, Camera, Edit2, X, Save } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
+    const { user: authUser, apiUrl } = useAuth();
     const [user, setUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
@@ -13,16 +15,15 @@ const Profile = () => {
     const fileInputRef = useRef(null);
     const [uploading, setUploading] = useState(false);
 
-    // Hardcoded user ID = 1
-    const userId = 1;
-
     useEffect(() => {
-        fetchUser();
-    }, []);
+        if (authUser) {
+            fetchUser();
+        }
+    }, [authUser]);
 
     const fetchUser = async () => {
         try {
-            const response = await axios.get(`http://localhost:8000/users/${userId}`);
+            const response = await axios.get(`${apiUrl}/users/${authUser.id}`);
             setUser(response.data);
             setEditForm({
                 full_name: response.data.full_name,
@@ -37,7 +38,7 @@ const Profile = () => {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.put(`http://localhost:8000/users/${userId}`, editForm);
+            const response = await axios.put(`${apiUrl}/users/${authUser.id}`, editForm);
             setUser(response.data);
             setIsEditing(false);
         } catch (error) {
@@ -55,7 +56,7 @@ const Profile = () => {
 
         setUploading(true);
         try {
-            await axios.post(`http://localhost:8000/users/${userId}/image`, formData, {
+            await axios.post(`${apiUrl}/users/${authUser.id}/image`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             // Refresh user to get new image URL

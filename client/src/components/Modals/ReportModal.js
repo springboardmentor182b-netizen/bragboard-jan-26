@@ -1,27 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
-const ReportModal = ({ isOpen, onClose, shoutoutId, userId = 1 }) => {
+const ReportModal = ({ isOpen, onClose, shoutoutId, userId }) => {
     const [reason, setReason] = useState('');
     const [details, setDetails] = useState('');
     const [loading, setLoading] = useState(false);
+    const [reasons, setReasons] = useState([]);
+    const { apiUrl } = useAuth();
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchReasons();
+        }
+    }, [isOpen]);
+
+    const fetchReasons = async () => {
+        try {
+            const response = await axios.get(`${apiUrl}/reasons`);
+            setReasons(response.data);
+        } catch (error) {
+            console.error("Error fetching reasons:", error);
+            // Fallback options if API fails
+            setReasons([
+                "Inappropriate Content",
+                "Spam or Misleading",
+                "Harassment or Bullying",
+                "Offensive Language",
+                "Other"
+            ]);
+        }
+    };
 
     if (!isOpen) return null;
-
-    const reasons = [
-        "Inappropriate Content",
-        "Spam or Misleading",
-        "Harassment or Bullying",
-        "Offensive Language",
-        "Other"
-    ];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
-            await axios.post(`http://localhost:8000/reports/?user_id=${userId}`, {
+            await axios.post(`${apiUrl}/reports/?user_id=${userId}`, {
                 reason,
                 details,
                 shoutout_id: shoutoutId

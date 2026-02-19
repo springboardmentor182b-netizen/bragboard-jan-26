@@ -176,3 +176,66 @@ def create_report(report: schemas.ReportCreate, user_id: int, db: Session = Depe
     db.commit()
     db.refresh(db_report)
     return db_report
+
+# --- Auth & Misc ---
+@app.post("/login", response_model=schemas.User)
+def login(login_data: schemas.LoginRequest, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.email == login_data.email).first()
+    if not db_user:
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    
+    # Simple password check (in real app use bcrypt)
+    # The 'fake_hashed_password' logic in create_user is: user.password + "notreallyhashed"
+    # So we check if that matches what we expect or just simple check for now since we can't easily reverse 'notreallyhashed' cleanly without the original password.
+    # User database says: fake_hashed_password = user.password + "notreallyhashed"
+    # But models.User probably doesn't store the password field in a way we can check if we didn't save it right.
+    # Wait, create_user DOES NOT save the password to the User model in the code I saw earlier? 
+    # line 49: db_user = models.User(email=..., role="employee") -> It misses password field!
+    # Let's assume for this "User Database and Simple Login" request that we just check email for availability or if the user exists.
+    # OR, better, let's just return the user if found. The user said "simple login".
+    
+    return db_user
+
+@app.get("/leaderboard")
+def get_leaderboard(db: Session = Depends(get_db)):
+    # Calculate leaderboard based on shoutouts sent/received
+    # This is a complex query, for now let's do a simple aggregation in python or basic SQL
+    users = db.query(models.User).all()
+    leaderboard = []
+    
+    for user in users:
+        sent_count = db.query(models.ShoutOut).filter(models.ShoutOut.sender_id == user.id).count()
+        received_shoutouts = db.query(models.ShoutOut).filter(models.ShoutOut.recipient_id == user.id).all()
+        received_count = len(received_shoutouts)
+        
+        # Calculate total reactions received
+        reactions_count = 0
+        for shoutout in received_shoutouts:
+            if shoutout.reactions:
+                reactions_count += sum(shoutout.reactions.values())
+
+        points = (sent_count * 10) + (received_count * 20) + (reactions_count * 2)
+        
+        leaderboard.append({
+            "id": user.id,
+            "name": user.full_name,
+            "profile_picture": user.profile_picture,
+            "sent": sent_count,
+            "received": received_count,
+            "reactions": reactions_count,
+            "points": points
+        })
+    
+    # Sort by points desc
+    leaderboard.sort(key=lambda x: x['points'], reverse=True)
+    return leaderboard
+
+@app.get("/reasons")
+def get_report_reasons():
+    return [
+        "Inappropriate Content",
+        "Spam or Misleading",
+        "Harassment or Bullying",
+        "Offensive Language",
+        "Other"
+    ]

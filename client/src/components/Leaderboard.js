@@ -1,14 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Trophy, Medal, Award, Flame } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Leaderboard = () => {
-    // Dummy data
-    const leaders = [
-        { id: 1, name: 'Sarah Johnson', sent: 45, received: 38, reactions: 256, points: 339 },
-        { id: 2, name: 'Mike Chen', sent: 38, received: 42, reactions: 245, points: 325 },
-        { id: 3, name: 'Emily Watson', sent: 42, received: 35, reactions: 234, points: 311 },
-        { id: 4, name: 'Alex Rodriguez', sent: 35, received: 30, reactions: 198, points: 263 },
-    ];
+    const [leaders, setLeaders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const { apiUrl } = useAuth();
+
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            try {
+                const response = await axios.get(`${apiUrl}/leaderboard`);
+                setLeaders(response.data);
+            } catch (error) {
+                console.error("Error fetching leaderboard:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchLeaderboard();
+    }, [apiUrl]);
 
     const getRankIcon = (index) => {
         if (index === 0) return <Trophy className="text-yellow-500" fill="#EAB308" />;
@@ -16,6 +28,8 @@ const Leaderboard = () => {
         if (index === 2) return <Medal className="text-orange-500" fill="#F97316" />;
         return <span className="text-2xl font-bold text-gray-300">#{index + 1}</span>;
     };
+
+    if (loading) return <div>Loading leaderboard...</div>;
 
     return (
         <div className="max-w-4xl mx-auto">
