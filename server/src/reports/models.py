@@ -1,9 +1,12 @@
-from pydantic import BaseModel
+from sqlalchemy import Column, Integer, String, DateTime
 from datetime import datetime
+from src.database.db import Base
 
-class ReportOut(BaseModel):
-    id: int
-    shoutout_id: int
-    reported_by: str
-    reason: str
-    created_at: datetime
+class Report(Base):
+    __tablename__ = "reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    shoutout_id = Column(Integer, nullable=False)
+    reported_by = Column(String, nullable=False)
+    reason = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

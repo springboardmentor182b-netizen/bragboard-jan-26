@@ -1,34 +1,29 @@
-from fastapi import APIRouter
-from typing import List
-from .models import ReportOut
-from .service import (
-    get_all_reports,
-    resolve_report,
-    delete_shoutout
-)
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from src.database.db import SessionLocal
+from . import service
 
-router = APIRouter(
-    prefix="/admin/reports",
-    tags=["Admin Report Moderation"]
-)
+router = APIRouter()
 
-@router.get("/", response_model=List[ReportOut])
-def fetch_reported_shoutouts():
-    """
-    Fetch all reported shout-outs for admin review
-    """
-    return get_all_reports()
 
-@router.post("/{report_id}/resolve")
-def resolve_report_by_id(report_id: int):
-    """
-    Resolve / ignore a reported shout-out
-    """
-    return resolve_report(report_id)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-@router.delete("/shoutout/{shoutout_id}")
-def delete_shoutout_by_id(shoutout_id: int):
-    """
-    Delete a reported shout-out
-    """
-    return delete_shoutout(shoutout_id)
+
+@router.get("/admin/reports/")
+def get_reports(db: Session = Depends(get_db)):
+    return service.get_all_reports(db)
+
+
+@router.post("/admin/reports/{report_id}/resolve")
+def resolve_report(report_id: int, db: Session = Depends(get_db)):
+    return service.resolve_report(db, report_id)
+
+
+@router.delete("/admin/reports/shoutout/{shoutout_id}")
+def delete_shoutout(shoutout_id: int, db: Session = Depends(get_db)):
+    return service.delete_shoutout(db, shoutout_id)

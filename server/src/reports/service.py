@@ -1,29 +1,26 @@
-from datetime import datetime
+from sqlalchemy.orm import Session
+from .models import Report
 
-def get_all_reports():
-    return [
-        {
-            "id": 1,
-            "shoutout_id": 101,
-            "reported_by": "jane@company.com",
-            "reason": "Inappropriate language",
-            "created_at": datetime.now()
-        },
-        {
-            "id": 2,
-            "shoutout_id": 102,
-            "reported_by": "mike@company.com",
-            "reason": "Spam or promotional content",
-            "created_at": datetime.now()
-        }
-    ]
 
-def resolve_report(report_id: int):
-    return {
-        "message": f"Report with ID {report_id} resolved successfully"
-    }
+def get_all_reports(db: Session):
+    return db.query(Report).all()
 
-def delete_shoutout(shoutout_id: int):
-    return {
-        "message": f"Shout-out with ID {shoutout_id} deleted successfully"
-    }
+
+def resolve_report(db: Session, report_id: int):
+    report = db.query(Report).filter(Report.id == report_id).first()
+    if report:
+        db.delete(report)
+        db.commit()
+    return {"message": "Report resolved successfully"}
+
+
+def delete_shoutout(db: Session, shoutout_id: int):
+    reports = db.query(Report).filter(
+        Report.shoutout_id == shoutout_id
+    ).all()
+
+    for report in reports:
+        db.delete(report)
+
+    db.commit()
+    return {"message": "Shoutout deleted successfully"}
