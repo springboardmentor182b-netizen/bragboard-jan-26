@@ -1,49 +1,91 @@
+import React, { useState, useEffect } from 'react';
+import Sidebar from './components/Sidebar';
+import ShoutoutCard from './components/ShoutoutCard';
+import CreateShoutoutModal from './components/CreateShoutoutModal';
+import Leaderboard from './components/Leaderboard';
+import Departments from './components/Departments';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import ForgotPassword from './pages/forgotpassword';  // ← lowercase
 
-function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated() ? children : <Navigate to="/login" />;
-}
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-function AdminRoute({ children }) {
-  const { isAuthenticated, user } = useAuth();
-  if (!isAuthenticated()) return <Navigate to="/login" />;
-  if (user?.role !== 'admin') return <Navigate to="/dashboard" />;
-  return children;
-}
-
-function PublicRoute({ children }) {
-  const { isAuthenticated } = useAuth();
-  return !isAuthenticated() ? children : <Navigate to="/dashboard" />;
-}
-
-function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" />} />
-      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-      <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/admin-dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-    </Routes>
-  );
-}
+// Import the Pages
+import Home from './pages/Home';           
+import AdminDashboard from './pages/Dashboard'; 
 
 function App() {
+  const [activeTab, setActiveTab] = useState('feed');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Data States
+  const [feedData, setFeedData] = useState([]);
+  const [myShoutouts, setMyShoutouts] = useState([]);
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [deptData, setDeptData] = useState([]);
+
+  // 1. Load User & Initial Data
+  useEffect(() => {
+    fetch(`${API_URL}/users`)
+        .then(res => res.json())
+        .then(users => {
+            const me = users.find(u => u.id === 1) || users[0]; 
+            if (me) {
+                setCurrentUser(me);
+            }
+        })
+        .catch(err => console.error("Failed to load users:", err));
+  }, []);
+
+  // 2. Load Tab Data
+  useEffect(() => {
+    if (activeTab === 'feed') {
+        fetch(`${API_URL}/shoutouts`).then(res => res.json()).then(setFeedData).catch(console.error);
+    } else if (activeTab === 'my-shoutouts' && currentUser) {
+        fetch(`${API_URL}/shoutouts/my/${currentUser.id}`).then(res => res.json()).then(setMyShoutouts).catch(console.error);
+    } else if (activeTab === 'leaderboard') {
+        fetch(`${API_URL}/shoutouts/leaderboard`).then(res => res.json()).then(setLeaderboardData).catch(console.error);
+    } else if (activeTab === 'departments') {
+        fetch(`${API_URL}/shoutouts/departments`).then(res => res.json()).then(setDeptData).catch(console.error);
+    }
+  }, [activeTab, currentUser]);
+
+  const handlePost = async (data) => {
+    if (!currentUser) return;
+    const payload = { 
+        sender_id: currentUser.id, 
+        message: data.message,
+        recipient_ids: data.recipient_ids,
+        tags: data.tags
+    };
+    try {
+        const response = await fetch(`${API_URL}/shoutouts/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            const res = await fetch(`${API_URL}/shoutouts`);
+            const newData = await res.json();
+            setFeedData(newData);
+            setActiveTab('feed');
+        }
+    } catch (error) {
+        console.error("Post failed:", error);
+    }
+  };
+
   return (
     <Router>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </Router>
-  );
-}
-
-export default App;
+      <Routes>
+        <Route path="/" element={
+          <div className="flex bg-gray-50 min-h-screen">
+            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onOpenModal={() => setIsModalOpen(true)} user={currentUser} />
+            <div className="flex-1 ml-64 p-8">
+              <div className="max-w-3xl mx-auto">
+                  {activeTab === 'feed' && (
+                      <div>
+                          <h2 className="text-2xl font-bold mb-4">Activity Feed</h2>
+                          {feedData.map(post => <ShoutoutCard key={post.id} data={post} />)}
+                      </div>
+                  )}
+                  {activeTab === 'my-
