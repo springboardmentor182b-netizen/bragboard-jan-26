@@ -1,4 +1,6 @@
-const BASE_URL = "http://localhost:8000/admin/moderation";
+import { config } from '../../../config/env';
+
+const BASE_URL = `${config.apiBaseUrl}/admin/moderation`;
 
 export const fetchReports = async () => {
   const res = await fetch(`${BASE_URL}/reports`);

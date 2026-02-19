@@ -3,7 +3,9 @@
  * Handles all API calls for shoutout management
  */
 
-const BASE_URL = "http://localhost:8000/admin/shoutouts";
+import { config } from '../../../config/env';
+
+const BASE_URL = `${config.apiBaseUrl}/admin/shoutouts`;
 
 /**
  * Fetch all shoutouts with optional filters
