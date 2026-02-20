@@ -1,14 +1,15 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AdminRoutes from './admin/adminRoutes';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import AdminPanel from './pages/AdminPanel';
+// import Home from './pages/Home'; // Your user-side page
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        <Route path='/' element={<Navigate to='/admin' replace />} />
-        <Route path='/admin/*' element={<AdminRoutes />} />
+        {/* <Route path="/" element={<Home />} /> */}
+        <Route path="/admin" element={<AdminPanel />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 
