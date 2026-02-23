@@ -1,9 +1,13 @@
+"""
+User Service
+Business logic for user operations
+"""
+
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from .models import User, UserRole
 from passlib.context import CryptContext
 
-# Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class UserService:
@@ -41,9 +45,13 @@ class UserService:
         email: str,
         password: str,
         department: str,
-        role: UserRole = UserRole.EMPLOYEE
+        role: str = "employee"
     ) -> User:
         """Create a new user"""
+        # Convert string role to UserRole enum
+        if isinstance(role, str):
+            role = UserRole(role.lower())
+        
         hashed_password = UserService.get_password_hash(password)
         user = User(
             name=name,
@@ -56,51 +64,6 @@ class UserService:
         db.commit()
         db.refresh(user)
         return user
-    
-    @staticmethod
-    def update_user(
-        db: Session,
-        user_id: int,
-        name: Optional[str] = None,
-        department: Optional[str] = None,
-        role: Optional[UserRole] = None
-    ) -> Optional[User]:
-        """Update user information"""
-        user = UserService.get_user_by_id(db, user_id)
-        if not user:
-            return None
-        
-        if name:
-            user.name = name
-        if department:
-            user.department = department
-        if role:
-            user.role = role
-        
-        db.commit()
-        db.refresh(user)
-        return user
-    
-    @staticmethod
-    def delete_user(db: Session, user_id: int) -> bool:
-        """Delete a user"""
-        user = UserService.get_user_by_id(db, user_id)
-        if not user:
-            return False
-        
-        db.delete(user)
-        db.commit()
-        return True
-    
-    @staticmethod
-    def get_users_by_role(db: Session, role: UserRole) -> List[User]:
-        """Get all users with a specific role"""
-        return db.query(User).filter(User.role == role).all()
-    
-    @staticmethod
-    def get_users_by_department(db: Session, department: str) -> List[User]:
-        """Get all users in a department"""
-        return db.query(User).filter(User.department == department).all()
     
     @staticmethod
     def get_user_count(db: Session) -> int:
@@ -117,61 +80,3 @@ class UserService:
         ).group_by(User.role).all()
         
         return {role.value: count for role, count in results}
-from sqlalchemy.orm import Session
-from .models import User
-from src.database.connection import engine (
-    hash_password,
-    verify_password,
-    create_access_token,
-    create_refresh_token
-)
-
-
-def register_user(db: Session, user_data):
-
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
-    if existing_user:
-        raise Exception("Email already registered")
-
-    new_user = User(
-        name=user_data.name,
-        email=user_data.email,
-        password=hash_password(user_data.password),
-        department=user_data.department,
-    )
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    return new_user
-
-
-def authenticate_user(db: Session, email: str, password: str):
-    user = db.query(User).filter(User.email == email).first()
-
-    if not user:
-        return None
-
-    if not verify_password(password, user.password):
-        return None
-
-    return user
-
-
-def generate_tokens(user: User):
-
-    payload = {
-        "sub": user.email,
-        "user_id": user.id,
-        "role": user.role.value
-    }
-
-    access_token = create_access_token(payload)
-    refresh_token = create_refresh_token(payload)
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer"
-    }
