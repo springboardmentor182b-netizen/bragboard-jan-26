@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-"""
-User Service
-Business logic for user operations
-"""
-
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from .models import User, UserRole
@@ -123,10 +117,9 @@ class UserService:
         ).group_by(User.role).all()
         
         return {role.value: count for role, count in results}
-=======
 from sqlalchemy.orm import Session
 from .models import User
-from src.core.security import (
+from src.database.connection import engine (
     hash_password,
     verify_password,
     create_access_token,
@@ -182,4 +175,3 @@ def generate_tokens(user: User):
         "refresh_token": refresh_token,
         "token_type": "bearer"
     }
->>>>>>> ff6b9ac298133bc779a2d2610a3f4eda536800c3

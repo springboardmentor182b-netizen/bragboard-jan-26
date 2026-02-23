@@ -3,7 +3,7 @@ import { Users, FileText, BarChart3 } from 'lucide-react';
 import Dashboard from './Dashboard';
 import UserManagement from './admin/UserManagement';
 import ShoutoutsManagement from './admin/ShoutoutsManagement';
-
+import Reports from './Reports'; // Make sure path is correct
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -11,6 +11,7 @@ const AdminPanel = () => {
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'users', label: 'Users Management', icon: Users },
     { id: 'shoutouts', label: 'Shout-outs Management', icon: FileText },
+    { id: 'reports', label: 'Reports', icon: BarChart3 }, // Added Reports tab
   ];
 
   const renderContent = () => {
@@ -21,6 +22,8 @@ const AdminPanel = () => {
         return <UserManagement />;
       case 'shoutouts':
         return <ShoutoutsManagement />;
+      case 'reports':
+        return <Reports />; // Added Reports case
       default:
         return <Dashboard />;
     }

@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-"""
-Authentication Service
-Handles JWT token creation and validation
-"""
-
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -60,7 +54,6 @@ class AuthService:
         
         user = UserService.get_user_by_id(db, user_id)
         return user
-=======
 from sqlalchemy.orm import Session
 from src.entities.user import User
 from src.auth.models import RegisterRequest, LoginRequest
@@ -127,4 +120,3 @@ def login_user(db: Session, data: LoginRequest):
         "access_token": token,
         "token_type": "bearer",
     }
->>>>>>> ff6b9ac298133bc779a2d2610a3f4eda536800c3

@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-"""
-Authentication Controller
-API endpoints for login and registration
-"""
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -147,5 +141,4 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     try:
         return login_user(db, data)
     except Exception as e:
-        raise HTTPException(status_code=401, detail=str(e))
->>>>>>> ff6b9ac298133bc779a2d2610a3f4eda536800c3
+        raise HTTPException(status_code=401, detail=str(e)) 

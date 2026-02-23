@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from sqlalchemy import Column, Integer, String, DateTime, Enum
 from sqlalchemy.sql import func
 import enum
@@ -32,10 +31,9 @@ class User(Base):
             "role": self.role.value,
             "joined_at": self.joined_at.isoformat() if self.joined_at else None,
         }
-=======
 from sqlalchemy import Column, Integer, String, Enum, TIMESTAMP
 from sqlalchemy.sql import func
-from src.core.database import Base
+from src.database.connection import engine
 import enum
 
 
@@ -54,4 +52,4 @@ class User(Base):
     department = Column(String, nullable=False)
     role = Column(Enum(RoleEnum), default=RoleEnum.employee)
     joined_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
->>>>>>> ff6b9ac298133bc779a2d2610a3f4eda536800c3
+
