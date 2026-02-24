@@ -27,12 +27,18 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
   };
 
+  // Call this after role changes to update stored user without full re-login
+  const refreshUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   const isAuthenticated = () => {
     return !!token && !!user;
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, token, login, logout, refreshUser, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

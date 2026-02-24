@@ -56,9 +56,9 @@ def make_admin(email: str) -> bool:
                 print(f"ℹ️  {name} ({user_email}) is already an admin!")
                 return True
             
-            # Promote to admin
+            # Promote to admin - use enum value explicitly for PostgreSQL ENUM column
             conn.execute(
-                text("UPDATE users SET role = 'admin' WHERE email = :email"),
+                text("UPDATE users SET role = CAST('admin' AS userrole) WHERE email = :email"),
                 {"email": email}
             )
             conn.commit()
@@ -104,9 +104,9 @@ def demote_admin(email: str) -> bool:
                 print(f"ℹ️  {name} ({email}) is already an employee!")
                 return True
             
-            # Demote to employee
+            # Demote to employee - use enum value explicitly for PostgreSQL ENUM column
             conn.execute(
-                text("UPDATE users SET role = 'employee' WHERE email = :email"),
+                text("UPDATE users SET role = CAST('employee' AS userrole) WHERE email = :email"),
                 {"email": email}
             )
             conn.commit()

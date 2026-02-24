@@ -19,8 +19,9 @@ function AdminRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { isAuthenticated } = useAuth();
-  return !isAuthenticated() ? children : <Navigate to="/dashboard" />;
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated()) return children;
+  return <Navigate to={user?.role === 'admin' ? '/admin-dashboard' : '/dashboard'} />;
 }
 
 function AppRoutes() {
