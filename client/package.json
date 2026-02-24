@@ -18,7 +18,11 @@
 =======
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+<<<<<<< HEAD
 >>>>>>> 8f8593a (Add Admin Report Moderation client UI)
+=======
+    "react-router-dom": "^7.13.1",
+>>>>>>> c6db9cc (Completed Admin Report Moderation UI (Figma styled) + Backend shoutout integration)
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },

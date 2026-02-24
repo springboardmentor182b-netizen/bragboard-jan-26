@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from "react";
-import {
-  fetchReports,
-  resolveReport,
-  deleteShoutout,
-} from "../features/admin/services/reportService";
+import "./AdminReportModeration.css";
+import { fetchReports, resolveReport, deleteShoutout } from "../features/admin/services/reportService";
 
-const AdminReportModeration = () => {
+function AdminReportModeration() {
   const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadReports();
@@ -15,8 +11,7 @@ const AdminReportModeration = () => {
 
   const loadReports = async () => {
     const data = await fetchReports();
-    setReports(data || []);
-    setLoading(false);
+    setReports(data);
   };
 
   const handleResolve = async (id) => {
@@ -29,75 +24,79 @@ const AdminReportModeration = () => {
     loadReports();
   };
 
-  if (loading) {
-    return <h3 style={{ padding: "20px" }}>Loading reports...</h3>;
-  }
+  const totalReports = reports.length;
 
   return (
-    <div style={{ padding: "30px", background: "#f5f3ff", minHeight: "100vh" }}>
-      <h1 style={{ color: "#7c3aed" }}>
-        Admin Report Moderation
-      </h1>
+    <div className="admin-container">
+      {/* Sidebar */}
+      <div className="admin-sidebar">
+        <h2>Admin Panel</h2>
+        <div className="sidebar-item">Account Management</div>
+        <div className="sidebar-item active">Reported Shout-Outs</div>
+        <div className="sidebar-item">Platform Analysis</div>
+      </div>
 
-      <table
-        style={{
-          width: "100%",
-          background: "white",
-          marginTop: "20px",
-          borderCollapse: "collapse",
-        }}
-      >
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Shoutout ID</th>
-            <th>Reported By</th>
-            <th>Reason</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+      {/* Content */}
+      <div className="admin-content">
+        <h1>Reported Shout-Outs</h1>
 
-        <tbody>
-          {reports.map((r) => (
-            <tr key={r.id}>
-              <td>{r.id}</td>
-              <td>{r.shoutout_id}</td>
-              <td>{r.reported_by}</td>
-              <td>{r.reason}</td>
-              <td>
+        {/* Stats */}
+        <div className="stats-container">
+          <div className="stat-card">
+            <p>Total Reports</p>
+            <h3>{totalReports}</h3>
+          </div>
+          <div className="stat-card">
+            <p>Pending Review</p>
+            <h3>{totalReports}</h3>
+          </div>
+          <div className="stat-card">
+            <p>Reviewed</p>
+            <h3>0</h3>
+          </div>
+        </div>
+
+        {/* Reports */}
+        {reports.map((report) => (
+          <div key={report.id} className="report-card">
+            <div className="report-header">
+              <strong>Report #{report.id}</strong>
+              <span className="reason-badge">{report.reason}</span>
+            </div>
+
+            {report.shoutout && (
+              <div className="report-message">
+                <strong>
+                  {report.shoutout.sender} → {report.shoutout.receiver}
+                </strong>
+                <p>{report.shoutout.message}</p>
+              </div>
+            )}
+
+            <p><strong>Reported by:</strong> {report.reported_by}</p>
+
+            <div className="actions">
+              <button
+                className="btn-resolve"
+                onClick={() => handleResolve(report.id)}
+              >
+                Resolve
+              </button>
+
+              {report.shoutout && (
                 <button
-                  onClick={() => handleResolve(r.id)}
-                  style={{
-                    background: "#7c3aed",
-                    color: "white",
-                    border: "none",
-                    padding: "6px 10px",
-                    marginRight: "10px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Resolve
-                </button>
-
-                <button
-                  onClick={() => handleDelete(r.shoutout_id)}
-                  style={{
-                    background: "#ef4444",
-                    color: "white",
-                    border: "none",
-                    padding: "6px 10px",
-                    cursor: "pointer",
-                  }}
+                  className="btn-delete"
+                  onClick={() => handleDelete(report.shoutout.id)}
                 >
                   Delete
                 </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
-};
+}
 
 export default AdminReportModeration;
