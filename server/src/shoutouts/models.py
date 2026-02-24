@@ -4,7 +4,6 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-
 # ── Request schemas ─────────────────────────────────────────────────────────
 
 class ShoutoutCreate(BaseModel):
@@ -20,8 +19,6 @@ class UserSummary(BaseModel):
     id: int
     name: str
     department: Optional[str] = "General"
-<<<<<<< HEAD
-=======
 
     class Config:
         from_attributes = True
@@ -36,27 +33,15 @@ class RecipientSummary(BaseModel):
 
 
 # ── Response schemas ─────────────────────────────────────────────────────────
->>>>>>> origin/main-group-D
-
 
 class ShoutoutRecipientResponse(BaseModel):
     id: int
-<<<<<<< HEAD
     recipient_id: int
-=======
-    sender: UserSummary
-    message: str
-    tags: Optional[str] = None
-    likes: Optional[int] = 0
-    created_at: datetime
-    recipients: Optional[List[RecipientSummary]] = []
->>>>>>> origin/main-group-D
 
     class Config:
         from_attributes = True
 
 
-<<<<<<< HEAD
 class ShoutoutResponse(BaseModel):
     id: int
     sender_id: int
@@ -71,10 +56,8 @@ class ShoutoutResponse(BaseModel):
         from_attributes = True
 
 
-=======
 # ── Leaderboard & department schemas ────────────────────────────────────────
 
->>>>>>> origin/main-group-D
 class LeaderboardEntry(BaseModel):
     id: int
     name: str

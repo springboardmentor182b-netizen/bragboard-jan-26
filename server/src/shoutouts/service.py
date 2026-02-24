@@ -9,19 +9,11 @@ from src.entities.user import User
 from src.shoutouts.models import ShoutoutCreate
 
 
-<<<<<<< HEAD
 def create_shoutout(db: Session, sender_id: int, data: ShoutoutCreate) -> Shoutout:
     tag_string = ",".join(data.tags) if data.tags else None
     shoutout = Shoutout(
-        sender_id=sender_id, 
+        sender_id=sender_id,
         message=data.message,
-=======
-def create_shoutout(db: Session, shoutout_data: ShoutoutCreate):
-    tag_string = ",".join(shoutout_data.tags)
-    new_shoutout = Shoutout(
-        sender_id=shoutout_data.sender_id,
-        message=shoutout_data.message,
->>>>>>> origin/main-group-D
         tags=tag_string
     )
     db.add(shoutout)
@@ -32,29 +24,19 @@ def create_shoutout(db: Session, shoutout_data: ShoutoutCreate):
         db.add(recipient)
 
     db.commit()
-<<<<<<< HEAD
-    db.refresh(shoutout)
-    return shoutout
-
-
-def get_all_shoutouts(db: Session, skip: int = 0, limit: int = 20) -> List[Shoutout]:
-=======
     # Reload with relationships so response includes sender + recipients
     return db.query(Shoutout).options(
         joinedload(Shoutout.sender),
-        joinedload(Shoutout.recipients).joinedload(ShoutoutRecipient.recipient)
-    ).filter(Shoutout.id == new_shoutout.id).first()
+        joinedload(Shoutout.shoutout_recipients).joinedload(ShoutoutRecipient.recipient)
+    ).filter(Shoutout.id == shoutout.id).first()
 
 
-def get_all_shoutouts(db: Session):
-    """Get all shoutouts with sender and recipients eagerly loaded."""
->>>>>>> origin/main-group-D
+def get_all_shoutouts(db: Session, skip: int = 0, limit: int = 20) -> List[Shoutout]:
     return db.query(Shoutout).options(
         joinedload(Shoutout.sender),
         joinedload(Shoutout.shoutout_recipients).joinedload(ShoutoutRecipient.recipient)
     ).order_by(Shoutout.created_at.desc()).offset(skip).limit(limit).all()
 
-<<<<<<< HEAD
 
 def get_shoutout_by_id(db: Session, shoutout_id: int) -> Shoutout:
     shoutout = db.query(Shoutout).options(
@@ -76,38 +58,14 @@ def delete_shoutout(db: Session, shoutout_id: int, user_id: int, user_role: str)
 
 def get_my_shoutouts(db: Session, user_id: int):
     # Get shoutouts sent by ME or received by ME
-    return db.query(Shoutout).join(ShoutoutRecipient, Shoutout.id == ShoutoutRecipient.shoutout_id).filter(
+    return db.query(Shoutout).join(
+        ShoutoutRecipient, Shoutout.id == ShoutoutRecipient.shoutout_id
+    ).filter(
         (Shoutout.sender_id == user_id) | (ShoutoutRecipient.recipient_id == user_id)
     ).options(
         joinedload(Shoutout.sender),
         joinedload(Shoutout.shoutout_recipients).joinedload(ShoutoutRecipient.recipient)
     ).distinct().all()
-=======
-
-def get_my_shoutouts(db: Session, user_id: int):
-    """Get shoutouts sent by OR received by the given user."""
-    sent = db.query(Shoutout).filter(Shoutout.sender_id == user_id)
-    received = db.query(Shoutout).join(ShoutoutRecipient).filter(
-        ShoutoutRecipient.recipient_id == user_id
-    )
-    # Union and deduplicate via Python (simpler than SQL union with SQLAlchemy ORM)
-    seen = set()
-    results = []
-    for s in list(sent.all()) + list(received.all()):
-        if s.id not in seen:
-            seen.add(s.id)
-            results.append(s)
-
-    # Re-fetch with relationships loaded
-    if not results:
-        return []
-    ids = [s.id for s in results]
-    return db.query(Shoutout).options(
-        joinedload(Shoutout.sender),
-        joinedload(Shoutout.recipients).joinedload(ShoutoutRecipient.recipient)
-    ).filter(Shoutout.id.in_(ids)).order_by(Shoutout.created_at.desc()).all()
-
->>>>>>> origin/main-group-D
 
 
 def get_leaderboard(db: Session):
@@ -122,8 +80,6 @@ def get_leaderboard(db: Session):
      .order_by(desc('score'))\
      .limit(10).all()
 
-<<<<<<< HEAD
-=======
     return [
         {
             "id": r.id,
@@ -134,7 +90,6 @@ def get_leaderboard(db: Session):
         for r in results
     ]
 
->>>>>>> origin/main-group-D
 
 def get_department_stats(db: Session):
     """Count users and shoutouts per department."""
@@ -157,15 +112,10 @@ def get_department_stats(db: Session):
     return sorted(results, key=lambda x: x["shoutout_count"], reverse=True)
 
 
-
 def like_shoutout(db: Session, shoutout_id: int):
     shoutout = db.query(Shoutout).filter(Shoutout.id == shoutout_id).first()
     if shoutout:
-<<<<<<< HEAD
-        shoutout.likes += 1
-=======
         shoutout.likes = (shoutout.likes or 0) + 1
->>>>>>> origin/main-group-D
         db.commit()
         db.refresh(shoutout)
     return shoutout

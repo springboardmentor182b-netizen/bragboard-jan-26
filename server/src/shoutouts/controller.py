@@ -2,15 +2,10 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-<<<<<<< HEAD
 
 from src.database.connection import get_db
 from src.auth.service import get_current_user
 from src.entities.user import User
-=======
-from typing import List
-from src.database.connection import get_db  # ← FIXED: was core, should be connection
->>>>>>> origin/main-group-D
 from src.shoutouts import service, models
 
 router = APIRouter(prefix="/shoutouts", tags=["Shoutouts"])
@@ -25,14 +20,6 @@ def create_shoutout(
     """Create a new shoutout."""
     return service.create_shoutout(db, current_user.id, data)
 
-<<<<<<< HEAD
-=======
-
-@router.post("/", response_model=models.ShoutoutResponse)
-def create_shoutout(post: models.ShoutoutCreate, db: Session = Depends(get_db)):
-    return service.create_shoutout(db, post)
->>>>>>> origin/main-group-D
-
 
 @router.get("/", response_model=List[models.ShoutoutResponse])
 def list_shoutouts(
@@ -44,7 +31,6 @@ def list_shoutouts(
     """List shoutouts with pagination."""
     return service.get_all_shoutouts(db, skip, limit)
 
-<<<<<<< HEAD
 
 @router.get("/{shoutout_id}", response_model=models.ShoutoutResponse)
 def get_shoutout(
@@ -66,13 +52,9 @@ def delete_shoutout(
     service.delete_shoutout(db, shoutout_id, current_user.id, current_user.role)
 
 
-# --- NEW ROUTES FROM main-group-D ---
-=======
->>>>>>> origin/main-group-D
-
 @router.get("/my/{user_id}", response_model=List[models.ShoutoutResponse])
 def read_my_shoutouts(
-    user_id: int, 
+    user_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -96,13 +78,9 @@ def read_departments(
 
 
 @router.put("/{id}/like", response_model=models.ShoutoutResponse)
-<<<<<<< HEAD
 def like_shoutout(
-    id: int, 
+    id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-=======
-def like_shoutout(id: int, db: Session = Depends(get_db)):
->>>>>>> origin/main-group-D
     return service.like_shoutout(db, id)
