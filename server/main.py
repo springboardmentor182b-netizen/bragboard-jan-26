@@ -8,7 +8,15 @@ import src.entities  # noqa: F401
 
 from src.database.connection import engine
 from src.database.core import create_tables
-from api import api_router
+
+from src.auth.controller import router as auth_router
+from src.users.controller import router as users_router
+from src.shoutouts.controller import router as shoutouts_router
+from src.comments.controller import router as comments_router
+from src.reactions.controller import router as reactions_router
+from src.reports.controller import router as reports_router
+from src.admin.controller import router as admin_router
+from src.leaderboard.controller import router as leaderboard_router
 
 
 @asynccontextmanager
@@ -34,9 +42,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount all routes (via api.py which includes auth, users, shoutouts, comments,
-# reactions, reports, admin, and leaderboard routers)
-app.include_router(api_router)
+# Mount all routes
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(shoutouts_router)
+app.include_router(comments_router)
+app.include_router(reactions_router)
+app.include_router(reports_router)
+app.include_router(admin_router)
+app.include_router(leaderboard_router)
 
 
 @app.get("/", tags=["Root"])
