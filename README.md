@@ -14,6 +14,18 @@ The robust Admin Portal provides a centralized interface for managing the entire
 - **CRUD Operations**: Effortlessly add new team members, edit existing profiles, or remove users when necessary.
 - **Modern UI**: A clean, light-themed interface with vibrant purple accents and intuitive navigation.
 
+### 🎯 Core Functionality
+- **Shout-Out System** — Post and share recognition messages for team members
+- **Interactive Engagement** — Like and comment on shout-outs
+- **Category-Based Recognition** — Organize shout-outs by Teamwork, Leadership, Problem Solving, Mentorship, and Communication
+- **User Profiles** — Track individual contributions and recognition received
+
+### 👑 Admin Features
+- **Analytics Dashboard** — Comprehensive overview of platform metrics and engagement
+- **User Management** — Manage team members, roles, and permissions
+- **🛡️ Shout-Out Moderation Screen** — Review and moderate flagged content with advanced filtering and sorting capabilities
+- **System Logs** — Monitor platform activity and user actions
+
 ## Tech Stack
 
 ### Frontend
@@ -27,6 +39,7 @@ The robust Admin Portal provides a centralized interface for managing the entire
 - **SQLAlchemy**: Robust ORM for database interactions.
 - **PostgreSQL**: Reliable relational database.
 - **Bcrypt**: State-of-the-art password security.
+- **JWT Authentication**: Secure user sessions.
 
 ## Getting Started
 
@@ -64,5 +77,65 @@ The robust Admin Portal provides a centralized interface for managing the entire
    npm run dev
    ```
 
+## 🔐 Authentication
+
+BragBoard uses JWT-based authentication with role-based access control:
+
+- **Employee Role** — Can create shout-outs, like, comment, and view analytics
+- **Admin Role** — Full access to moderation, user management, and system logs
+
+### Creating an Admin User
+```bash
+cd server
+python create_admin.py
+```
+
+## 📊 Analytics & Insights
+
+Track key metrics on the admin dashboard:
+- Total Employees
+- Total Shout-Outs
+- Engagement (Likes & Comments)
+- Top Performers
+- Category Breakdown
+- Growth Trends
+
+## 🔒 Security Features
+
+- JWT token authentication
+- Password hashing (bcrypt)
+- Protected API routes
+- Role-based access control
+- Input validation and sanitization
+- CORS configuration
+
+## 📝 API Endpoints
+
+### Authentication
+- `POST /api/auth/register` — User registration
+- `POST /api/auth/login` — User login
+- `POST /api/auth/forgot-password` — Password reset
+
+### Shout-Outs
+- `GET /api/shoutouts` — Fetch all shout-outs
+- `POST /api/shoutouts` — Create new shout-out
+- `DELETE /api/shoutouts/{id}` — Delete shout-out (admin)
+
+### Admin
+- `GET /api/admin/reports` — Fetch moderation reports
+- `POST /api/admin/dismiss/{id}` — Dismiss a report
+- `DELETE /api/admin/shoutout/{id}` — Delete flagged content
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
 ## License
+
 MIT License.
