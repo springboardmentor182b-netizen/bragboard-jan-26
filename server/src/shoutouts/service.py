@@ -1,180 +1,113 @@
-"""
-Shoutout Service Layer
-Business logic for shoutout operations
-"""
-
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
-from typing import List, Optional
-from fastapi import HTTPException
-
-from src.entities.shoutout import Shoutout, VisibilityEnum
-from src.shoutouts.models import ShoutoutCreate, ShoutoutUpdate, ShoutoutFilter
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, desc
+from src.entities.shoutout import Shoutout, ShoutoutRecipient
+from src.entities.user import User
+from src.shoutouts.models import ShoutoutCreate
 
 
-def create_shoutout(db: Session, data: ShoutoutCreate, author_id: int) -> Shoutout:
-    """
-    Create a new shoutout
-    
-    Args:
-        db: Database session
-        data: Shoutout data
-        author_id: ID of the user creating the shoutout
-        
-    Returns:
-        Created shoutout object
-    """
-    shoutout = Shoutout(
-        content=data.content,
-        author_id=author_id,
-        recipient_name=data.recipient_name,
-        visibility=data.visibility
+def create_shoutout(db: Session, shoutout_data: ShoutoutCreate):
+    tag_string = ",".join(shoutout_data.tags)
+    new_shoutout = Shoutout(
+        sender_id=shoutout_data.sender_id,
+        message=shoutout_data.message,
+        tags=tag_string
     )
-    
-    db.add(shoutout)
+    db.add(new_shoutout)
     db.commit()
-    db.refresh(shoutout)
-    
-    return shoutout
+    db.refresh(new_shoutout)
 
+    for r_id in shoutout_data.recipient_ids:
+        recipient = ShoutoutRecipient(shoutout_id=new_shoutout.id, recipient_id=r_id)
+        db.add(recipient)
 
-def get_all_shoutouts(db: Session, filters: ShoutoutFilter) -> List[Shoutout]:
-    """
-    Get all shoutouts with optional filtering and pagination
-    
-    Args:
-        db: Database session
-        filters: Filter criteria
-        
-    Returns:
-        List of shoutouts
-    """
-    query = db.query(Shoutout)
-    
-    # Apply filters
-    conditions = []
-    
-    if not filters.include_deleted:
-        conditions.append(Shoutout.is_deleted == False)
-    
-    if filters.author_id:
-        conditions.append(Shoutout.author_id == filters.author_id)
-    
-    if filters.visibility:
-        conditions.append(Shoutout.visibility == filters.visibility)
-    
-    if conditions:
-        query = query.filter(and_(*conditions))
-    
-    # Order by most recent first
-    query = query.order_by(Shoutout.created_at.desc())
-    
-    # Apply pagination
-    query = query.offset(filters.skip).limit(filters.limit)
-    
-    return query.all()
-
-
-def get_shoutout_by_id(db: Session, shoutout_id: int, include_deleted: bool = False) -> Optional[Shoutout]:
-    """
-    Get a specific shoutout by ID
-    
-    Args:
-        db: Database session
-        shoutout_id: Shoutout ID
-        include_deleted: Whether to include deleted shoutouts
-        
-    Returns:
-        Shoutout object or None if not found
-    """
-    query = db.query(Shoutout).filter(Shoutout.id == shoutout_id)
-    
-    if not include_deleted:
-        query = query.filter(Shoutout.is_deleted == False)
-    
-    return query.first()
-
-
-def update_shoutout(db: Session, shoutout_id: int, data: ShoutoutUpdate) -> Shoutout:
-    """
-    Update an existing shoutout
-    
-    Args:
-        db: Database session
-        shoutout_id: Shoutout ID
-        data: Update data
-        
-    Returns:
-        Updated shoutout object
-        
-    Raises:
-        HTTPException: If shoutout not found
-    """
-    shoutout = get_shoutout_by_id(db, shoutout_id)
-    
-    if not shoutout:
-        raise HTTPException(status_code=404, detail="Shoutout not found")
-    
-    # Update only provided fields
-    if data.content is not None:
-        shoutout.content = data.content
-    
-    if data.recipient_name is not None:
-        shoutout.recipient_name = data.recipient_name
-    
-    if data.visibility is not None:
-        shoutout.visibility = data.visibility
-    
     db.commit()
-    db.refresh(shoutout)
-    
-    return shoutout
+    # Reload with relationships so response includes sender + recipients
+    return db.query(Shoutout).options(
+        joinedload(Shoutout.sender),
+        joinedload(Shoutout.recipients).joinedload(ShoutoutRecipient.recipient)
+    ).filter(Shoutout.id == new_shoutout.id).first()
 
 
-def delete_shoutout(db: Session, shoutout_id: int) -> Shoutout:
-    """
-    Soft delete a shoutout
-    
-    Args:
-        db: Database session
-        shoutout_id: Shoutout ID
-        
-    Returns:
-        Deleted shoutout object
-        
-    Raises:
-        HTTPException: If shoutout not found
-    """
-    shoutout = get_shoutout_by_id(db, shoutout_id)
-    
-    if not shoutout:
-        raise HTTPException(status_code=404, detail="Shoutout not found")
-    
-    shoutout.is_deleted = True
-    db.commit()
-    db.refresh(shoutout)
-    
-    return shoutout
+def get_all_shoutouts(db: Session):
+    """Get all shoutouts with sender and recipients eagerly loaded."""
+    return db.query(Shoutout).options(
+        joinedload(Shoutout.sender),
+        joinedload(Shoutout.recipients).joinedload(ShoutoutRecipient.recipient)
+    ).order_by(Shoutout.created_at.desc()).all()
 
 
-def get_user_shoutouts(db: Session, user_id: int, skip: int = 0, limit: int = 50) -> List[Shoutout]:
-    """
-    Get all shoutouts by a specific user
-    
-    Args:
-        db: Database session
-        user_id: User ID
-        skip: Number of records to skip
-        limit: Maximum number of records to return
-        
-    Returns:
-        List of shoutouts
-    """
-    return (
-        db.query(Shoutout)
-        .filter(Shoutout.author_id == user_id, Shoutout.is_deleted == False)
-        .order_by(Shoutout.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
+def get_my_shoutouts(db: Session, user_id: int):
+    """Get shoutouts sent by OR received by the given user."""
+    sent = db.query(Shoutout).filter(Shoutout.sender_id == user_id)
+    received = db.query(Shoutout).join(ShoutoutRecipient).filter(
+        ShoutoutRecipient.recipient_id == user_id
     )
+    # Union and deduplicate via Python (simpler than SQL union with SQLAlchemy ORM)
+    seen = set()
+    results = []
+    for s in list(sent.all()) + list(received.all()):
+        if s.id not in seen:
+            seen.add(s.id)
+            results.append(s)
+
+    # Re-fetch with relationships loaded
+    if not results:
+        return []
+    ids = [s.id for s in results]
+    return db.query(Shoutout).options(
+        joinedload(Shoutout.sender),
+        joinedload(Shoutout.recipients).joinedload(ShoutoutRecipient.recipient)
+    ).filter(Shoutout.id.in_(ids)).order_by(Shoutout.created_at.desc()).all()
+
+
+def get_leaderboard(db: Session):
+    """Count how many shoutouts each user RECEIVED — most appreciated."""
+    results = db.query(
+        User.id,
+        User.name,
+        User.department,
+        func.count(ShoutoutRecipient.id).label('score')
+    ).join(ShoutoutRecipient, User.id == ShoutoutRecipient.recipient_id)\
+     .group_by(User.id)\
+     .order_by(desc('score'))\
+     .limit(10).all()
+
+    return [
+        {
+            "id": r.id,
+            "name": r.name,
+            "department": r.department or "General",
+            "score": r.score
+        }
+        for r in results
+    ]
+
+
+def get_department_stats(db: Session):
+    """Count users and shoutouts per department."""
+    results = []
+    departments = db.query(User.department).filter(
+        User.department.isnot(None), User.department != ""
+    ).distinct().all()
+
+    for (dept_name,) in departments:
+        member_count = db.query(User).filter(User.department == dept_name).count()
+        shoutout_count = db.query(ShoutoutRecipient).join(User).filter(
+            User.department == dept_name
+        ).count()
+        results.append({
+            "name": dept_name,
+            "member_count": member_count,
+            "shoutout_count": shoutout_count
+        })
+
+    return sorted(results, key=lambda x: x["shoutout_count"], reverse=True)
+
+
+def like_shoutout(db: Session, shoutout_id: int):
+    shoutout = db.query(Shoutout).filter(Shoutout.id == shoutout_id).first()
+    if shoutout:
+        shoutout.likes = (shoutout.likes or 0) + 1
+        db.commit()
+        db.refresh(shoutout)
+    return shoutout
