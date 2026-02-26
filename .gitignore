@@ -1,19 +1,60 @@
 # Python
-venv/
 __pycache__/
-*.pyc
-.env
-.pytest_cache/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
 dist/
 build/
+.pytest_cache/
+.coverage
+htmlcov/
+.env
 
-# [cite_start]Node/React [cite: 39-43]
+# Node/React
 node_modules/
 npm-debug.log*
-build/
-.env.local
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
 
-# [cite_start]IDEs [cite: 47-48]
+# Production builds
+/client/build
+/server/dist
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs and editors
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
+
+# OS files
 Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
