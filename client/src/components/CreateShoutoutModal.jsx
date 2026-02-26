@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { config } from '../config/env';
 
 const API_URL = '/api';
 

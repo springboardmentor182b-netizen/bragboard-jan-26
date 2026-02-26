@@ -11,7 +11,6 @@ import AdminLayout from './layout/AdminLayout';
 function ProtectedRoute({ children }) {
   const { isAuthenticated, user, loading } = useAuth();
   if (loading) return null;
-  // isAuthenticated may be a function or derived from user
   const authed = typeof isAuthenticated === 'function' ? isAuthenticated() : !!user;
   return authed ? children : <Navigate to="/login" />;
 }
