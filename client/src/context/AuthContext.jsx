@@ -1,74 +1,52 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import api from '../api/axios';
+import { createContext, useState, useContext, useEffect } from 'react';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            checkAuth();
-        } else {
-            setLoading(false);
-        }
-    }, []);
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser && token) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, [token]);
 
-    const checkAuth = async () => {
-        try {
-            const response = await api.get('/auth/me');
-            setUser(response.data);
-        } catch (error) {
-            localStorage.removeItem('token');
-            setUser(null);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const login = (userData, authToken) => {
+    setUser(userData);
+    setToken(authToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('token', authToken);
+  };
 
-    // login can be called two ways:
-    //   login(email, password)  – calls API, stores token, fetches user
-    //   login(userObj, token)   – directly sets user & token (used by Login.jsx)
-    const login = async (emailOrUser, passwordOrToken) => {
-        // If first arg is an object, the caller already did the API call
-        if (typeof emailOrUser === 'object' && emailOrUser !== null) {
-            localStorage.setItem('token', passwordOrToken);
-            setUser(emailOrUser);
-            return { user: emailOrUser, access_token: passwordOrToken };
-        }
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+  };
 
-        // Otherwise, do the API call ourselves
-        const response = await api.post('/auth/login', {
-            email: emailOrUser,
-            password: passwordOrToken,
-        });
-        const { access_token } = response.data;
-        localStorage.setItem('token', access_token);
-        await checkAuth();
-        return response.data;
-    };
+  const refreshUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
 
-    const register = async (userData) => {
-        const response = await api.post('/auth/register', userData);
-        return response.data;
-    };
+  const isAuthenticated = () => {
+    return !!token && !!user;
+  };
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-    };
-
-    const isAuthenticated = () => {
-        return !!user && !!localStorage.getItem('token');
-    };
-
-    return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading, isAuthenticated }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  return (
+    <AuthContext.Provider value={{ user, token, login, logout, refreshUser, isAuthenticated }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+};
