@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Star } from 'lucide-react';
-import { config } from '../config/env';
 
-const API_URL = config.apiBaseUrl;
+const API_URL = import.meta.env.VITE_API_URL;
 
 const ShoutoutCard = ({ data }) => {
   const tags = data.tags ? data.tags.split(',') : [];
-
+  
   // 1. Local state to show updates instantly
   const [likes, setLikes] = useState(data.likes || 0);
   const [isLiked, setIsLiked] = useState(false); // Just for visual color effect
@@ -14,17 +13,17 @@ const ShoutoutCard = ({ data }) => {
   const handleLike = async () => {
     // 2. Call the API
     try {
-      const response = await fetch(`${API_URL}/shoutouts/${data.id}/like`, {
-        method: 'PUT',
-      });
-
-      if (response.ok) {
-        // 3. Update the number on screen
-        setLikes(prev => prev + 1);
-        setIsLiked(true);
-      }
+        const response = await fetch(`${API_URL}/shoutouts/${data.id}/like`, {
+            method: 'PUT',
+        });
+        
+        if (response.ok) {
+            // 3. Update the number on screen
+            setLikes(prev => prev + 1);
+            setIsLiked(true);
+        }
     } catch (error) {
-      console.error("Failed to like:", error);
+        console.error("Failed to like:", error);
     }
   };
 
@@ -39,7 +38,7 @@ const ShoutoutCard = ({ data }) => {
             <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
               {data.sender.name}
               <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                <Star size={10} /> Featured
+                 <Star size={10} /> Featured
               </span>
             </h3>
             <p className="text-gray-400 text-sm">
@@ -61,9 +60,9 @@ const ShoutoutCard = ({ data }) => {
 
       <div className="flex items-center gap-6 border-t border-gray-50 pt-4">
         {/* LIKE BUTTON */}
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-2 transition-colors group ${isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+        <button 
+            onClick={handleLike}
+            className={`flex items-center gap-2 transition-colors group ${isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
         >
           <Heart size={20} className={`transition-all ${isLiked ? 'fill-red-500 scale-110' : 'group-hover:fill-red-500'}`} />
           <span className="text-sm font-medium">{likes} Likes</span>

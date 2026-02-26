@@ -5,7 +5,6 @@ Run this once to initialize your database schema
 
 from src.database.connection import Base, engine
 from src.entities.user import User
-from src.entities.shoutout import Shoutout
 
 def create_tables():
     """
@@ -23,12 +22,11 @@ def create_tables():
         # Create all tables fresh
         Base.metadata.create_all(bind=engine)
         print("✓ Tables created successfully!")
-        print("✓ Users table is ready")
-        print("✓ Shoutouts table is ready")
+        print("✓ Users table is ready with security question fields")
         
     except Exception as e:
         print(f"✗ Error creating tables: {e}")
-        print("Make sure PostgreSQL is running and your .env file is configured correctly")
+        print("Make sure PostgreSQL is running and your password in config.py is correct")
 
 if __name__ == "__main__":
     create_tables()
