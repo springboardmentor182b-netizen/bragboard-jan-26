@@ -1,71 +1,87 @@
-
 import React, { useEffect, useState } from 'react';
+// 1. Removed Sidebar import since it's redundant
 
 const AdminPanel = () => {
     const [reports, setReports] = useState([]);
-    const [loading, setLoading] = useState(true);
 
-    // 1. Load the reports when the page opens
     const fetchReports = async () => {
         try {
             const response = await fetch('http://127.0.0.1:8000/admin/reports');
             const data = await response.json();
             setReports(data);
-            setLoading(false);
         } catch (error) {
             console.error("Error fetching reports:", error);
-            setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchReports();
-    }, []);
+    useEffect(() => { fetchReports(); }, []);
 
-    // 2. Function to delete a bad shoutout
-    // 2. Function to delete a bad shoutout
-const handleDelete = async (shoutoutId) => { // <--- This is the variable name
+    const handleDelete = async (reportId) => {
     if (window.confirm("Are you sure you want to delete this shoutout?")) {
         try {
-            const response = await fetch(`http://127.0.0.1:8000/admin/shoutouts/${shoutoutId}`, { // <--- Updated this line
+            // UPDATED URL: Added /admin before /reports
+            const response = await fetch(`http://127.0.0.1:8000/admin/reports/${reportId}`, {
                 method: 'DELETE',
             });
             if (response.ok) {
-                alert("Shoutout removed successfully!");
-                fetchReports(); // Refresh the list
+                alert("Shoutout deleted.");
+                fetchReports(); // This refreshes the table automatically
             }
         } catch (error) {
-            alert("Failed to delete shoutout.");
+            console.error("Error deleting shoutout:", error);
         }
     }
 };
 
-    if (loading) return <div className="p-10 text-center">Loading Reports...</div>;
-
     return (
-        <div className="p-8 max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6 text-red-600">Admin Moderation</h1>
+        /* 2. Changed 'flex' container to a simple div since the global Sidebar 
+           usually handles the layout positioning now */
+        <div style={{ padding: '40px', backgroundColor: '#FFFFFF', minHeight: '100vh' }}>
+            <h1 style={{ marginBottom: '30px', color: '#333' }}>Reported Shoutouts Management</h1>
             
-            {reports.length === 0 ? (
-                <p className="text-gray-500">No reports found. The board is clean!</p>
-            ) : (
-                <div className="space-y-4">
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '2px solid #F5F5F5', color: '#666' }}>
+                        <th style={{ padding: '12px' }}>Employee</th>
+                        <th style={{ padding: '12px' }}>Message</th>
+                        <th style={{ padding: '12px' }}>Reason</th>
+                        <th style={{ padding: '12px' }}>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
                     {reports.map((report) => (
-                        <div key={report.id} className="border p-4 rounded-lg shadow-sm bg-white flex justify-between items-center">
-                            <div>
-                                <p className="font-bold text-lg">Reason: {report.reason}</p>
-                                <p className="text-sm text-gray-600">Shoutout ID: {report.shoutout_id}</p>
-                            </div>
-                            <button 
-                                onClick={() => handleDelete(report.shoutout_id)}
-                                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition"
-                            >
-                                Delete Shoutout
-                            </button>
-                        </div>
+                        <tr key={report.id} style={{ borderBottom: '1px solid #F5F5F5' }}>
+                            <td style={{ padding: '12px', fontWeight: 'bold' }}>
+                                {report.sender_name || "Unknown Employee"}
+                            </td> 
+                            
+                            <td style={{ padding: '12px', fontStyle: 'italic' }}>
+                                "{report.content || "No content available"}"
+                            </td> 
+                            
+                            <td style={{ padding: '12px', color: '#d9534f' }}>
+                                {report.reason}
+                            </td>
+                            
+                            <td style={{ padding: '12px' }}>
+                                <button 
+                                    onClick={() => handleDelete(report.id)}
+                                    style={{ 
+                                        backgroundColor: '#FF4D4D', 
+                                        color: 'white', 
+                                        border: 'none', 
+                                        padding: '8px 16px', 
+                                        borderRadius: '5px', 
+                                        cursor: 'pointer' 
+                                    }}
+                                >
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
                     ))}
-                </div>
-            )}
+                </tbody>
+            </table>
         </div>
     );
 };
