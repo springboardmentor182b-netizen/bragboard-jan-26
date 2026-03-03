@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from src.core.database import SessionLocal
 from .schemas import UserCreate, UserLogin
 from .service import register_user, authenticate_user, generate_tokens
+from src.reports.controller import router as reports_router
+
+app.include_router(reports_router)
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
