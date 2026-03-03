@@ -4,6 +4,8 @@ import AdminPanel from "./pages/AdminPanel";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
+import ReportedShoutouts from "./pages/admin/ReportedShoutouts";
+
 import "./index.css";
 
 function App() {
@@ -15,7 +17,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
+<Route path="/admin/reported-shoutouts" element={<ReportedShoutouts />} />
         <Route
           path="/admin/*"
           element={isAuthenticated ? <AdminPanel /> : <Navigate to="/login" />}

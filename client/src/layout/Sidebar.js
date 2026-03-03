@@ -1,9 +1,10 @@
 import React from "react";
+import { NavLink } from "react-router-dom";
 
 function Sidebar() {
   return (
     <div className="w-64 min-h-screen bg-blue-900 text-white flex flex-col justify-between">
-
+      
       {/* Top Section */}
       <div>
         <div className="p-6 text-2xl font-bold border-b border-blue-700">
@@ -11,21 +12,61 @@ function Sidebar() {
         </div>
 
         <nav className="p-4 space-y-2">
-          <div className="bg-blue-700 px-4 py-2 rounded">
+          <NavLink
+            to="/admin/dashboard"
+            className={({ isActive }) =>
+              isActive
+                ? "flex items-center gap-2 bg-blue-700 px-4 py-2 rounded"
+                : "flex items-center gap-2 px-4 py-2 hover:bg-blue-800 rounded cursor-pointer"
+            }
+          >
             📊 Dashboard
-          </div>
+          </NavLink>
 
-          <div className="px-4 py-2 hover:bg-blue-800 rounded cursor-pointer">
+          <NavLink
+            to="/admin/users"
+            className={({ isActive }) =>
+              isActive
+                ? "flex items-center gap-2 bg-blue-700 px-4 py-2 rounded"
+                : "flex items-center gap-2 px-4 py-2 hover:bg-blue-800 rounded cursor-pointer"
+            }
+          >
             👥 User Management
-          </div>
+          </NavLink>
 
-          <div className="px-4 py-2 hover:bg-blue-800 rounded cursor-pointer">
+          <NavLink
+            to="/admin/shoutouts"
+            className={({ isActive }) =>
+              isActive
+                ? "flex items-center gap-2 bg-blue-700 px-4 py-2 rounded"
+                : "flex items-center gap-2 px-4 py-2 hover:bg-blue-800 rounded cursor-pointer"
+            }
+          >
             💬 Shout-outs Management
-          </div>
+          </NavLink>
 
-          <div className="px-4 py-2 hover:bg-blue-800 rounded cursor-pointer">
+          {/* ← NEW: Reported Shoutouts */}
+          <NavLink
+            to="/admin/reported-shoutouts"
+            className={({ isActive }) =>
+              isActive
+                ? "flex items-center justify-between bg-blue-700 px-4 py-2 rounded"
+                : "flex items-center justify-between px-4 py-2 hover:bg-blue-800 rounded cursor-pointer"
+            }
+          >
+            <span>🚩 Reported Shoutouts</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/reports"
+            className={({ isActive }) =>
+              isActive
+                ? "flex items-center gap-2 bg-blue-700 px-4 py-2 rounded"
+                : "flex items-center gap-2 px-4 py-2 hover:bg-blue-800 rounded cursor-pointer"
+            }
+          >
             📄 Reports
-          </div>
+          </NavLink>
         </nav>
 
         {/* Quick Stats */}
