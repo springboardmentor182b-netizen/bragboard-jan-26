@@ -1,13 +1,13 @@
-"""
-Database and Application Configuration
-Loads settings from environment variables for security
-"""
-
 import os
 from dotenv import load_dotenv
+from pathlib import Path
+
+# Get the directory containing this file, then go up to server directory
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+ENV_PATH = BASE_DIR / ".env"
 
 # Load environment variables from .env file
-load_dotenv(r"C:\Users\Windows 10\Desktop\bragboard-project\server\.env")
+load_dotenv(ENV_PATH)
 
 
 class Settings:

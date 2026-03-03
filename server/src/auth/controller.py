@@ -5,6 +5,9 @@ from ..database.connection import get_db
 from ..entities.user import User, UserRole
 from .service import hash_password, verify_password, create_access_token
 from .models import UserRegister, UserLogin, Token, ForgotPasswordRequest, VerifySecurityAnswerRequest
+from src.auth.dependencies import get_current_user
+from src.entities.user import User
+from fastapi import HTTPException, status
 
 #router for authentication endpoints
 router = APIRouter(prefix="/auth", tags=["Authentication"])
