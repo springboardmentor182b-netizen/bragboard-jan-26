@@ -1,24 +1,15 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from src.database.connection import get_db
-from src.auth.service import verify_token          # reuse existing JWT helper
+from src.auth.service import get_current_user
 from src.entities.user import User, UserRole
-from . import service
-from .models import ChangeRoleRequest
+from src.admin import service
+from src.admin.models import AdminLogResponse, ChangeRoleRequest
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
-
-
-# ─── JWT dependency (reuse project pattern) ───────────────────────────────────
-
-def get_current_user(token: str = Depends(verify_token), db: Session = Depends(get_db)) -> User:
-    """Decode JWT and return the User object."""
-    payload = token  # verify_token already decoded it
-    user = db.query(User).filter(User.id == payload.get("user_id")).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    return user
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
@@ -134,7 +125,7 @@ def delete_shoutout(
 
 # ─── Admin Logs Endpoint ─────────────────────────────────────────────────────
 
-@router.get("/logs")
+@router.get("/logs", response_model=List[AdminLogResponse])
 def get_logs(
     limit: int = Query(50, ge=1, le=200),
     admin: User = Depends(require_admin),

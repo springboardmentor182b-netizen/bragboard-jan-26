@@ -1,17 +1,20 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from src.database.connection import Base
-import datetime
+
+from src.database.core import Base
 
 
 class AdminLog(Base):
     __tablename__ = "admin_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    admin_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    action = Column(String, nullable=False)          # e.g. "Deleted shoutout"
-    target_id = Column(Integer, nullable=True)       # ID of the affected record
-    target_type = Column(String, nullable=True)      # e.g. "shoutout", "user"
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    admin_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    action = Column(Text, nullable=False)
+    target_id = Column(Integer, nullable=True)
+    target_type = Column(String, nullable=True)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
 
-    admin = relationship("User", foreign_keys=[admin_id])
+    # Relationships
+    admin = relationship("User", back_populates="admin_logs")

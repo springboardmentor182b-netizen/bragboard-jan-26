@@ -33,8 +33,9 @@ class ShoutoutAdminView(BaseModel):
     recipient_names: list[str]
 
 
-class AdminLogEntry(BaseModel):
+class AdminLogResponse(BaseModel):
     id: int
+    admin_id: int
     admin_name: str
     action: str
     target_id: Optional[int]

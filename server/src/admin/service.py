@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 
 from src.entities.user import User, UserRole
 from src.entities.shoutout import Shoutout, ShoutoutRecipient
+from src.entities.admin_log import AdminLog
 
 
 # ─── Helper: record an admin action ──────────────────────────────────────────
@@ -18,13 +19,11 @@ def log_admin_action(
     target_type: Optional[str] = None,
 ):
     """
-    Write an entry to the admin_logs table (if the entity exists).
+    Write an entry to the admin_logs table.
     Silently skips if the AdminLog entity hasn't been created yet so
     other endpoints remain usable during development.
     """
     try:
-        from src.entities.admin_log import AdminLog  # lazy import
-
         entry = AdminLog(
             admin_id=admin_id,
             action=action,
@@ -37,6 +36,29 @@ def log_admin_action(
     except Exception:
         # Table/entity not yet migrated — safe to skip
         pass
+
+
+def get_all_admin_logs(db: Session) -> List[AdminLog]:
+    return db.query(AdminLog).order_by(AdminLog.timestamp.desc()).all()
+
+
+def create_admin_log(
+    db: Session,
+    admin_id: int,
+    action: str,
+    target_id: int = None,
+    target_type: str = None,
+) -> AdminLog:
+    log = AdminLog(
+        admin_id=admin_id,
+        action=action,
+        target_id=target_id,
+        target_type=target_type,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
 
 
 # ─── Analytics / Stats ───────────────────────────────────────────────────────
@@ -240,8 +262,6 @@ def delete_shoutout(db: Session, shoutout_id: int) -> dict:
 def get_admin_logs(db: Session, limit: int = 50) -> list[dict]:
     """Retrieve the most recent admin action log entries."""
     try:
-        from src.entities.admin_log import AdminLog
-
         logs = (
             db.query(AdminLog)
             .order_by(AdminLog.timestamp.desc())
@@ -255,6 +275,7 @@ def get_admin_logs(db: Session, limit: int = 50) -> list[dict]:
             result.append(
                 {
                     "id": log.id,
+                    "admin_id": log.admin_id,
                     "admin_name": admin.name if admin else "Unknown",
                     "action": log.action,
                     "target_id": log.target_id,
