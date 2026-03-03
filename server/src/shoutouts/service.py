@@ -3,6 +3,8 @@ from sqlalchemy import func, desc
 from src.entities.shoutout import Shoutout, ShoutoutRecipient
 from src.entities.user import User
 from src.shoutouts.models import ShoutoutCreate
+from src.entities.shoutout_like import ShoutoutLike
+from fastapi import HTTPException, status
 
 
 def create_shoutout(db: Session, shoutout_data: ShoutoutCreate):

@@ -231,7 +231,7 @@ function Register() {
                 required
                 minLength="6"
                 className="w-full px-4 py-3 text-base outline-none"
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters"
                 style={{ 
                   height: '44px',
                   backgroundColor: '#FAFBFC',

@@ -5,6 +5,7 @@ from src.auth.controller import router as auth_router
 from src.leaderboard.controller import router as leaderboard_router
 from src.shoutouts.controller import router as shoutouts_router
 from src.users.controller import router as users_router  # ← ADDED
+from src.entities.shoutout_like import ShoutoutLike  # noqa: F401
 
 # Import all entities so SQLAlchemy registers them before create_all
 from src.entities import user, shoutout  # noqa: F401

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
 from src.database.connection import Base
-import datetime
+from datetime import datetime, timezone  # ADD THIS
 
 
 class Shoutout(Base):
@@ -12,11 +12,12 @@ class Shoutout(Base):
     message = Column(Text, nullable=False)
     tags = Column(String)
     likes = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # FIX THIS
 
     # Relationships
     sender = relationship("User", foreign_keys=[sender_id], backref="sent_shoutouts")
     recipients = relationship("ShoutoutRecipient", back_populates="shoutout", cascade="all, delete-orphan")
+    like_records = relationship("ShoutoutLike", back_populates="shoutout", cascade="all, delete-orphan")  # ADD THIS
 
 
 class ShoutoutRecipient(Base):
