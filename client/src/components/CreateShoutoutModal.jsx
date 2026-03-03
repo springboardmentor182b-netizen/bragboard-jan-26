@@ -1,230 +1,211 @@
-import React, { useState, useEffect } from 'react';
-import { X, Search, UserPlus } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, ChevronDown, Check } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-const CreateShoutoutModal = ({ isOpen, onClose, onPost, currentUser }) => {
+const CreateShoutoutModal = ({ isOpen, onClose, onSuccess, currentUser }) => {
   const [message, setMessage] = useState('');
-  const [selectedRecipients, setSelectedRecipients] = useState([]); // ← CHANGED: Now array
+  const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
-  const [users, setUsers] = useState([]); 
-  const [searchTerm, setSearchTerm] = useState(''); // ← NEW: For filtering users
-  const [showDropdown, setShowDropdown] = useState(false); // ← NEW: Toggle dropdown
+  const [users, setUsers] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const dropdownRef = useRef(null);
 
-  // Fetch users when modal opens
+  // Styles Object for Consistency
+  const styles = {
+    overlay: {
+      position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, padding: '20px', backdropFilter: 'blur(4px)'
+    },
+    modal: {
+      backgroundColor: '#fff', borderRadius: '20px', width: '100%',
+      maxWidth: '540px', maxHeight: '90vh', overflowY: 'auto',
+      position: 'relative', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+    },
+    header: {
+      position: 'sticky', top: 0, backgroundColor: '#fff', padding: '24px',
+      borderBottom: '1px solid #F3F4F6', zIndex: 10, display: 'flex',
+      justifyContent: 'space-between', alignItems: 'center'
+    },
+    closeBtn: {
+      border: 'none', background: '#F3F4F6', color: '#6B7280',
+      borderRadius: '50%', padding: '8px', cursor: 'pointer',
+      display: 'flex', transition: 'all 0.2s'
+    },
+    label: {
+      display: 'block', fontSize: '14px', fontWeight: 600,
+      color: '#374151', marginBottom: '8px'
+    },
+    input: {
+      width: '100%', border: '2px solid #E5E7EB', borderRadius: '12px',
+      padding: '12px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s',
+      boxSizing: 'border-box'
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
-        fetch(`${API_URL}/users`)
-            .then(res => res.json())
-            .then(data => {
-                // Filter out yourself so you don't shoutout yourself
-                if (currentUser) {
-                    setUsers(data.filter(u => u.id !== currentUser.id));
-                } else {
-                    setUsers(data);
-                }
-            })
-            .catch(err => console.error("Failed to load colleagues", err));
+      const token = localStorage.getItem('token');
+      // Added trailing slash to match FastAPI strict routing
+      fetch(`${API_URL}/users/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to load users');
+          return res.json();
+        })
+        .then(data => {
+          if (currentUser) {
+            setUsers(data.filter(u => u.id !== currentUser.id));
+          } else {
+            setUsers(data);
+          }
+        })
+        .catch(err => {
+          console.error("Failed to load colleagues", err);
+          setError("Could not load user list.");
+        });
     }
   }, [isOpen, currentUser]);
 
   if (!isOpen) return null;
 
-  // ↓↓↓ NEW: Add recipient to selection ↓↓↓
-  const addRecipient = (user) => {
-    if (!selectedRecipients.find(r => r.id === user.id)) {
-      setSelectedRecipients([...selectedRecipients, user]);
-      setSearchTerm(''); // Clear search
-      setShowDropdown(false); // Close dropdown
-    }
+  const toggleRecipient = (userId) => {
+    setSelectedRecipients(prev => 
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
   };
 
-  // ↓↓↓ NEW: Remove recipient from selection ↓↓↓
-  const removeRecipient = (userId) => {
-    setSelectedRecipients(selectedRecipients.filter(r => r.id !== userId));
-  };
+  const handleSubmit = async () => {
+    if (selectedRecipients.length === 0) return setError("Select at least one colleague!");
+    if (!message.trim()) return setError("Please write a message!");
 
-  // ↓↓↓ NEW: Filter users based on search ↓↓↓
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.department.toLowerCase().includes(searchTerm.toLowerCase())
-  ).filter(user => 
-    !selectedRecipients.find(r => r.id === user.id) // Exclude already selected
-  );
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/shoutouts/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          sender_id: currentUser.id,
+          recipient_ids: selectedRecipients,
+          message: message.trim(),
+          tags: selectedTags
+        })
+      });
 
-  const handleSubmit = () => {
-    // ↓↓↓ UPDATED: Check for at least one recipient ↓↓↓
-    if (selectedRecipients.length === 0) {
-      return alert("Please select at least one colleague!");
+      if (response.ok) {
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Failed to post shoutout');
+      }
+    } catch (err) {
+      setError('Could not connect to server.');
+    } finally {
+      setSubmitting(false);
     }
-    if (!message.trim()) {
-      return alert("Please write a message!");
-    }
-
-    // ↓↓↓ UPDATED: Send array of recipient IDs ↓↓↓
-    onPost({ 
-        message, 
-        recipient_ids: selectedRecipients.map(r => r.id), // Extract IDs
-        tags: selectedTags 
-    });
-    
-    // Reset form
-    onClose();
-    setMessage(''); 
-    setSelectedTags([]); 
-    setSelectedRecipients([]); // ← UPDATED: Clear array
-    setSearchTerm('');
   };
 
   const availableTags = ['Teamwork', 'Innovation', 'Leadership', 'Bug Hunter', 'Problem Solving'];
-
-  const toggleTag = (tag) => {
-      if (selectedTags.includes(tag)) {
-          setSelectedTags(prev => prev.filter(t => t !== tag));
-      } else {
-          setSelectedTags(prev => [...prev, tag]);
-      }
-  };
+  const selectedUsers = users.filter(u => selectedRecipients.includes(u.id));
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl w-full max-w-lg p-6 relative shadow-2xl">
-        <button 
-          onClick={onClose} 
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-        >
-          <X size={24} />
-        </button>
-        
-        <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-          Give a Shout-out 🎉
-        </h2>
-        
-        {/* ↓↓↓ NEW: MULTI-SELECT RECIPIENT COMPONENT ↓↓↓ */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-2 text-gray-700">
-            Who are you recognizing?
-          </label>
-          
-          {/* Selected Recipients Display */}
-          {selectedRecipients.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {selectedRecipients.map(user => (
-                <div 
-                  key={user.id}
-                  className="flex items-center gap-2 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full text-sm font-medium"
-                >
-                  <span>{user.name}</span>
-                  <button
-                    onClick={() => removeRecipient(user.id)}
-                    className="hover:bg-indigo-200 rounded-full p-0.5 transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+    <div style={styles.overlay}>
+      <div style={styles.modal}>
+        <div style={styles.header}>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#111827', margin: 0 }}>Give a Shout-out 🎉</h2>
+          <button onClick={onClose} style={styles.closeBtn} onMouseEnter={e => e.currentTarget.style.background = '#E5E7EB'} onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}>
+            <X size={20} />
+          </button>
+        </div>
 
-          {/* Search Input */}
-          <div className="relative">
-            <div className="relative">
-              <Search 
-                size={18} 
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" 
-              />
-              <input
-                type="text"
-                placeholder="Search colleagues..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setShowDropdown(true);
-                }}
-                onFocus={() => setShowDropdown(true)}
-                className="w-full border border-gray-300 pl-10 pr-3 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-              />
-            </div>
+        <div style={{ padding: '24px' }}>
+          {error && <div style={{ marginBottom: '16px', color: '#B91C1C', backgroundColor: '#FEF2F2', padding: '12px', borderRadius: '8px', fontSize: '13px' }}>{error}</div>}
 
-            {/* Dropdown Results */}
-            {showDropdown && filteredUsers.length > 0 && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                {filteredUsers.map(user => (
-                  <button
-                    key={user.id}
-                    onClick={() => addRecipient(user)}
-                    className="w-full text-left px-4 py-3 hover:bg-indigo-50 transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <div className="font-medium text-gray-800">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.department}</div>
-                    </div>
-                    <UserPlus 
-                      size={18} 
-                      className="text-gray-400 group-hover:text-indigo-600" 
-                    />
-                  </button>
-                ))}
+          {/* Recipient Selection */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={styles.label}>Who are you recognizing?</label>
+            <div 
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              style={{ ...styles.input, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {selectedRecipients.length === 0 ? <span style={{ color: '#9CA3AF' }}>Select teammates...</span> : 
+                  selectedUsers.map(u => (
+                    <span key={u.id} style={{ background: '#EEF2FF', color: '#4F46E5', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>{u.name}</span>
+                  ))
+                }
               </div>
-            )}
+              <ChevronDown size={18} style={{ color: '#9CA3AF' }} />
+            </div>
 
-            {/* No results message */}
-            {showDropdown && searchTerm && filteredUsers.length === 0 && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg p-4 text-center text-gray-500">
-                No colleagues found
+            {dropdownOpen && (
+              <div style={{ position: 'absolute', width: 'calc(100% - 48px)', marginTop: '8px', background: '#fff', border: '1px solid #E5E7EB', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 20, maxHeight: '200px', overflowY: 'auto' }}>
+                {users.map(u => (
+                  <div key={u.id} onClick={() => toggleRecipient(u.id)} style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', borderBottom: '1px solid #F9FAFB' }}>
+                    <div style={{ width: '18px', height: '18px', border: '2px solid #D1D5DB', borderRadius: '4px', backgroundColor: selectedRecipients.includes(u.id) ? '#4F46E5' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {selectedRecipients.includes(u.id) && <Check size={12} color="#fff" strokeWidth={4} />}
+                    </div>
+                    <span style={{ fontSize: '14px', color: '#374151' }}>{u.name}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Helper text */}
-          <p className="text-xs text-gray-500 mt-2">
-            {selectedRecipients.length === 0 
-              ? "Select one or more teammates to recognize" 
-              : `${selectedRecipients.length} teammate${selectedRecipients.length > 1 ? 's' : ''} selected`
-            }
-          </p>
-        </div>
-        {/* ↑↑↑ END OF MULTI-SELECT COMPONENT ↑↑↑ */}
-
-        {/* MESSAGE BOX */}
-        <div className="mb-4">
-            <label className="block text-sm font-medium mb-2 text-gray-700">Message</label>
+          {/* Message */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={styles.label}>Message</label>
             <textarea 
-                className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" 
-                rows="4" 
-                placeholder="What did they do?"
-                value={message} 
-                onChange={(e) => setMessage(e.target.value)} 
+              style={{ ...styles.input, minHeight: '120px', resize: 'none' }}
+              placeholder="What did they do that deserves recognition?"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
             />
-        </div>
+          </div>
 
-        {/* TAGS */}
-        <div className="mb-6">
-            <label className="block text-sm font-medium mb-2 text-gray-700">Tags (optional)</label>
-            <div className="flex gap-2 flex-wrap">
-                {availableTags.map(tag => (
-                    <button 
-                        key={tag} 
-                        onClick={() => toggleTag(tag)}
-                        className={`px-3 py-1 rounded-full text-sm border transition-all ${
-                          selectedTags.includes(tag) 
-                            ? 'bg-indigo-600 text-white border-indigo-600' 
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
-                        }`}
-                    >
-                        {tag}
-                    </button>
-                ))}
+          {/* Tags */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={styles.label}>Tags (optional)</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {availableTags.map(tag => (
+                <button 
+                  key={tag} 
+                  onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                  style={{
+                    padding: '6px 14px', borderRadius: '50px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '2px solid',
+                    borderColor: selectedTags.includes(tag) ? '#4F46E5' : '#E5E7EB',
+                    backgroundColor: selectedTags.includes(tag) ? '#EEF2FF' : '#fff',
+                    color: selectedTags.includes(tag) ? '#4F46E5' : '#6B7280'
+                  }}
+                >
+                  {tag}
+                </button>
+              ))}
             </div>
-        </div>
+          </div>
 
-        <button 
-          onClick={handleSubmit} 
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={selectedRecipients.length === 0 || !message.trim()}
-        >
-          Post Shoutout 🎉
-        </button>
+          <button 
+            onClick={handleSubmit} 
+            disabled={submitting}
+            style={{ 
+              width: '100%', padding: '14px', borderRadius: '12px', border: 'none', 
+              backgroundColor: submitting ? '#9CA3AF' : '#4F46E5', color: '#fff', 
+              fontSize: '16px', fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 6px -1px rgba(79,70,229,0.2)'
+            }}
+          >
+            {submitting ? 'Posting...' : 'Post Shout-out'}
+          </button>
+        </div>
       </div>
     </div>
   );

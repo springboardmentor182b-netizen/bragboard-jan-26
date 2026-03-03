@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import CreateShoutoutModal from '../components/CreateShoutoutModal';
 import '../styles/theme.css';
 
-// ─── Icons (inline SVG) ──────────────────────────────────────────────────────
+// Icons (keeping your existing inline SVG icons)
 const HomeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -50,12 +51,6 @@ const HeartIcon = () => (
     <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
   </svg>
 );
-const ChatIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-);
 const LogOutIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -64,11 +59,10 @@ const LogOutIcon = () => (
   </svg>
 );
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const getInitials = (name) =>
   name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
+// Sidebar Component
 function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }) {
   const navItems = [
     { id: 'feed', label: 'Activity Feed', icon: HomeIcon },
@@ -83,7 +77,6 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
       height: '100vh', display: 'flex', flexDirection: 'column',
       position: 'fixed', left: 0, top: 0, zIndex: 20, boxShadow: '2px 0 8px rgba(0,0,0,0.04)'
     }}>
-      {/* Logo */}
       <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
           <div style={{
@@ -97,7 +90,6 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
           </span>
         </div>
 
-        {/* Give Shoutout Button */}
         <button
           onClick={onCreateShoutout}
           style={{
@@ -115,7 +107,6 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
         </button>
       </div>
 
-      {/* Nav */}
       <nav style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
         <p style={{ fontSize: '11px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.8px', padding: '0 12px', marginBottom: '8px' }}>
           Menu
@@ -144,7 +135,6 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
         })}
       </nav>
 
-      {/* User Profile */}
       <div style={{ padding: '16px', borderTop: '1px solid #F3F4F6', background: 'rgba(249,250,251,0.5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <div style={{
@@ -172,7 +162,7 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
               color: '#EF4444', padding: '4px', borderRadius: '6px', display: 'flex',
               transition: 'all 0.15s ease'
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
+            onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             <LogOutIcon />
@@ -183,255 +173,34 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
   );
 }
 
-// ─── Shoutout Card ────────────────────────────────────────────────────────────
-function ShoutoutCard({ shoutout }) {
-  const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(shoutout.likes || 0);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-  // Normalise fields — handle both API format and any legacy format
-  const authorName = shoutout.sender?.name || shoutout.author || 'Unknown';
-  const recipientNames = shoutout.recipients?.length
-    ? shoutout.recipients.map(r => r.recipient?.name || r.name).join(', ')
-    : shoutout.recipient || '';
-  const tagList = Array.isArray(shoutout.tags)
-    ? shoutout.tags
-    : (shoutout.tags || '').split(',').map(t => t.trim()).filter(Boolean);
-  const timeAgo = shoutout.created_at
-    ? new Date(shoutout.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    : shoutout.timeAgo || '';
-
-  const handleLike = async () => {
-    setLiked(!liked);
-    setLikes(liked ? likes - 1 : likes + 1);
-    await fetch(`${API_URL}/shoutouts/${shoutout.id}/like`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }).catch(() => {});
-  };
-
-  return (
-    <div style={{
-      background: '#fff', borderRadius: '14px', padding: '20px',
-      border: '1px solid #E5E7EB',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-      transition: 'box-shadow 0.2s ease'
-    }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '42px', height: '42px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 700, fontSize: '14px'
-          }}>
-            {getInitials(authorName)}
-          </div>
-          <div>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827', display: 'block' }}>{authorName}</span>
-            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>{timeAgo}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Message */}
-      <p style={{ fontSize: '14px', color: '#374151', lineHeight: 1.65, margin: '0 0 10px 0' }}>
-        {shoutout.message}
-      </p>
-
-      {/* Recipient */}
-      {recipientNames && (
-        <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '12px' }}>
-          Shoutout to{' '}
-          <span style={{ color: '#4F46E5', background: '#EEF2FF', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
-            {recipientNames}
-          </span>
-        </div>
-      )}
-
-      {/* Tags */}
-      {tagList.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-          {tagList.map((tag, i) => (
-            <span key={i} style={{
-              background: '#F3F4F6', color: '#4B5563', fontSize: '11px',
-              fontWeight: 600, padding: '4px 10px', borderRadius: '6px'
-            }}>
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: '20px', paddingTop: '12px', borderTop: '1px solid #F3F4F6' }}>
-        <button
-          onClick={handleLike}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            fontSize: '13px', fontWeight: 600,
-            color: liked ? '#EF4444' : '#6B7280',
-            transition: 'color 0.15s ease'
-          }}
-        >
-          <HeartIcon /> {likes}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Create Shoutout Modal ────────────────────────────────────────────────────
-function CreateShoutoutModal({ onClose, currentUser, onSuccess }) {
-  const [users, setUsers] = useState([]);
-  const [recipientId, setRecipientId] = useState('');
-  const [message, setMessage] = useState('');
-  const [tags, setTags] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-  // Load all users to pick recipient from
-  useEffect(() => {
-    fetch(`${API_URL}/users/`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(res => res.json())
-      .then(data => setUsers(Array.isArray(data) ? data.filter(u => u.id !== currentUser?.id) : []))
-      .catch(() => setUsers([]));
-  }, []);
-
-  const handleSubmit = async () => {
-    if (!recipientId) { setError('Please select a recipient'); return; }
-    if (!message.trim()) { setError('Please write a message'); return; }
-    setSubmitting(true);
-    setError('');
-    try {
-      const res = await fetch(`${API_URL}/shoutouts/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          sender_id: currentUser.id,
-          recipient_ids: [parseInt(recipientId)],
-          message: message.trim(),
-          tags: tags.split(',').map(t => t.trim()).filter(Boolean)
-        })
-      });
-      if (res.ok) {
-        onSuccess && onSuccess();
-        onClose();
-      } else {
-        const err = await res.json();
-        setError(err.detail || 'Failed to post shoutout');
-      }
-    } catch {
-      setError('Could not connect to server');
-    }
-    setSubmitting(false);
-  };
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px'
-    }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div style={{
-        background: '#fff', borderRadius: '16px', padding: '32px',
-        width: '100%', maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
-      }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#111827', margin: '0 0 20px 0' }}>
-          Give a Shout-out 🎉
-        </h2>
-
-        {error && (
-          <p style={{ color: '#EF4444', fontSize: '13px', marginBottom: '12px', background: '#FEF2F2', padding: '8px 12px', borderRadius: '6px' }}>
-            {error}
-          </p>
-        )}
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
-            Who are you recognizing?
-          </label>
-          <select value={recipientId} onChange={e => setRecipientId(e.target.value)} style={{
-            width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB',
-            borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box',
-            background: '#fff', color: '#374151'
-          }}>
-            <option value="">Select a teammate...</option>
-            {users.map(u => (
-              <option key={u.id} value={u.id}>{u.name} — {u.department || 'General'}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
-            What did they do?
-          </label>
-          <textarea rows={4} value={message} onChange={e => setMessage(e.target.value)}
-            placeholder="Share what they did that deserves recognition..." style={{
-              width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB',
-              borderRadius: '8px', fontSize: '14px', outline: 'none', resize: 'vertical',
-              boxSizing: 'border-box', fontFamily: 'inherit'
-            }} />
-        </div>
-
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
-            Tags (comma separated)
-          </label>
-          <input value={tags} onChange={e => setTags(e.target.value)}
-            placeholder="e.g. Teamwork, Leadership" style={{
-              width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB',
-              borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box'
-            }} />
-        </div>
-
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{
-            padding: '10px 20px', border: '1px solid #E5E7EB', borderRadius: '8px',
-            background: '#fff', color: '#6B7280', fontSize: '14px', fontWeight: 500, cursor: 'pointer'
-          }}>
-            Cancel
-          </button>
-          <button onClick={handleSubmit} disabled={submitting} style={{
-            padding: '10px 20px', border: 'none', borderRadius: '8px',
-            background: submitting ? '#9CA3AF' : '#4F46E5', color: '#fff',
-            fontSize: '14px', fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer',
-            boxShadow: '0 2px 8px rgba(79,70,229,0.3)'
-          }}>
-            {submitting ? 'Posting...' : 'Post Shout-out 🎉'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Feed View ────────────────────────────────────────────────────────────────
+// Feed View Component
 function FeedView({ user }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [showModal, setShowModal] = useState(false);
   const [shoutouts, setShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-  const loadShoutouts = () => {
-    fetch(`${API_URL}/shoutouts/`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(res => res.json())
-      .then(data => { setShoutouts(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(() => { setShoutouts([]); setLoading(false); });
+  const loadShoutouts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/shoutouts/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!res.ok) throw new Error('Failed to load shoutouts');
+      
+      const data = await res.json();
+      setShoutouts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Load error:', err);
+      setError('Could not load shoutouts. Please refresh the page.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadShoutouts(); }, []);
@@ -466,19 +235,6 @@ function FeedView({ user }) {
           <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 2px 0' }}>Recognition Feed</h3>
           <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>Celebrate your team's achievements</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          style={{
-            padding: '10px 20px', background: '#4F46E5', color: '#fff', border: 'none',
-            borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: '6px',
-            boxShadow: '0 2px 8px rgba(79,70,229,0.25)', transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#4338CA'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#4F46E5'; e.currentTarget.style.transform = 'translateY(0)'; }}
-        >
-          <PlusIcon /> Create Shoutout
-        </button>
       </div>
 
       {/* Search & Filter */}
@@ -500,78 +256,291 @@ function FeedView({ user }) {
           value={filter} onChange={e => setFilter(e.target.value)}
           style={{
             padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px',
-            fontSize: '14px', background: '#fff', color: '#374151', cursor: 'pointer', outline: 'none', minWidth: '160px'
+            fontSize: '14px', background: '#fff', outline: 'none', cursor: 'pointer'
           }}
         >
-          <option value="all">All Categories</option>
+          <option value="all">All Tags</option>
           <option value="Teamwork">Teamwork</option>
+          <option value="Innovation">Innovation</option>
           <option value="Leadership">Leadership</option>
+          <option value="Bug Hunter">Bug Hunter</option>
           <option value="Problem Solving">Problem Solving</option>
-          <option value="Mentorship">Mentorship</option>
-          <option value="Communication">Communication</option>
         </select>
       </div>
 
-      {/* Cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        {loading && <p style={{ textAlign: 'center', color: '#9CA3AF', padding: '40px 0' }}>Loading...</p>}
-        {!loading && filtered.map(s => <ShoutoutCard key={s.id} shoutout={s} />)}
-        {!loading && filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#9CA3AF' }}>
-            <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>🎉</p>
-            <p style={{ fontSize: '16px', fontWeight: 500 }}>No shoutouts yet — be the first!</p>
-          </div>
-        )}
-      </div>
-
-      {showModal && (
-        <CreateShoutoutModal
-          onClose={() => setShowModal(false)}
-          currentUser={user}
-          onSuccess={loadShoutouts}
-        />
+      {/* Error State */}
+      {error && (
+        <div style={{
+          background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '8px',
+          padding: '12px 16px', marginBottom: '16px', color: '#991B1B'
+        }}>
+          {error}
+        </div>
       )}
+
+      {/* Loading State */}
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '48px', color: '#9CA3AF' }}>
+          <div className="animate-spin" style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+          <p>Loading shoutouts...</p>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && filtered.length === 0 && (
+        <div style={{
+          textAlign: 'center', padding: '48px', background: '#F9FAFB',
+          borderRadius: '12px', border: '1px dashed #E5E7EB'
+        }}>
+          <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>🎉</p>
+          <p style={{ fontSize: '16px', fontWeight: 600, color: '#374151', margin: '0 0 6px 0' }}>
+            {search || filter !== 'all' ? 'No matching shoutouts' : 'No shoutouts yet'}
+          </p>
+          <p style={{ fontSize: '13px', color: '#9CA3AF' }}>
+            {search || filter !== 'all' ? 'Try adjusting your filters' : 'Be the first to recognize someone!'}
+          </p>
+        </div>
+      )}
+
+      {/* Shoutouts List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {filtered.map(shoutout => (
+          <ShoutoutCard key={shoutout.id} shoutout={shoutout} />
+        ))}
+      </div>
     </div>
   );
 }
 
-// ─── My Shoutouts View ────────────────────────────────────────────────────────
+// Shoutout Card Component
+function ShoutoutCard({ shoutout }) {
+  const [liked, setLiked] = useState(false);
+  const [likes, setLikes] = useState(shoutout.likes || 0);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  const authorName = shoutout.sender?.name || 'Unknown';
+  
+  // UPDATED: Handle multiple recipients properly
+  const recipients = shoutout.recipients || [];
+  
+  const tagList = Array.isArray(shoutout.tags)
+    ? shoutout.tags
+    : (shoutout.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+    
+  const timeAgo = shoutout.created_at
+    ? new Date(shoutout.created_at).toLocaleDateString('en-GB', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric' 
+      })
+    : '';
+
+  const handleLike = async () => {
+    const previousLiked = liked;
+    const previousLikes = likes;
+    
+    setLiked(!liked);
+    setLikes(liked ? likes - 1 : likes + 1);
+    
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_URL}/shoutouts/${shoutout.id}/like/`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err) {
+      console.error('Like error:', err);
+      setLiked(previousLiked);
+      setLikes(previousLikes);
+    }
+  };
+
+  return (
+    <div style={{
+      background: '#fff',
+      borderRadius: '14px',
+      padding: '20px',
+      border: '1px solid #E5E7EB',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+      transition: 'box-shadow 0.2s ease'
+    }}>
+      {/* Header */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        marginBottom: '14px' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: '14px'
+          }}>
+            {getInitials(authorName)}
+          </div>
+          <div>
+            <span style={{ 
+              fontSize: '14px', 
+              fontWeight: 700, 
+              color: '#111827', 
+              display: 'block' 
+            }}>
+              {authorName}
+            </span>
+            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>
+              {timeAgo}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Message */}
+      <p style={{ 
+        fontSize: '14px', 
+        color: '#374151', 
+        lineHeight: 1.65, 
+        margin: '0 0 10px 0' 
+      }}>
+        {shoutout.message}
+      </p>
+
+      {/* Recipients - UPDATED TO SHOW MULTIPLE AS CHIPS */}
+      {recipients.length > 0 && (
+        <div style={{ 
+          fontSize: '13px', 
+          marginBottom: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '6px'
+        }}>
+          <span style={{ color: '#6B7280' }}>Shoutout to</span>
+          {recipients.map((r, idx) => {
+            const name = r.recipient?.name || r.name;
+            if (!name) return null;
+            
+            return (
+              <span 
+                key={r.id || idx}
+                style={{ 
+                  color: '#4F46E5', 
+                  background: '#EEF2FF', 
+                  padding: '3px 10px', 
+                  borderRadius: '6px', 
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  fontSize: '12px'
+                }}
+              >
+                {name}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tags */}
+      {tagList.length > 0 && (
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '6px', 
+          marginBottom: '14px' 
+        }}>
+          {tagList.map((tag, i) => (
+            <span key={i} style={{
+              background: '#F3F4F6',
+              color: '#4B5563',
+              fontSize: '11px',
+              fontWeight: 600,
+              padding: '4px 10px',
+              borderRadius: '6px'
+            }}>
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '20px', 
+        paddingTop: '12px', 
+        borderTop: '1px solid #F3F4F6' 
+      }}>
+        <button
+          onClick={handleLike}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 600,
+            color: liked ? '#EF4444' : '#6B7280',
+            transition: 'color 0.15s ease'
+          }}
+        >
+          <HeartIcon /> {likes}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// My Shoutouts View (keeping existing implementation)
 function MyShoutoutsView({ user }) {
   const [shoutouts, setShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
-    if (!user?.id) return;
-    fetch(`${API_URL}/shoutouts/my/${user.id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(res => res.json())
-      .then(data => { setShoutouts(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(() => { setShoutouts([]); setLoading(false); });
+    if (user?.id) {
+      fetch(`${API_URL}/shoutouts/my/${user.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+        .then(res => res.json())
+        .then(data => { setShoutouts(Array.isArray(data) ? data : []); setLoading(false); })
+        .catch(() => { setShoutouts([]); setLoading(false); });
+    }
   }, [user]);
 
   return (
     <div>
       <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>My Shout-outs</h3>
-      <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Recognitions you've sent and received</p>
-      {loading && <p style={{ textAlign: 'center', color: '#9CA3AF', padding: '40px 0' }}>Loading...</p>}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        {!loading && shoutouts.map(s => <ShoutoutCard key={s.id} shoutout={s} />)}
-        {!loading && shoutouts.length === 0 && (
-          <div style={{ background: '#fff', borderRadius: '14px', padding: '48px 24px', textAlign: 'center', border: '1px solid #E5E7EB' }}>
-            <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>🏆</p>
-            <p style={{ fontSize: '16px', fontWeight: 600, color: '#374151', margin: '0 0 6px 0' }}>No shoutouts yet</p>
-            <p style={{ fontSize: '13px', color: '#9CA3AF' }}>Shoutouts you've given and received will appear here</p>
-          </div>
-        )}
+      <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Shoutouts you've given and received</p>
+
+      {loading && <p style={{ textAlign: 'center', color: '#9CA3AF' }}>Loading...</p>}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {!loading && shoutouts.map(shoutout => (
+          <ShoutoutCard key={shoutout.id} shoutout={shoutout} />
+        ))}
       </div>
+
+      {!loading && shoutouts.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '48px', background: '#F9FAFB', borderRadius: '12px' }}>
+          <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>🏆</p>
+          <p style={{ fontSize: '16px', fontWeight: 600, color: '#374151', margin: '0 0 6px 0' }}>No shoutouts yet</p>
+          <p style={{ fontSize: '13px', color: '#9CA3AF' }}>Shoutouts you've given and received will appear here</p>
+        </div>
+      )}
     </div>
   );
 }
 
-
-// ─── Leaderboard View ─────────────────────────────────────────────────────────
+// Leaderboard View (keeping existing)
 function LeaderboardView() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -579,20 +548,24 @@ function LeaderboardView() {
   const medals = ['🥇', '🥈', '🥉'];
 
   useEffect(() => {
-    fetch(`${API_URL}/leaderboard/most-appreciated`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+    fetch(`${API_URL}/leaderboard/most-appreciated`, { 
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
+    })
       .then(res => res.json())
-      .then(data => { setLeaders(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(err => { console.error('Leaderboard fetch failed:', err); setLoading(false); });
+      .then(data => { 
+        setLeaders(Array.isArray(data) ? data : []); 
+        setLoading(false); 
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   return (
     <div>
       <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>Leaderboard</h3>
       <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Most appreciated employees</p>
+      
       <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-        {loading && (
-          <p style={{ padding: '32px', textAlign: 'center', color: '#9CA3AF' }}>Loading...</p>
-        )}
+        {loading && <p style={{ padding: '32px', textAlign: 'center', color: '#9CA3AF' }}>Loading...</p>}
         {!loading && leaders.length === 0 && (
           <p style={{ padding: '32px', textAlign: 'center', color: '#9CA3AF' }}>
             🏆 No shoutouts yet — be the first to recognise someone!
@@ -605,7 +578,7 @@ function LeaderboardView() {
             background: i === 0 ? 'linear-gradient(90deg, #FFFBEB, #fff)' : '#fff'
           }}>
             <span style={{ fontSize: '20px', width: '28px', textAlign: 'center' }}>
-              {medals[i] || `#${l.rank}`}
+              {medals[i] || `#${i + 1}`}
             </span>
             <div style={{
               width: '40px', height: '40px', borderRadius: '50%',
@@ -623,7 +596,7 @@ function LeaderboardView() {
               background: '#EEF2FF', color: '#4F46E5', fontWeight: 700, fontSize: '13px',
               padding: '4px 12px', borderRadius: '20px'
             }}>
-              {l.count} shoutouts
+              {l.score} shoutouts
             </span>
           </div>
         ))}
@@ -632,7 +605,7 @@ function LeaderboardView() {
   );
 }
 
-// ─── Departments View ─────────────────────────────────────────────────────────
+// Departments View (keeping existing)
 function DepartmentsView() {
   const [depts, setDepts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -640,20 +613,24 @@ function DepartmentsView() {
   const deptEmojis = { Engineering: '⚙️', Product: '🎯', Design: '🎨', Marketing: '📢', Sales: '💼', HR: '🤝' };
 
   useEffect(() => {
-    fetch(`${API_URL}/leaderboard/departments`)
+    fetch(`${API_URL}/leaderboard/departments`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
       .then(res => res.json())
       .then(data => { setDepts(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(err => { console.error('Departments fetch failed:', err); setLoading(false); });
+      .catch(() => setLoading(false));
   }, []);
 
   return (
     <div>
       <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>Departments</h3>
       <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Recognition breakdown by department</p>
+      
       {loading && <p style={{ textAlign: 'center', color: '#9CA3AF' }}>Loading...</p>}
       {!loading && depts.length === 0 && (
         <p style={{ textAlign: 'center', color: '#9CA3AF' }}>No department data yet.</p>
       )}
+      
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' }}>
         {!loading && depts.map(d => (
           <div key={d.name} style={{
@@ -677,7 +654,7 @@ function DepartmentsView() {
   );
 }
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+// Main Dashboard Component
 function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -685,6 +662,15 @@ function Dashboard() {
   const [showModal, setShowModal] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/login'); };
+
+  const handleModalSuccess = () => {
+    setShowModal(false);
+    // Refresh the feed by switching views
+    if (currentView === 'feed') {
+      setCurrentView('my-shoutouts');
+      setTimeout(() => setCurrentView('feed'), 100);
+    }
+  };
 
   const renderView = () => {
     switch (currentView) {
@@ -706,23 +692,19 @@ function Dashboard() {
         onCreateShoutout={() => setShowModal(true)}
       />
 
-      {/* Main Content */}
       <main style={{ paddingLeft: '256px', flex: 1, minHeight: '100vh' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 32px' }}>
           {renderView()}
         </div>
       </main>
 
-      {showModal && (
-        <CreateShoutoutModal
-          onClose={() => setShowModal(false)}
-          currentUser={user}
-          onSuccess={() => {
-            setShowModal(false);
-            setCurrentView('feed');
-          }}
-        />
-      )}
+      {/* Modal */}
+      <CreateShoutoutModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={handleModalSuccess}
+        currentUser={user}
+      />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
