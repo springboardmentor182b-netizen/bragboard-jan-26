@@ -7,7 +7,7 @@ export default function Settings() {
     const [message, setMessage] = useState('');
 
     useEffect(() => {
-        fetch('http://localhost:8000/users/me')
+        fetch(`${import.meta.env.VITE_API_URL}/users/me`)
             .then(res => res.json())
             .then(data => {
                 setUser(data);
@@ -29,7 +29,7 @@ export default function Settings() {
         setSaving(true);
         setMessage('');
         try {
-            const response = await fetch('http://localhost:8000/users/me', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/users/me`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

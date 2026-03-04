@@ -10,8 +10,8 @@ export default function Dashboard() {
         const fetchData = async () => {
             try {
                 const [statsRes, shoutoutsRes] = await Promise.all([
-                    fetch('http://localhost:8000/shoutouts/stats'),
-                    fetch('http://localhost:8000/shoutouts/')
+                    fetch(`${import.meta.env.VITE_API_URL}/shoutouts/stats`),
+                    fetch(`${import.meta.env.VITE_API_URL}/shoutouts/`)
                 ]);
                 const statsData = await statsRes.json();
                 const shoutoutsData = await shoutoutsRes.json();

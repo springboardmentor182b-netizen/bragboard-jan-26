@@ -10,11 +10,11 @@ export default function MyActivity() {
         setLoading(true);
         let url = '';
         if (activeTab === 'Shout-outs Sent' || activeTab === 'Shout-outs Received') {
-            url = 'http://localhost:8000/shoutouts/mine';
+            url = `${import.meta.env.VITE_API_URL}/shoutouts/mine`;
         } else if (activeTab === 'Comments Sent') {
-            url = 'http://localhost:8000/shoutouts/comments/mine?sent=true';
+            url = `${import.meta.env.VITE_API_URL}/shoutouts/comments/mine?sent=true`;
         } else if (activeTab === 'Comments Received') {
-            url = 'http://localhost:8000/shoutouts/comments/mine?sent=false';
+            url = `${import.meta.env.VITE_API_URL}/shoutouts/comments/mine?sent=false`;
         }
 
         try {
@@ -53,8 +53,8 @@ export default function MyActivity() {
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all border whitespace-nowrap ${activeTab === tab
-                                ? 'bg-gray-900 text-white border-gray-900 shadow-xl'
-                                : 'bg-white text-gray-400 border-gray-100 hover:border-orange-200 hover:text-gray-600'
+                            ? 'bg-gray-900 text-white border-gray-900 shadow-xl'
+                            : 'bg-white text-gray-400 border-gray-100 hover:border-orange-200 hover:text-gray-600'
                             }`}
                     >
                         {tab}

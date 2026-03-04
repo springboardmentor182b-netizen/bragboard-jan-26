@@ -6,7 +6,7 @@ export default function Feed() {
     const [loading, setLoading] = useState(true);
 
     const fetchFeed = () => {
-        fetch('http://localhost:8000/shoutouts/')
+        fetch(`${import.meta.env.VITE_API_URL}/shoutouts/`)
             .then(res => res.json())
             .then(data => {
                 setShoutouts(data);

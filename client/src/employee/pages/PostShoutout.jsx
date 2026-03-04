@@ -13,7 +13,7 @@ export default function PostShoutout() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        fetch('http://localhost:8000/users/')
+        fetch(`${import.meta.env.VITE_API_URL}/users/`)
             .then(res => res.json())
             .then(data => setUsers(data))
             .catch(err => console.error('Error fetching users:', err));
@@ -30,7 +30,7 @@ export default function PostShoutout() {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch('http://localhost:8000/shoutouts/', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/shoutouts/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -155,8 +155,8 @@ export default function PostShoutout() {
                                 type="button"
                                 onClick={() => toggleValue(val)}
                                 className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${selectedValues.includes(val)
-                                        ? 'bg-orange-500 text-white border-orange-500 ring-4 ring-orange-500/20'
-                                        : 'bg-white text-gray-500 border-gray-100 hover:border-orange-200'
+                                    ? 'bg-orange-500 text-white border-orange-500 ring-4 ring-orange-500/20'
+                                    : 'bg-white text-gray-500 border-gray-100 hover:border-orange-200'
                                     }`}
                             >
                                 {val}
