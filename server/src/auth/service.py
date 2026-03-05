@@ -1,17 +1,74 @@
-from passlib.context import CryptContext
-from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from ..database.config import settings
+from typing import Optional
+
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
+
+from src.database.config import settings
+from src.entities.user import User, UserStatus
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Check if password matches the hash."""
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
+
+def hash_password(password: str) -> str:
+    """Hash a password for storage."""
+    return pwd_context.hash(password)
+
+
+def get_password_hash(password: str) -> str:
+    """Alias for hash_password (for compatibility)."""
+    return hash_password(password)
+
+
+def authenticate_user(db: Session, email: str, password: str) -> User:
+    """
+    Verify credentials and check approval status.
+    
+    Returns the user if credentials are valid AND user is approved.
+    Raises HTTPException for pending/rejected/suspended users.
+    Returns None for invalid credentials.
+    """
+    user = db.query(User).filter(User.email == email).first()
+    
+    # Check if user exists and password is correct
+    if not user or not verify_password(password, user.password):
+        return None
+    
+    # Check approval status
+    if user.status == UserStatus.pending:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account is pending admin approval. Please wait for an administrator to approve your registration."
+        )
+    
+    if user.status == UserStatus.rejected:
+        detail = "Your account registration was rejected."
+        if user.rejection_reason:
+            detail += f" Reason: {user.rejection_reason}"
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=detail
+        )
+    
+    if user.status == UserStatus.suspended:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been suspended. Please contact your administrator."
+        )
+    
+    # User is approved, return user
+    return user
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a JWT access token."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -21,9 +78,57 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
-def decode_access_token(token: str) -> dict:
+
+def get_current_user(token: str, db: Session) -> User:
+    """Get user from JWT token."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        return payload
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
     except JWTError:
-        raise Exception("Invalid or expired token")
+        raise credentials_exception
+    
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+def register_new_user(db: Session, user_data) -> User:
+    """
+    Create a new user with hashed password and pending status.
+    """
+    # Check if email already exists
+    existing = db.query(User).filter(User.email == user_data.email).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+
+    # Hash security answer if provided
+    hashed_answer = None
+    if hasattr(user_data, "security_answer") and user_data.security_answer:
+        hashed_answer = hash_password(user_data.security_answer)
+
+    # Create user with pending status
+    user = User(
+        name=user_data.name,
+        email=user_data.email,
+        password=hash_password(user_data.password),
+        department=user_data.department,
+        role=user_data.role if hasattr(user_data, "role") else None,  # Will use default from model
+        status=UserStatus.pending,  # New users start as pending
+        security_question=getattr(user_data, "security_question", None),
+        security_answer=hashed_answer,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
