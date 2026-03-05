@@ -1,574 +1,1171 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import adminAPI from '../services/adminAPI';
 import '../styles/theme.css';
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
-const BarChartIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/>
-    <line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/>
-  </svg>
-);
-const UsersIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-    <circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-  </svg>
-);
-const ShieldIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
-    <path d="m9 12 2 2 4-4"/>
-  </svg>
-);
-const FileTextIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
-    <path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
-  </svg>
-);
-const AwardIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/>
-    <circle cx="12" cy="8" r="6"/>
-  </svg>
-);
-const TrendUpIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
-  </svg>
-);
-const HeartIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-  </svg>
-);
-const MessageIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-);
-const LogOutIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-    <polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
-  </svg>
-);
-const UserPlusIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-    <line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>
-  </svg>
-);
-const StarIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-  </svg>
-);
+// ─── Tiny SVG icon set ────────────────────────────────────────────────────────
+const Icon = {
+  Bar: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/>
+      <line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/>
+    </svg>
+  ),
+  Users: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  // ✅ NEW: Clock icon for Pending Approvals nav item
+  Clock: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+  ),
+  Shield: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+      <path d="m9 12 2 2 4-4"/>
+    </svg>
+  ),
+  Log: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+      <path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+    </svg>
+  ),
+  Award: ({ size = 22 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/>
+      <circle cx="12" cy="8" r="6"/>
+    </svg>
+  ),
+  Heart: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+    </svg>
+  ),
+  Logout: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
+    </svg>
+  ),
+  Trash: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+    </svg>
+  ),
+  Crown: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21 5.5l-2 10.5a2 2 0 0 1-2 1.5H7a2 2 0 0 1-2-1.5L3 5.5l4.094 3.664a1 1 0 0 0 1.516-.294z"/>
+      <path d="M5 21h14"/>
+    </svg>
+  ),
+  Activity: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+  ),
+  Check: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  ),
+  X: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  ),
+};
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-const getInitials = (name) =>
-  name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'A';
+// ─── Utilities ────────────────────────────────────────────────────────────────
+const initials = (name) =>
+  (name || '?').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
-// ─── Admin Sidebar ────────────────────────────────────────────────────────────
-function AdminSidebar({ currentView, onViewChange, onLogout, user }) {
-  const navItems = [
-    { id: 'analytics', label: 'Analytics Overview', icon: BarChartIcon },
-    { id: 'users', label: 'User Management', icon: UsersIcon },
-    { id: 'moderation', label: 'Moderation Queue', icon: ShieldIcon },
-    { id: 'logs', label: 'System Logs', icon: FileTextIcon },
+const fmt = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+
+const relativeTime = (iso) => {
+  if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+};
+
+// ─── Shared sub-components ────────────────────────────────────────────────────
+function Avatar({ name, color = '#4F46E5', size = 34 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: `linear-gradient(135deg, ${color}, ${color}cc)`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: '#fff', fontWeight: 700, fontSize: size * 0.35, flexShrink: 0,
+    }}>
+      {initials(name)}
+    </div>
+  );
+}
+
+function Badge({ label, color, bg }) {
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, color, background: bg,
+    }}>
+      {label}
+    </span>
+  );
+}
+
+function Spinner() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+      <div style={{
+        width: 32, height: 32, border: '3px solid #E5E7EB',
+        borderTop: '3px solid #4F46E5', borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+function ErrorBanner({ message }) {
+  return (
+    <div style={{
+      background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10,
+      padding: '12px 16px', color: '#DC2626', fontSize: 13, marginBottom: 20,
+    }}>
+      ⚠️ {message}
+    </div>
+  );
+}
+
+// ─── Inline Confirm Dialog (replaces browser confirm/alert) ──────────────────
+function ConfirmDialog({ isOpen, title, message, confirmLabel, confirmColor = '#10B981', onConfirm, onCancel, children }) {
+  if (!isOpen) return null;
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, backdropFilter: 'blur(2px)',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 16, padding: '28px 28px 24px',
+        width: '100%', maxWidth: 420, boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+        animation: 'popIn 0.18s ease',
+      }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, color: '#111827', margin: '0 0 8px 0' }}>{title}</h3>
+        <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 20px 0', lineHeight: 1.5 }}>{message}</p>
+        {children}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '9px 20px', borderRadius: 8, border: '1px solid #E5E7EB',
+              background: '#fff', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: '9px 20px', borderRadius: 8, border: 'none',
+              background: confirmColor, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+      <style>{`@keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }`}</style>
+    </div>
+  );
+}
+
+// ─── Toast notification ───────────────────────────────────────────────────────
+function Toast({ toast }) {
+  if (!toast) return null;
+  const colors = {
+    success: { bg: '#F0FDF4', border: '#86EFAC', text: '#166534' },
+    error: { bg: '#FEF2F2', border: '#FECACA', text: '#991B1B' },
+  };
+  const c = colors[toast.type] || colors.success;
+  return (
+    <div style={{
+      position: 'fixed', bottom: 24, right: 24, zIndex: 2000,
+      background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10,
+      padding: '14px 20px', color: c.text, fontSize: 14, fontWeight: 600,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+      animation: 'slideUp 0.25s ease',
+      display: 'flex', alignItems: 'center', gap: 10, maxWidth: 360,
+    }}>
+      <span style={{ fontSize: 18 }}>{toast.type === 'success' ? '✅' : '❌'}</span>
+      {toast.message}
+      <style>{`@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
+    </div>
+  );
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+function AdminSidebar({ view, setView, onLogout, user, pendingCount }) {
+  // ✅ Added 'approvals' as a nav item with a live badge for pending count
+  const nav = [
+    { id: 'analytics',  label: 'Analytics',        Icon: Icon.Bar    },
+    { id: 'approvals',  label: 'Pending Approvals', Icon: Icon.Clock, badge: pendingCount },
+    { id: 'users',      label: 'User Management',   Icon: Icon.Users  },
+    { id: 'moderation', label: 'Moderation',        Icon: Icon.Shield },
+    { id: 'logs',       label: 'System Logs',       Icon: Icon.Log    },
   ];
 
   return (
     <aside style={{
-      width: '256px', background: '#FFFFFF', borderRight: '1px solid #E5E7EB',
+      width: 240, background: '#fff', borderRight: '1px solid #E5E7EB',
       height: '100vh', display: 'flex', flexDirection: 'column',
-      position: 'fixed', left: 0, top: 0, zIndex: 20, boxShadow: '2px 0 8px rgba(0,0,0,0.04)'
+      position: 'fixed', left: 0, top: 0, zIndex: 20,
+      boxShadow: '2px 0 8px rgba(0,0,0,0.04)',
     }}>
       {/* Logo */}
-      <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #F3F4F6' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            background: 'linear-gradient(135deg, #DC2626, #EF4444)',
-            padding: '8px', borderRadius: '10px',
-            boxShadow: '0 2px 8px rgba(220,38,38,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
+            background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
+            padding: 8, borderRadius: 10, color: '#fff',
+            boxShadow: '0 2px 8px rgba(79,70,229,0.3)',
           }}>
-            <AwardIcon />
+            <Icon.Award size={18} />
           </div>
           <div>
-            <span style={{ fontWeight: 800, fontSize: '18px', color: '#111827', letterSpacing: '-0.3px', display: 'block' }}>
+            <span style={{ fontWeight: 800, fontSize: 16, color: '#111827', display: 'block', letterSpacing: -0.3 }}>
               BragBoard
             </span>
-            <span style={{ fontSize: '11px', color: '#DC2626', fontWeight: 600 }}>Admin Portal</span>
+            <span style={{ fontSize: 11, color: '#4F46E5', fontWeight: 600 }}>Admin Portal</span>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
-        <p style={{ fontSize: '11px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.8px', padding: '0 12px', marginBottom: '8px' }}>
+      <nav style={{ flex: 1, padding: 12, overflowY: 'auto' }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.8px', padding: '4px 10px 8px', margin: 0 }}>
           Management
         </p>
-        {navItems.map(({ id, label, icon: Icon }) => {
-          const active = currentView === id;
+        {nav.map(({ id, label, Icon: I, badge }) => {
+          const active = view === id;
           return (
             <button
               key={id}
-              onClick={() => onViewChange(id)}
+              onClick={() => setView(id)}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '10px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                fontSize: '14px', fontWeight: active ? 600 : 500, marginBottom: '2px',
-                background: active ? '#FEF2F2' : 'transparent',
-                color: active ? '#DC2626' : '#6B7280',
-                transition: 'all 0.15s ease'
+                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: active ? 600 : 500, marginBottom: 2,
+                background: active ? '#EEF2FF' : 'transparent',
+                color: active ? '#4F46E5' : '#6B7280',
+                transition: 'all 0.15s', justifyContent: 'space-between',
               }}
-              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#1F2937'; }}}
-              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B7280'; }}}
+              onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#1F2937'; } }}
+              onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B7280'; } }}
             >
-              <Icon />
-              {label}
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <I /> {label}
+              </span>
+              {/* ✅ Live badge — shows count of pending registrations */}
+              {badge > 0 && (
+                <span style={{
+                  background: '#EF4444', color: '#fff', fontSize: 10, fontWeight: 800,
+                  padding: '2px 7px', borderRadius: 20, minWidth: 18, textAlign: 'center',
+                  animation: 'pulse 2s infinite',
+                }}>
+                  {badge}
+                </span>
+              )}
             </button>
           );
         })}
       </nav>
 
-      {/* User Profile */}
-      <div style={{ padding: '16px', borderTop: '1px solid #F3F4F6', background: 'rgba(249,250,251,0.5)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, #DC2626, #EF4444)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 700, fontSize: '13px', flexShrink: 0
-          }}>
-            {getInitials(user?.name)}
-          </div>
+      {/* User */}
+      <div style={{ padding: 12, borderTop: '1px solid #F3F4F6' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, background: '#F9FAFB' }}>
+          <Avatar name={user?.name} size={32} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user?.name || 'Admin'}
             </p>
-            <p style={{ fontSize: '11px', color: '#DC2626', fontWeight: 600, margin: 0 }}>👑 Administrator</p>
+            <p style={{ fontSize: 10, color: '#4F46E5', fontWeight: 600, margin: 0 }}>👑 Administrator</p>
           </div>
           <button
             onClick={onLogout}
             title="Logout"
-            style={{
-              border: 'none', background: 'transparent', cursor: 'pointer',
-              color: '#EF4444', padding: '4px', borderRadius: '6px', display: 'flex',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#9CA3AF', padding: 4, borderRadius: 6, display: 'flex', transition: 'all 0.15s' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#DC2626'; e.currentTarget.style.background = '#FEF2F2'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#9CA3AF'; e.currentTarget.style.background = 'transparent'; }}
           >
-            <LogOutIcon />
+            <Icon.Logout />
           </button>
         </div>
       </div>
+
+      <style>{`@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.7; } }`}</style>
     </aside>
   );
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ label, value, sub, subColor, icon, iconBg }) {
+// ─── Stat card ────────────────────────────────────────────────────────────────
+function StatCard({ label, value, sub, subColor = '#10B981', iconBg, children }) {
   return (
     <div style={{
-      background: '#fff', borderRadius: '14px', padding: '20px',
-      border: '1px solid #E5E7EB', boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
+      background: '#fff', borderRadius: 14, padding: 20,
+      border: '1px solid #E5E7EB', boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <p style={{ fontSize: '13px', color: '#6B7280', fontWeight: 500, margin: '0 0 6px 0' }}>{label}</p>
-          <p style={{ fontSize: '32px', fontWeight: 800, color: '#111827', margin: '0 0 6px 0', lineHeight: 1 }}>{value}</p>
-          {sub && <p style={{ fontSize: '12px', color: subColor || '#10B981', fontWeight: 600, margin: 0 }}>{sub}</p>}
+          <p style={{ fontSize: 12, color: '#6B7280', fontWeight: 500, margin: '0 0 6px 0' }}>{label}</p>
+          <p style={{ fontSize: 30, fontWeight: 800, color: '#111827', margin: '0 0 4px 0', lineHeight: 1 }}>
+            {value === undefined ? '—' : fmt(Number(value))}
+          </p>
+          {sub && <p style={{ fontSize: 11, color: subColor, fontWeight: 600, margin: 0 }}>{sub}</p>}
         </div>
-        <div style={{ background: iconBg, padding: '10px', borderRadius: '10px' }}>
-          {icon}
-        </div>
+        <div style={{ background: iconBg, padding: 10, borderRadius: 10 }}>{children}</div>
       </div>
     </div>
   );
 }
 
-// ─── Analytics View ───────────────────────────────────────────────────────────
+// ─── Analytics view ───────────────────────────────────────────────────────────
 function AnalyticsView({ user }) {
-  const stats = [
-    { label: 'Total Employees', value: 47, sub: '↑ 5% from last month', subColor: '#10B981', icon: <UsersIcon />, iconBg: '#EEF2FF' },
-    { label: 'Total Shoutouts', value: 234, sub: '18 this week', subColor: '#4F46E5', icon: <AwardIcon />, iconBg: '#FEF3C7' },
-    { label: 'Total Likes', value: 1284, sub: '↑ 12% this week', subColor: '#10B981', icon: <HeartIcon />, iconBg: '#FEF2F2' },
-    { label: 'Total Comments', value: 342, sub: '↑ 8% this week', subColor: '#10B981', icon: <MessageIcon />, iconBg: '#F0FDF4' },
-  ];
+  const [stats, setStats] = useState(null);
+  const [contributors, setContributors] = useState([]);
+  const [depts, setDepts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const topEmployees = [
-    { name: 'Sarah Johnson', dept: 'Engineering', count: 12 },
-    { name: 'Mike Chen', dept: 'Product', count: 10 },
-    { name: 'Emily Rodriguez', dept: 'Design', count: 9 },
-    { name: 'Alex Torres', dept: 'Engineering', count: 7 },
-    { name: 'Priya Sharma', dept: 'Marketing', count: 6 },
-  ];
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      adminAPI.getStats(),
+      adminAPI.getTopContributors(5),
+      adminAPI.getDepartmentStats(),
+    ])
+      .then(([s, c, d]) => {
+        setStats(s.data);
+        setContributors(c.data);
+        setDepts(d.data.slice(0, 5));
+      })
+      .catch(() => setError('Failed to load analytics. Check that the backend is running.'))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const categoryStats = [
-    { name: 'Teamwork', count: 58, pct: 85 },
-    { name: 'Leadership', count: 44, pct: 65 },
-    { name: 'Problem Solving', count: 39, pct: 57 },
-    { name: 'Mentorship', count: 28, pct: 41 },
-    { name: 'Communication', count: 22, pct: 32 },
-  ];
+  const maxDeptCount = Math.max(...depts.map((d) => d.shoutout_count), 1);
 
   return (
     <div>
-      {/* Welcome Banner */}
       <div style={{
-        background: 'linear-gradient(135deg, #DC2626 0%, #F59E0B 100%)',
-        borderRadius: '16px', padding: '28px 32px', marginBottom: '28px', color: '#fff'
+        background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
+        borderRadius: 16, padding: '24px 28px', marginBottom: 24, color: '#fff',
       }}>
-        <h2 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 6px 0' }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 4px 0' }}>
           Welcome back, {user?.name?.split(' ')[0] || 'Admin'}! 👋
         </h2>
-        <p style={{ fontSize: '15px', margin: 0, opacity: 0.9 }}>
-          Here's what's happening with your team's recognition platform today
+        <p style={{ fontSize: 14, margin: 0, opacity: 0.9 }}>
+          Here's what's happening with your recognition platform today
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-        {stats.map(s => <StatCard key={s.label} {...s} />)}
-      </div>
-
-      {/* Two Columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }}>
-        {/* Top Performers */}
-        <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#111827', margin: 0 }}>🏆 Top Performers</h4>
+      {error && <ErrorBanner message={error} />}
+      {loading ? <Spinner /> : (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 14, marginBottom: 24 }}>
+            <StatCard label="Total Employees" value={stats?.total_users} sub="Registered accounts" iconBg="#EEF2FF">
+              <span style={{ color: '#4F46E5' }}><Icon.Users /></span>
+            </StatCard>
+            <StatCard label="Total Shoutouts" value={stats?.total_shoutouts} sub="All time" subColor="#F59E0B" iconBg="#FFFBEB">
+              <span style={{ color: '#F59E0B' }}><Icon.Award size={20} /></span>
+            </StatCard>
+            <StatCard label="Total Likes" value={stats?.total_likes} sub="Across all posts" iconBg="#FEF2F2">
+              <span style={{ color: '#DC2626' }}><Icon.Heart /></span>
+            </StatCard>
+            <StatCard label="Active This Week" value={stats?.active_this_week} sub="New shoutouts" iconBg="#F0FDF4">
+              <span style={{ color: '#10B981' }}><Icon.Activity /></span>
+            </StatCard>
           </div>
-          {topEmployees.map((e, i) => (
-            <div key={e.name} style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '12px 20px', borderBottom: i < topEmployees.length - 1 ? '1px solid #F9FAFB' : 'none'
-            }}>
-              <span style={{ fontSize: '14px', color: '#9CA3AF', width: '20px' }}>#{i + 1}</span>
-              <div style={{
-                width: '34px', height: '34px', borderRadius: '50%',
-                background: 'linear-gradient(135deg, #DC2626, #EF4444)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 700, fontSize: '12px'
-              }}>
-                {getInitials(e.name)}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+            <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #F3F4F6' }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0 }}>🏆 Top Contributors</h4>
               </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '13px', fontWeight: 600, color: '#111827', margin: '0 0 1px 0' }}>{e.name}</p>
-                <p style={{ fontSize: '11px', color: '#9CA3AF', margin: 0 }}>{e.dept}</p>
-              </div>
-              <span style={{ background: '#FEF2F2', color: '#DC2626', fontWeight: 700, fontSize: '12px', padding: '3px 10px', borderRadius: '20px' }}>
-                {e.count}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Category Breakdown */}
-        <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#111827', margin: 0 }}>📊 Top Categories</h4>
-          </div>
-          <div style={{ padding: '16px 20px' }}>
-            {categoryStats.map(c => (
-              <div key={c.name} style={{ marginBottom: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>{c.name}</span>
-                  <span style={{ fontSize: '12px', color: '#9CA3AF' }}>{c.count}</span>
-                </div>
-                <div style={{ background: '#F3F4F6', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%', borderRadius: '4px', width: `${c.pct}%`,
-                    background: 'linear-gradient(90deg, #4F46E5, #6366F1)', transition: 'width 0.5s ease'
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6' }}>
-          <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#111827', margin: 0 }}>⚡ Quick Actions</h4>
-        </div>
-        <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-          {[
-            { icon: <UserPlusIcon />, label: 'Add User', sub: 'Invite new team member', color: '#4F46E5', bg: '#EEF2FF' },
-            { icon: <ShieldIcon />, label: 'Review Reports', sub: 'View flagged content', color: '#DC2626', bg: '#FEF2F2' },
-            { icon: <StarIcon />, label: 'Feature Post', sub: 'Highlight a shoutout', color: '#F59E0B', bg: '#FFFBEB' },
-          ].map(a => (
-            <button
-              key={a.label}
-              style={{
-                background: '#FAFBFC', border: '1px solid #E5E7EB', borderRadius: '10px',
-                padding: '16px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = a.color; e.currentTarget.style.boxShadow = `0 4px 12px ${a.bg}`; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              <div style={{ background: a.bg, display: 'inline-flex', padding: '8px', borderRadius: '8px', marginBottom: '10px', color: a.color }}>
-                {a.icon}
-              </div>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: '0 0 3px 0' }}>{a.label}</p>
-              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{a.sub}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── User Management View ─────────────────────────────────────────────────────
-function UserManagementView() {
-  const users = [
-    { name: 'Sarah Johnson', email: 'sarah@company.com', dept: 'Engineering', role: 'employee', status: 'active' },
-    { name: 'Mike Chen', email: 'mike@company.com', dept: 'Product', role: 'employee', status: 'active' },
-    { name: 'Emily Rodriguez', email: 'emily@company.com', dept: 'Design', role: 'employee', status: 'active' },
-    { name: 'Admin User', email: 'admin@company.com', dept: 'Management', role: 'admin', status: 'active' },
-    { name: 'Alex Torres', email: 'alex@company.com', dept: 'Engineering', role: 'employee', status: 'inactive' },
-  ];
-
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <div>
-          <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 4px 0' }}>User Management</h3>
-          <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0 }}>Manage team members and their roles</p>
-        </div>
-        <button style={{
-          padding: '10px 18px', background: '#4F46E5', color: '#fff', border: 'none',
-          borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: '6px'
-        }}>
-          + Invite User
-        </button>
-      </div>
-
-      <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-              {['Name', 'Department', 'Role', 'Status', 'Actions'].map(h => (
-                <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u, i) => (
-              <tr key={u.email} style={{ borderBottom: i < users.length - 1 ? '1px solid #F9FAFB' : 'none' }}>
-                <td style={{ padding: '14px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                      width: '34px', height: '34px', borderRadius: '50%',
-                      background: u.role === 'admin' ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'linear-gradient(135deg, #4F46E5, #6366F1)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#fff', fontWeight: 700, fontSize: '12px'
-                    }}>
-                      {getInitials(u.name)}
+              {contributors.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#9CA3AF', padding: 24, fontSize: 13 }}>No data yet</p>
+              ) : (
+                contributors.map((u, i) => (
+                  <div key={u.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '11px 18px', borderBottom: i < contributors.length - 1 ? '1px solid #F9FAFB' : 'none',
+                  }}>
+                    <span style={{ fontSize: 12, color: i === 0 ? '#F59E0B' : '#9CA3AF', width: 20, fontWeight: 700 }}>
+                      #{u.rank}
+                    </span>
+                    <Avatar name={u.name} color={i === 0 ? '#F59E0B' : '#4F46E5'} size={32} />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: '0 0 1px 0' }}>{u.name}</p>
+                      <p style={{ fontSize: 11, color: '#9CA3AF', margin: 0 }}>{u.department}</p>
                     </div>
-                    <div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: '0 0 1px 0' }}>{u.name}</p>
-                      <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{u.email}</p>
-                    </div>
+                    <Badge label={`${u.count} sent`} color="#4F46E5" bg="#EEF2FF" />
                   </div>
-                </td>
-                <td style={{ padding: '14px 20px', fontSize: '13px', color: '#6B7280' }}>{u.dept}</td>
-                <td style={{ padding: '14px 20px' }}>
-                  <span style={{
-                    fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px',
-                    background: u.role === 'admin' ? '#FEF2F2' : '#EEF2FF',
-                    color: u.role === 'admin' ? '#DC2626' : '#4F46E5'
-                  }}>
-                    {u.role === 'admin' ? '👑 Admin' : 'Employee'}
-                  </span>
-                </td>
-                <td style={{ padding: '14px 20px' }}>
-                  <span style={{
-                    fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px',
-                    background: u.status === 'active' ? '#F0FDF4' : '#F9FAFB',
-                    color: u.status === 'active' ? '#10B981' : '#9CA3AF'
-                  }}>
-                    {u.status}
-                  </span>
-                </td>
-                <td style={{ padding: '14px 20px' }}>
-                  <button style={{
-                    fontSize: '12px', fontWeight: 500, color: '#6B7280', background: '#F9FAFB',
-                    border: '1px solid #E5E7EB', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer'
-                  }}>
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ─── Moderation View ──────────────────────────────────────────────────────────
-function ModerationView() {
-  return (
-    <div>
-      <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>Moderation Queue</h3>
-      <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Review flagged content</p>
-      <div style={{
-        background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB',
-        padding: '48px 24px', textAlign: 'center'
-      }}>
-        <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>✅</p>
-        <p style={{ fontSize: '16px', fontWeight: 600, color: '#374151', margin: '0 0 6px 0' }}>All clear!</p>
-        <p style={{ fontSize: '13px', color: '#9CA3AF' }}>No flagged content requires review at this time</p>
-      </div>
-    </div>
-  );
-}
-
-// ─── System Logs View ─────────────────────────────────────────────────────────
-function SystemLogsView() {
-  const logs = [
-    { time: '2 min ago', event: 'User login', user: 'sarah@company.com', status: 'success' },
-    { time: '15 min ago', event: 'Shoutout created', user: 'mike@company.com', status: 'success' },
-    { time: '1 hr ago', event: 'Password reset', user: 'emily@company.com', status: 'success' },
-    { time: '3 hr ago', event: 'Failed login attempt', user: 'unknown@test.com', status: 'warning' },
-    { time: '5 hr ago', event: 'User registered', user: 'alex@company.com', status: 'success' },
-  ];
-
-  return (
-    <div>
-      <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>System Logs</h3>
-      <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Recent system activity</p>
-      <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-        {logs.map((log, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'center', gap: '16px',
-            padding: '14px 20px', borderBottom: i < logs.length - 1 ? '1px solid #F9FAFB' : 'none'
-          }}>
-            <div style={{
-              width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
-              background: log.status === 'success' ? '#10B981' : '#F59E0B'
-            }} />
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: '#111827', margin: '0 0 2px 0' }}>{log.event}</p>
-              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>{log.user}</p>
+                ))
+              )}
             </div>
-            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>{log.time}</span>
+
+            <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #F3F4F6' }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0 }}>📊 Department Engagement</h4>
+              </div>
+              <div style={{ padding: '14px 18px' }}>
+                {depts.length === 0 ? (
+                  <p style={{ color: '#9CA3AF', fontSize: 13 }}>No departments found</p>
+                ) : (
+                  depts.map((d) => (
+                    <div key={d.name} style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: '#374151' }}>{d.name}</span>
+                        <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+                          {d.shoutout_count} shoutouts · {d.member_count} members
+                        </span>
+                      </div>
+                      <div style={{ background: '#F3F4F6', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%', borderRadius: 4,
+                          width: `${(d.shoutout_count / maxDeptCount) * 100}%`,
+                          background: 'linear-gradient(90deg, #4F46E5, #6366F1)',
+                          transition: 'width 0.6s ease',
+                        }} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </div>
   );
 }
 
-// ─── Page Header ──────────────────────────────────────────────────────────────
-function AdminHeader({ currentView, user }) {
-  const titles = {
-    analytics: { title: 'Analytics Overview', sub: 'Monitor team recognition metrics' },
-    users: { title: 'User Management', sub: 'Manage team members and roles' },
-    moderation: { title: 'Moderation Queue', sub: 'Review reported content' },
-    logs: { title: 'System Logs', sub: 'Track system activity' },
+// ─── ✅ NEW: Pending Approvals View ────────────────────────────────────────────
+// Replaces the old Python script workflow entirely.
+// Admin can review who registered, then approve or reject inline — no terminal needed.
+function PendingApprovalsView({ onPendingCountChange }) {
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState('');
+  const [processing, setProcessing]     = useState(null);   // userId currently being actioned
+  const [toast, setToast]               = useState(null);
+
+  // Reject dialog state
+  const [rejectDialog, setRejectDialog] = useState({ open: false, user: null });
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  // Approve dialog state
+  const [approveDialog, setApproveDialog] = useState({ open: false, user: null });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
   };
-  const { title, sub } = titles[currentView] || titles.analytics;
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await adminAPI.getPendingUsers();
+      const data = res.data || [];
+      setPendingUsers(data);
+      onPendingCountChange(data.length);
+    } catch {
+      setError('Failed to load pending users. Make sure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  }, [onPendingCountChange]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // ── Approve ──────────────────────────────────────────────────────────────
+  const confirmApprove = (user) => setApproveDialog({ open: true, user });
+
+  const handleApprove = async () => {
+    const { user } = approveDialog;
+    setApproveDialog({ open: false, user: null });
+    setProcessing(user.id);
+    try {
+      await adminAPI.approveUser(user.id);
+      const updated = pendingUsers.filter(u => u.id !== user.id);
+      setPendingUsers(updated);
+      onPendingCountChange(updated.length);
+      showToast(`${user.name} approved — they can now log in!`);
+    } catch (err) {
+      showToast(`Failed to approve: ${err.response?.data?.detail || err.message}`, 'error');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  // ── Reject ───────────────────────────────────────────────────────────────
+  const confirmReject = (user) => {
+    setRejectionReason('');
+    setRejectDialog({ open: true, user });
+  };
+
+  const handleReject = async () => {
+    const { user } = rejectDialog;
+    setRejectDialog({ open: false, user: null });
+    setProcessing(user.id);
+    try {
+      await adminAPI.rejectUser(user.id);
+      const updated = pendingUsers.filter(u => u.id !== user.id);
+      setPendingUsers(updated);
+      onPendingCountChange(updated.length);
+      showToast(`${user.name}'s registration has been rejected.`, 'error');
+    } catch (err) {
+      showToast(`Failed to reject: ${err.response?.data?.detail || err.message}`, 'error');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  return (
+    <div>
+      {/* Section header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+        <div>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 3px 0' }}>
+            Pending Approvals
+          </h3>
+          <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>
+            Review new registrations — approve or reject access
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {pendingUsers.length > 0 && (
+            <Badge label={`${pendingUsers.length} waiting`} color="#DC2626" bg="#FEF2F2" />
+          )}
+          <button
+            onClick={load}
+            style={{
+              border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8,
+              padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: '#374151',
+            }}
+          >
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* How it works banner (shown when there are no pending yet — helps team understand flow) */}
+      {!loading && !error && pendingUsers.length === 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, #EEF2FF, #F0FDF4)',
+          border: '1px solid #C7D2FE', borderRadius: 14,
+          padding: '32px 28px', textAlign: 'center', marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', margin: '0 0 8px 0' }}>
+            All clear — no pending approvals
+          </h3>
+          <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 20px 0', lineHeight: 1.6 }}>
+            When someone registers, they'll appear here.<br/>
+            Approve them to grant access, or reject to deny.
+          </p>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 24,
+            background: '#fff', borderRadius: 10, padding: '14px 24px',
+            border: '1px solid #E5E7EB',
+          }}>
+            {[
+              { icon: '📝', step: '1. User registers' },
+              { icon: '⏳', step: '2. Status: pending' },
+              { icon: '✅', step: '3. Admin approves here' },
+              { icon: '🔓', step: '4. User can log in' },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</div>
+                <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 500 }}>{s.step}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {error && <ErrorBanner message={error} />}
+      {loading && <Spinner />}
+
+      {/* Pending users table */}
+      {!loading && pendingUsers.length > 0 && (
+        <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                {['User', 'Email', 'Department', 'Registered', 'Actions'].map((h, i) => (
+                  <th key={h} style={{
+                    padding: '12px 18px', textAlign: i === 4 ? 'right' : 'left',
+                    fontSize: 11, fontWeight: 700, color: '#9CA3AF',
+                    textTransform: 'uppercase', letterSpacing: '0.5px',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {pendingUsers.map((user, idx) => {
+                const busy = processing === user.id;
+                return (
+                  <tr key={user.id} style={{
+                    borderBottom: idx < pendingUsers.length - 1 ? '1px solid #F3F4F6' : 'none',
+                    background: busy ? '#FEFCE8' : '#fff',
+                    transition: 'background 0.2s',
+                  }}>
+                    {/* Name + avatar */}
+                    <td style={{ padding: '14px 18px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0,
+                        }}>
+                          {initials(user.name)}
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: '0 0 3px 0' }}>
+                            {user.name}
+                          </p>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, color: '#D97706',
+                            background: '#FFFBEB', border: '1px solid #FDE68A',
+                            padding: '2px 7px', borderRadius: 4,
+                          }}>
+                            ⏳ PENDING
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Email */}
+                    <td style={{ padding: '14px 18px', fontSize: 13, color: '#6B7280' }}>
+                      {user.email}
+                    </td>
+
+                    {/* Department */}
+                    <td style={{ padding: '14px 18px', fontSize: 13, color: '#6B7280' }}>
+                      {user.department || '—'}
+                    </td>
+
+                    {/* Registered date */}
+                    <td style={{ padding: '14px 18px', fontSize: 12, color: '#9CA3AF' }}>
+                      {user.joined_at
+                        ? new Date(user.joined_at).toLocaleDateString('en-GB', {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                          })
+                        : '—'}
+                    </td>
+
+                    {/* Actions */}
+                    <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => confirmApprove(user)}
+                          disabled={busy}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            padding: '7px 16px', borderRadius: 7, border: 'none',
+                            background: busy ? '#D1FAE5' : '#10B981', color: '#fff',
+                            fontSize: 12, fontWeight: 700,
+                            cursor: busy ? 'wait' : 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => { if (!busy) e.currentTarget.style.background = '#059669'; }}
+                          onMouseLeave={e => { if (!busy) e.currentTarget.style.background = '#10B981'; }}
+                        >
+                          <Icon.Check />
+                          {busy ? 'Processing…' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => confirmReject(user)}
+                          disabled={busy}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            padding: '7px 16px', borderRadius: 7,
+                            border: '1px solid #FECACA',
+                            background: busy ? '#FEF2F2' : '#fff', color: '#DC2626',
+                            fontSize: 12, fontWeight: 700,
+                            cursor: busy ? 'wait' : 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => { if (!busy) e.currentTarget.style.background = '#FEF2F2'; }}
+                          onMouseLeave={e => { if (!busy) e.currentTarget.style.background = '#fff'; }}
+                        >
+                          <Icon.X />
+                          {busy ? 'Processing…' : 'Reject'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Approve confirmation dialog ───────────────────────────────────── */}
+      <ConfirmDialog
+        isOpen={approveDialog.open}
+        title={`Approve ${approveDialog.user?.name}?`}
+        message={`${approveDialog.user?.email} will be granted access to BragBoard and can log in immediately.`}
+        confirmLabel="✓ Yes, Approve"
+        confirmColor="#10B981"
+        onConfirm={handleApprove}
+        onCancel={() => setApproveDialog({ open: false, user: null })}
+      />
+
+      {/* ── Reject confirmation dialog (with optional reason) ────────────── */}
+      <ConfirmDialog
+        isOpen={rejectDialog.open}
+        title={`Reject ${rejectDialog.user?.name}?`}
+        message={`${rejectDialog.user?.email} will not be able to access BragBoard.`}
+        confirmLabel="✕ Yes, Reject"
+        confirmColor="#EF4444"
+        onConfirm={handleReject}
+        onCancel={() => setRejectDialog({ open: false, user: null })}
+      >
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
+            Reason (optional)
+          </label>
+          <textarea
+            value={rejectionReason}
+            onChange={e => setRejectionReason(e.target.value)}
+            placeholder="e.g. Not an employee, duplicate account…"
+            rows={2}
+            style={{
+              width: '100%', border: '1px solid #E5E7EB', borderRadius: 8,
+              padding: '8px 12px', fontSize: 13, outline: 'none', resize: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+      </ConfirmDialog>
+
+      <Toast toast={toast} />
+    </div>
+  );
+}
+
+// ─── User Management view ─────────────────────────────────────────────────────
+function UserManagementView() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [changingId, setChangingId] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, user: null, newRole: '' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const load = useCallback(() => {
+    setLoading(true);
+    adminAPI.listUsers()
+      .then((r) => setUsers(r.data))
+      .catch(() => setError('Failed to load users.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const promptToggleRole = (u) => {
+    const newRole = u.role === 'admin' ? 'employee' : 'admin';
+    setConfirmDialog({ open: true, user: u, newRole });
+  };
+
+  const handleToggleRole = async () => {
+    const { user, newRole } = confirmDialog;
+    setConfirmDialog({ open: false, user: null, newRole: '' });
+    setChangingId(user.id);
+    try {
+      await adminAPI.changeUserRole(user.id, newRole);
+      setUsers((prev) => prev.map((x) => x.id === user.id ? { ...x, role: newRole } : x));
+      showToast(`${user.name}'s role changed to ${newRole}.`);
+    } catch {
+      showToast('Role change failed. You cannot change your own role.', 'error');
+    } finally {
+      setChangingId(null);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+        <div>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 3px 0' }}>User Management</h3>
+          <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>Manage roles and view all registered users</p>
+        </div>
+        <Badge label={`${users.length} users`} color="#4F46E5" bg="#EEF2FF" />
+      </div>
+
+      {error && <ErrorBanner message={error} />}
+      {loading ? <Spinner /> : (
+        <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
+                {['User', 'Department', 'Role', 'Status', 'Joined', 'Action'].map((h) => (
+                  <th key={h} style={{ padding: '11px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u, i) => (
+                <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? '1px solid #F9FAFB' : 'none' }}>
+                  <td style={{ padding: '13px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Avatar name={u.name} color={u.role === 'admin' ? '#DC2626' : '#4F46E5'} size={32} />
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: '0 0 1px 0' }}>{u.name}</p>
+                        <p style={{ fontSize: 11, color: '#9CA3AF', margin: 0 }}>{u.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '13px 18px', fontSize: 12, color: '#6B7280' }}>{u.department || '—'}</td>
+                  <td style={{ padding: '13px 18px' }}>
+                    <Badge
+                      label={u.role === 'admin' ? '👑 Admin' : 'Employee'}
+                      color={u.role === 'admin' ? '#DC2626' : '#4F46E5'}
+                      bg={u.role === 'admin' ? '#FEF2F2' : '#EEF2FF'}
+                    />
+                  </td>
+                  <td style={{ padding: '13px 18px' }}>
+                    <Badge
+                      label={u.status || 'approved'}
+                      color={u.status === 'pending' ? '#D97706' : u.status === 'suspended' ? '#DC2626' : '#059669'}
+                      bg={u.status === 'pending' ? '#FFFBEB' : u.status === 'suspended' ? '#FEF2F2' : '#F0FDF4'}
+                    />
+                  </td>
+                  <td style={{ padding: '13px 18px', fontSize: 12, color: '#9CA3AF' }}>
+                    {u.joined_at ? new Date(u.joined_at).toLocaleDateString() : '—'}
+                  </td>
+                  <td style={{ padding: '13px 18px' }}>
+                    <button
+                      disabled={changingId === u.id}
+                      onClick={() => promptToggleRole(u)}
+                      style={{
+                        fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 7,
+                        border: `1px solid ${u.role === 'admin' ? '#FECACA' : '#C7D2FE'}`,
+                        background: u.role === 'admin' ? '#FEF2F2' : '#EEF2FF',
+                        color: u.role === 'admin' ? '#DC2626' : '#4F46E5',
+                        cursor: changingId === u.id ? 'wait' : 'pointer',
+                        transition: 'all 0.15s',
+                        display: 'flex', alignItems: 'center', gap: 4,
+                      }}
+                    >
+                      <Icon.Crown />
+                      {changingId === u.id ? 'Saving…' : u.role === 'admin' ? 'Demote' : 'Promote'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        title={`Change role to "${confirmDialog.newRole}"?`}
+        message={`${confirmDialog.user?.name} will ${confirmDialog.newRole === 'admin' ? 'gain admin access to this dashboard' : 'lose admin access'}.`}
+        confirmLabel="Confirm"
+        confirmColor="#4F46E5"
+        onConfirm={handleToggleRole}
+        onCancel={() => setConfirmDialog({ open: false, user: null, newRole: '' })}
+      />
+      <Toast toast={toast} />
+    </div>
+  );
+}
+
+// ─── Moderation view ──────────────────────────────────────────────────────────
+function ModerationView() {
+  const [shoutouts, setShoutouts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
+  const [search, setSearch] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  useEffect(() => {
+    adminAPI.listShoutouts(100)
+      .then((r) => setShoutouts(r.data))
+      .catch(() => setError('Failed to load shoutouts.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleDelete = async () => {
+    const id = deleteDialog.id;
+    setDeleteDialog({ open: false, id: null });
+    setDeletingId(id);
+    try {
+      await adminAPI.deleteShoutout(id);
+      setShoutouts((prev) => prev.filter((s) => s.id !== id));
+      showToast('Shoutout deleted.');
+    } catch {
+      showToast('Delete failed — shoutout may already be removed.', 'error');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const filtered = shoutouts.filter((s) =>
+    s.message.toLowerCase().includes(search.toLowerCase()) ||
+    s.sender_name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+        <div>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 3px 0' }}>Moderation Queue</h3>
+          <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>Review and remove inappropriate shoutouts</p>
+        </div>
+        <input
+          placeholder="Search…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ border: '1px solid #E5E7EB', borderRadius: 8, padding: '7px 12px', fontSize: 13, outline: 'none', width: 200 }}
+        />
+      </div>
+
+      {error && <ErrorBanner message={error} />}
+      {loading ? <Spinner /> : filtered.length === 0 ? (
+        <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', padding: '48px 24px', textAlign: 'center' }}>
+          <p style={{ fontSize: 40, margin: '0 0 10px 0' }}>✅</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: '#374151', margin: '0 0 4px 0' }}>
+            {search ? 'No matching shoutouts' : 'All clear!'}
+          </p>
+          <p style={{ fontSize: 13, color: '#9CA3AF' }}>
+            {search ? 'Try a different search term.' : 'No shoutouts need review right now.'}
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map((s) => (
+            <div key={s.id} style={{
+              background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB',
+              padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 14,
+            }}>
+              <Avatar name={s.sender_name} size={36} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{s.sender_name}</span>
+                  {s.recipient_names?.length > 0 && (
+                    <>
+                      <span style={{ fontSize: 11, color: '#9CA3AF' }}>→</span>
+                      <span style={{ fontSize: 12, color: '#4F46E5', fontWeight: 600 }}>
+                        {s.recipient_names.join(', ')}
+                      </span>
+                    </>
+                  )}
+                  <span style={{ fontSize: 11, color: '#D1D5DB', marginLeft: 'auto' }}>
+                    {relativeTime(s.created_at)}
+                  </span>
+                </div>
+                <p style={{ fontSize: 13, color: '#374151', margin: '0 0 8px 0', lineHeight: 1.5 }}>{s.message}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Badge label={`❤️ ${s.likes}`} color="#DC2626" bg="#FEF2F2" />
+                  {s.tags && <Badge label={s.tags} color="#6B7280" bg="#F3F4F6" />}
+                </div>
+              </div>
+              <button
+                disabled={deletingId === s.id}
+                onClick={() => setDeleteDialog({ open: true, id: s.id })}
+                style={{
+                  padding: '6px 12px', borderRadius: 8, border: '1px solid #FECACA',
+                  background: '#FEF2F2', color: '#DC2626', cursor: 'pointer',
+                  fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4,
+                  transition: 'all 0.15s', flexShrink: 0,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#FEE2E2'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#FEF2F2'}
+              >
+                <Icon.Trash /> {deletingId === s.id ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={deleteDialog.open}
+        title="Delete this shoutout?"
+        message="This action is permanent and cannot be undone."
+        confirmLabel="Delete"
+        confirmColor="#DC2626"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteDialog({ open: false, id: null })}
+      />
+      <Toast toast={toast} />
+    </div>
+  );
+}
+
+// ─── System Logs view ─────────────────────────────────────────────────────────
+function SystemLogsView() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    adminAPI.getLogs(100)
+      .then((r) => setLogs(r.data))
+      .catch(() => setError('Failed to load logs. The admin_logs table may not be migrated yet.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div>
+      <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 4px 0' }}>System Logs</h3>
+      <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 22 }}>Admin action history and audit trail</p>
+
+      {error && <ErrorBanner message={error} />}
+      {loading ? <Spinner /> : logs.length === 0 ? (
+        <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', padding: '48px 24px', textAlign: 'center' }}>
+          <p style={{ fontSize: 40, margin: '0 0 10px 0' }}>📋</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: '#374151', margin: '0 0 4px 0' }}>No logs yet</p>
+          <p style={{ fontSize: 13, color: '#9CA3AF' }}>
+            Admin actions (approvals, role changes, deletions) will appear here.
+          </p>
+        </div>
+      ) : (
+        <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+          {logs.map((log, i) => (
+            <div key={log.id} style={{
+              display: 'flex', alignItems: 'center', gap: 14, padding: '13px 18px',
+              borderBottom: i < logs.length - 1 ? '1px solid #F9FAFB' : 'none',
+            }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: '#10B981' }} />
+              <Avatar name={log.admin_name} size={30} />
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: '0 0 2px 0' }}>{log.action}</p>
+                <p style={{ fontSize: 11, color: '#9CA3AF', margin: 0 }}>
+                  by {log.admin_name}
+                  {log.target_type && ` · ${log.target_type} #${log.target_id}`}
+                </p>
+              </div>
+              <span style={{ fontSize: 11, color: '#9CA3AF', flexShrink: 0 }}>{relativeTime(log.timestamp)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Top header bar ───────────────────────────────────────────────────────────
+function TopBar({ view, user }) {
+  const titles = {
+    analytics:  { t: 'Analytics Overview',     s: 'Monitor team recognition metrics' },
+    approvals:  { t: 'Pending Approvals',       s: 'Review and approve new registrations' },
+    users:      { t: 'User Management',         s: 'Manage members and roles' },
+    moderation: { t: 'Moderation Queue',        s: 'Review and remove content' },
+    logs:       { t: 'System Logs',             s: 'Track admin actions' },
+  };
+  const { t, s } = titles[view] || titles.analytics;
 
   return (
     <header style={{
-      background: '#fff', borderBottom: '1px solid #E5E7EB',
-      padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      position: 'sticky', top: 0, zIndex: 10
+      background: '#fff', borderBottom: '1px solid #E5E7EB', padding: '14px 28px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      position: 'sticky', top: 0, zIndex: 10,
     }}>
       <div>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#111827', margin: '0 0 2px 0' }}>{title}</h2>
-        <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>{sub}</p>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 2px 0' }}>{t}</h2>
+        <p style={{ fontSize: 12, color: '#9CA3AF', margin: 0 }}>{s}</p>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
-          <div style={{
-            width: '30px', height: '30px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, #DC2626, #EF4444)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 700, fontSize: '12px'
-          }}>
-            {getInitials(user?.name)}
-          </div>
-          <div>
-            <p style={{ fontSize: '13px', fontWeight: 600, color: '#111827', margin: 0 }}>{user?.name}</p>
-            <p style={{ fontSize: '11px', color: '#DC2626', fontWeight: 600, margin: 0 }}>Administrator</p>
-          </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 12px', borderRadius: 10, border: '1px solid #E5E7EB' }}>
+        <Avatar name={user?.name} size={28} />
+        <div>
+          <p style={{ fontSize: 12, fontWeight: 600, color: '#111827', margin: 0 }}>{user?.name}</p>
+          <p style={{ fontSize: 10, color: '#4F46E5', fontWeight: 600, margin: 0 }}>Administrator</p>
         </div>
       </div>
     </header>
   );
 }
 
-// ─── Main Admin Dashboard ─────────────────────────────────────────────────────
+// ─── Root component ───────────────────────────────────────────────────────────
 function AdminDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState('analytics');
+  const [view, setView] = useState('analytics');
+  // ✅ Shared pending count — sidebar badge + fetched from PendingApprovalsView
+  const [pendingCount, setPendingCount] = useState(0);
 
-  // Redirect non-admins
   useEffect(() => {
-    if (user && user.role !== 'admin') {
-      navigate('/dashboard');
-    }
+    if (user && user.role !== 'admin') navigate('/dashboard');
   }, [user, navigate]);
+
+  // Fetch pending count on mount so the badge shows even before visiting the tab
+  useEffect(() => {
+    adminAPI.getPendingUsers()
+      .then(r => setPendingCount((r.data || []).length))
+      .catch(() => {}); // silently ignore — badge just stays at 0
+  }, []);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const renderView = () => {
-    switch (currentView) {
-      case 'analytics': return <AnalyticsView user={user} />;
-      case 'users': return <UserManagementView />;
+    switch (view) {
+      case 'analytics':  return <AnalyticsView user={user} />;
+      case 'approvals':  return <PendingApprovalsView onPendingCountChange={setPendingCount} />;
+      case 'users':      return <UserManagementView />;
       case 'moderation': return <ModerationView />;
-      case 'logs': return <SystemLogsView />;
-      default: return <AnalyticsView user={user} />;
+      case 'logs':       return <SystemLogsView />;
+      default:           return <AnalyticsView user={user} />;
     }
   };
 
   return (
     <div style={{ minHeight: '100vh', background: '#F1F5F9', display: 'flex' }}>
       <AdminSidebar
-        currentView={currentView}
-        onViewChange={setCurrentView}
+        view={view}
+        setView={setView}
         onLogout={handleLogout}
         user={user}
+        pendingCount={pendingCount}
       />
-
-      {/* Main Content */}
-      <main style={{ paddingLeft: '256px', flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <AdminHeader currentView={currentView} user={user} />
-        <div style={{ flex: 1, padding: '28px 32px', maxWidth: '1100px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+      <main style={{ paddingLeft: 240, flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <TopBar view={view} user={user} />
+        <div style={{ flex: 1, padding: '24px 28px', maxWidth: 1080, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
           {renderView()}
         </div>
       </main>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        * { font-family: 'Inter', sans-serif; }
-      `}</style>
     </div>
   );
 }

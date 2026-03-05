@@ -13,11 +13,11 @@ function Register() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  
+  const [registered, setRegistered] = useState(false);  // ✅ show success screen
+  const [registeredName, setRegisteredName] = useState('');
+
   const navigate = useNavigate();
 
-  // Predefined security questions
   const securityQuestions = [
     "What is your first pet's name?",
     "What is your mother's maiden name?",
@@ -27,10 +27,7 @@ function Register() {
   ];
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -40,10 +37,9 @@ function Register() {
 
     try {
       await authAPI.register(formData);
-      setSuccess(true);
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // ✅ Show the "pending approval" success screen instead of immediately redirecting
+      setRegisteredName(formData.name.split(' ')[0]);
+      setRegistered(true);
     } catch (err) {
       setError(err.response?.data?.detail || 'Registration failed. Please try again.');
     } finally {
@@ -51,24 +47,121 @@ function Register() {
     }
   };
 
+  // ─── ✅ Success screen — replaces old "redirecting to login" toast ─────────
+  // Shows after registration to clearly explain the admin approval step.
+  if (registered) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-6"
+        style={{ backgroundColor: '#F1F5F9' }}
+      >
+        <div className="w-full" style={{ maxWidth: '480px' }}>
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div
+              className="inline-flex items-center justify-center mb-4"
+              style={{
+                width: '48px', height: '48px',
+                background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)',
+                borderRadius: '8px', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.15)'
+              }}
+            >
+              <span className="text-2xl">🎉</span>
+            </div>
+            <h1 className="text-3xl font-bold mb-1" style={{ color: '#4F46E5', fontWeight: 800 }}>
+              BragBoard
+            </h1>
+            <p className="text-sm" style={{ color: '#6B7280', fontWeight: 500 }}>
+              Employee Recognition Platform
+            </p>
+          </div>
+
+          {/* Success card */}
+          <div style={{
+            backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '40px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)', textAlign: 'center'
+          }}>
+            {/* Big checkmark */}
+            <div style={{
+              width: '72px', height: '72px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, #10B981, #059669)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 20px', boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)'
+            }}>
+              <span style={{ fontSize: '32px' }}>✓</span>
+            </div>
+
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#111827', margin: '0 0 8px 0' }}>
+              You're registered, {registeredName}!
+            </h2>
+            <p style={{ fontSize: '15px', color: '#6B7280', margin: '0 0 28px 0', lineHeight: 1.6 }}>
+              Your account is <strong style={{ color: '#D97706' }}>pending admin approval</strong>.<br/>
+              You'll be able to log in once an administrator reviews and approves your account.
+            </p>
+
+            {/* What happens next steps */}
+            <div style={{
+              background: '#F9FAFB', borderRadius: '12px',
+              padding: '20px', marginBottom: '28px', textAlign: 'left'
+            }}>
+              <p style={{ fontSize: '12px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 14px 0' }}>
+                What happens next
+              </p>
+              {[
+                { icon: '📬', text: 'Your registration is now in the admin queue' },
+                { icon: '👀', text: 'An admin will review your account' },
+                { icon: '✅', text: 'Once approved, you can sign in and start recognising colleagues' },
+              ].map((step, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: '12px',
+                  marginBottom: i < 2 ? '12px' : 0
+                }}>
+                  <span style={{ fontSize: '18px', flexShrink: 0, marginTop: '1px' }}>{step.icon}</span>
+                  <p style={{ fontSize: '13px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{step.text}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <button
+              onClick={() => navigate('/login')}
+              style={{
+                width: '100%', height: '48px', borderRadius: '8px', border: 'none',
+                background: '#4F46E5', color: '#fff', fontSize: '15px', fontWeight: 700,
+                cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: '0 2px 8px rgba(79, 70, 229, 0.25)'
+              }}
+              onMouseEnter={e => { e.target.style.background = '#4338CA'; e.target.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.target.style.background = '#4F46E5'; e.target.style.transform = 'translateY(0)'; }}
+            >
+              Back to Sign In
+            </button>
+          </div>
+        </div>
+
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+          * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        `}</style>
+      </div>
+    );
+  }
+
+  // ─── Registration form (unchanged) ───────────────────────────────────────
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-6"
-      style={{ 
-        backgroundColor: '#F1F5F9'
-      }}
+      style={{ backgroundColor: '#F1F5F9' }}
     >
       <div className="w-full" style={{ maxWidth: '420px' }}>
         {/* Logo Section */}
         <div className="text-center mb-8">
-          <div 
+          <div
             className="inline-flex items-center justify-center mb-4"
             style={{
-              width: '48px',
-              height: '48px',
+              width: '48px', height: '48px',
               background: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)',
-              borderRadius: '8px',
-              boxShadow: '0 4px 12px rgba(79, 70, 229, 0.15)'
+              borderRadius: '8px', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.15)'
             }}
           >
             <span className="text-2xl">🎉</span>
@@ -82,14 +175,10 @@ function Register() {
         </div>
 
         {/* Register Card */}
-        <div 
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '40px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
-          }}
-        >
+        <div style={{
+          backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '40px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
+        }}>
           <div style={{ marginBottom: '32px' }}>
             <h2 className="text-2xl font-bold mb-2" style={{ color: '#1F2937', fontWeight: 700 }}>
               Create Account
@@ -99,321 +188,148 @@ function Register() {
             </p>
           </div>
 
+          {/* ✅ Note about approval requirement */}
+          <div style={{
+            marginBottom: '20px', padding: '12px 14px',
+            background: '#EEF2FF', border: '1px solid #C7D2FE',
+            borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '10px'
+          }}>
+            <span style={{ fontSize: '16px', flexShrink: 0 }}>ℹ️</span>
+            <p style={{ fontSize: '12px', color: '#4338CA', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
+              After registering, your account will require <strong>admin approval</strong> before you can log in.
+            </p>
+          </div>
+
           {error && (
-            <div style={{ 
-              marginBottom: '24px',
-              padding: '12px 16px',
-              backgroundColor: '#FEE2E2',
-              border: '1px solid #FCA5A5',
-              borderRadius: '8px',
-              color: '#991B1B'
+            <div style={{
+              marginBottom: '24px', padding: '12px 16px',
+              backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5',
+              borderRadius: '8px', color: '#991B1B'
             }}>
               <p className="text-sm">{error}</p>
             </div>
           )}
 
-          {success && (
-            <div style={{ 
-              marginBottom: '24px',
-              padding: '12px 16px',
-              backgroundColor: '#D1FAE5',
-              border: '1px solid #10B981',
-              borderRadius: '8px',
-              color: '#065F46'
-            }}>
-              <p className="text-sm" style={{ fontWeight: 500 }}>
-                ✓ Account created successfully! Redirecting to login...
-              </p>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit}>
-            {/* Full Name Field */}
+            {/* Full Name */}
             <div style={{ marginBottom: '20px' }}>
-              <label 
-                className="block mb-2" 
-                style={{ 
-                  color: '#1F2937',
-                  fontWeight: 600,
-                  fontSize: '14px'
-                }}
-              >
+              <label className="block mb-2" style={{ color: '#1F2937', fontWeight: 600, fontSize: '14px' }}>
                 Full Name
               </label>
               <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                minLength="2"
+                type="text" name="name" value={formData.name}
+                onChange={handleChange} required minLength="2"
                 className="w-full px-4 py-3 text-base outline-none"
                 placeholder="John Doe"
-                style={{ 
-                  height: '44px',
-                  backgroundColor: '#FAFBFC',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px',
-                  color: '#1F2937',
-                  transition: 'all 0.2s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#4F46E5';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)';
-                  e.target.style.backgroundColor = '#FFFFFF';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#E5E7EB';
-                  e.target.style.boxShadow = 'none';
-                  e.target.style.backgroundColor = '#FAFBFC';
-                }}
+                style={{ height: '44px', backgroundColor: '#FAFBFC', border: '1px solid #E5E7EB', borderRadius: '8px', color: '#1F2937', transition: 'all 0.2s ease' }}
+                onFocus={e => { e.target.style.borderColor = '#4F46E5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.1)'; e.target.style.backgroundColor = '#FFFFFF'; }}
+                onBlur={e => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; e.target.style.backgroundColor = '#FAFBFC'; }}
               />
             </div>
 
-            {/* Email Field */}
+            {/* Email */}
             <div style={{ marginBottom: '20px' }}>
-              <label 
-                className="block mb-2" 
-                style={{ 
-                  color: '#1F2937',
-                  fontWeight: 600,
-                  fontSize: '14px'
-                }}
-              >
+              <label className="block mb-2" style={{ color: '#1F2937', fontWeight: 600, fontSize: '14px' }}>
                 Email Address
               </label>
               <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
+                type="email" name="email" value={formData.email}
+                onChange={handleChange} required
                 className="w-full px-4 py-3 text-base outline-none"
                 placeholder="your.email@company.com"
-                style={{ 
-                  height: '44px',
-                  backgroundColor: '#FAFBFC',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px',
-                  color: '#1F2937',
-                  transition: 'all 0.2s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#4F46E5';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)';
-                  e.target.style.backgroundColor = '#FFFFFF';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#E5E7EB';
-                  e.target.style.boxShadow = 'none';
-                  e.target.style.backgroundColor = '#FAFBFC';
-                }}
+                style={{ height: '44px', backgroundColor: '#FAFBFC', border: '1px solid #E5E7EB', borderRadius: '8px', color: '#1F2937', transition: 'all 0.2s ease' }}
+                onFocus={e => { e.target.style.borderColor = '#4F46E5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.1)'; e.target.style.backgroundColor = '#FFFFFF'; }}
+                onBlur={e => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; e.target.style.backgroundColor = '#FAFBFC'; }}
               />
             </div>
 
-            {/* Password Field */}
+            {/* Password */}
             <div style={{ marginBottom: '20px' }}>
-              <label 
-                className="block mb-2" 
-                style={{ 
-                  color: '#1F2937',
-                  fontWeight: 600,
-                  fontSize: '14px'
-                }}
-              >
+              <label className="block mb-2" style={{ color: '#1F2937', fontWeight: 600, fontSize: '14px' }}>
                 Password
               </label>
               <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength="6"
+                type="password" name="password" value={formData.password}
+                onChange={handleChange} required minLength="6"
                 className="w-full px-4 py-3 text-base outline-none"
                 placeholder="At least 8 characters"
-                style={{ 
-                  height: '44px',
-                  backgroundColor: '#FAFBFC',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px',
-                  color: '#1F2937',
-                  transition: 'all 0.2s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#4F46E5';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)';
-                  e.target.style.backgroundColor = '#FFFFFF';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#E5E7EB';
-                  e.target.style.boxShadow = 'none';
-                  e.target.style.backgroundColor = '#FAFBFC';
-                }}
+                style={{ height: '44px', backgroundColor: '#FAFBFC', border: '1px solid #E5E7EB', borderRadius: '8px', color: '#1F2937', transition: 'all 0.2s ease' }}
+                onFocus={e => { e.target.style.borderColor = '#4F46E5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.1)'; e.target.style.backgroundColor = '#FFFFFF'; }}
+                onBlur={e => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; e.target.style.backgroundColor = '#FAFBFC'; }}
               />
             </div>
 
-            {/* Department Field */}
+            {/* Department */}
             <div style={{ marginBottom: '20px' }}>
-              <label 
-                className="block mb-2" 
-                style={{ 
-                  color: '#1F2937',
-                  fontWeight: 600,
-                  fontSize: '14px'
-                }}
-              >
+              <label className="block mb-2" style={{ color: '#1F2937', fontWeight: 600, fontSize: '14px' }}>
                 Department
               </label>
               <input
-                type="text"
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                required
+                type="text" name="department" value={formData.department}
+                onChange={handleChange} required
                 className="w-full px-4 py-3 text-base outline-none"
                 placeholder="e.g. Engineering, Marketing"
-                style={{ 
-                  height: '44px',
-                  backgroundColor: '#FAFBFC',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px',
-                  color: '#1F2937',
-                  transition: 'all 0.2s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#4F46E5';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)';
-                  e.target.style.backgroundColor = '#FFFFFF';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#E5E7EB';
-                  e.target.style.boxShadow = 'none';
-                  e.target.style.backgroundColor = '#FAFBFC';
-                }}
+                style={{ height: '44px', backgroundColor: '#FAFBFC', border: '1px solid #E5E7EB', borderRadius: '8px', color: '#1F2937', transition: 'all 0.2s ease' }}
+                onFocus={e => { e.target.style.borderColor = '#4F46E5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.1)'; e.target.style.backgroundColor = '#FFFFFF'; }}
+                onBlur={e => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; e.target.style.backgroundColor = '#FAFBFC'; }}
               />
             </div>
 
-            {/* Security Question Dropdown */}
+            {/* Security Question */}
             <div style={{ marginBottom: '20px' }}>
-              <label 
-                className="block mb-2" 
-                style={{ 
-                  color: '#1F2937',
-                  fontWeight: 600,
-                  fontSize: '14px'
-                }}
-              >
+              <label className="block mb-2" style={{ color: '#1F2937', fontWeight: 600, fontSize: '14px' }}>
                 Security Question
               </label>
               <select
-                name="security_question"
-                value={formData.security_question}
-                onChange={handleChange}
-                required
+                name="security_question" value={formData.security_question}
+                onChange={handleChange} required
                 className="w-full px-4 py-3 text-base outline-none"
-                style={{ 
-                  height: '44px',
-                  backgroundColor: '#FAFBFC',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px',
-                  color: formData.security_question ? '#1F2937' : '#9CA3AF',
-                  transition: 'all 0.2s ease',
-                  cursor: 'pointer'
+                style={{
+                  height: '44px', backgroundColor: '#FAFBFC', border: '1px solid #E5E7EB',
+                  borderRadius: '8px', color: formData.security_question ? '#1F2937' : '#9CA3AF',
+                  transition: 'all 0.2s ease', cursor: 'pointer'
                 }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#4F46E5';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)';
-                  e.target.style.backgroundColor = '#FFFFFF';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#E5E7EB';
-                  e.target.style.boxShadow = 'none';
-                  e.target.style.backgroundColor = '#FAFBFC';
-                }}
+                onFocus={e => { e.target.style.borderColor = '#4F46E5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.1)'; e.target.style.backgroundColor = '#FFFFFF'; }}
+                onBlur={e => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; e.target.style.backgroundColor = '#FAFBFC'; }}
               >
                 <option value="">Select a security question</option>
-                {securityQuestions.map((question, index) => (
-                  <option key={index} value={question}>
-                    {question}
-                  </option>
+                {securityQuestions.map((q, i) => (
+                  <option key={i} value={q}>{q}</option>
                 ))}
               </select>
             </div>
 
-            {/* Security Answer Field */}
+            {/* Security Answer */}
             <div style={{ marginBottom: '24px' }}>
-              <label 
-                className="block mb-2" 
-                style={{ 
-                  color: '#1F2937',
-                  fontWeight: 600,
-                  fontSize: '14px'
-                }}
-              >
+              <label className="block mb-2" style={{ color: '#1F2937', fontWeight: 600, fontSize: '14px' }}>
                 Security Answer
               </label>
               <input
-                type="text"
-                name="security_answer"
-                value={formData.security_answer}
-                onChange={handleChange}
-                required
-                minLength="2"
+                type="text" name="security_answer" value={formData.security_answer}
+                onChange={handleChange} required minLength="2"
                 className="w-full px-4 py-3 text-base outline-none"
                 placeholder="Your answer (used for password recovery)"
-                style={{ 
-                  height: '44px',
-                  backgroundColor: '#FAFBFC',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px',
-                  color: '#1F2937',
-                  transition: 'all 0.2s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#4F46E5';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)';
-                  e.target.style.backgroundColor = '#FFFFFF';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#E5E7EB';
-                  e.target.style.boxShadow = 'none';
-                  e.target.style.backgroundColor = '#FAFBFC';
-                }}
+                style={{ height: '44px', backgroundColor: '#FAFBFC', border: '1px solid #E5E7EB', borderRadius: '8px', color: '#1F2937', transition: 'all 0.2s ease' }}
+                onFocus={e => { e.target.style.borderColor = '#4F46E5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.1)'; e.target.style.backgroundColor = '#FFFFFF'; }}
+                onBlur={e => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; e.target.style.backgroundColor = '#FAFBFC'; }}
               />
               <p className="text-xs mt-2" style={{ color: '#6B7280' }}>
-                💡 Remember this answer - you'll need it if you forget your password
+                💡 Remember this — you'll need it if you forget your password
               </p>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
-              type="submit"
-              disabled={loading || success}
+              type="submit" disabled={loading}
               className="w-full py-3 px-6 text-white text-base cursor-pointer"
-              style={{ 
-                backgroundColor: loading || success ? '#9CA3AF' : '#4F46E5',
-                height: '48px',
-                borderRadius: '8px',
-                border: 'none',
-                fontWeight: 600,
+              style={{
+                backgroundColor: loading ? '#9CA3AF' : '#4F46E5',
+                height: '48px', borderRadius: '8px', border: 'none', fontWeight: 600,
                 transition: 'all 0.3s ease',
-                boxShadow: loading || success ? 'none' : '0 2px 4px rgba(79, 70, 229, 0.2)'
+                boxShadow: loading ? 'none' : '0 2px 4px rgba(79,70,229,0.2)'
               }}
-              onMouseEnter={(e) => {
-                if (!loading && !success) {
-                  e.target.style.backgroundColor = '#4338CA';
-                  e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.3)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!loading && !success) {
-                  e.target.style.backgroundColor = '#4F46E5';
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 2px 4px rgba(79, 70, 229, 0.2)';
-                }
-              }}
+              onMouseEnter={e => { if (!loading) { e.target.style.backgroundColor = '#4338CA'; e.target.style.transform = 'translateY(-1px)'; } }}
+              onMouseLeave={e => { if (!loading) { e.target.style.backgroundColor = '#4F46E5'; e.target.style.transform = 'translateY(0)'; } }}
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -423,64 +339,35 @@ function Register() {
                   </svg>
                   Creating account...
                 </span>
-              ) : success ? (
-                '✓ Account Created'
               ) : (
                 'Create Account'
               )}
             </button>
           </form>
 
-          {/* Divider */}
-          <div 
-            style={{ 
-              margin: '28px 0',
-              height: '1px',
-              backgroundColor: '#E5E7EB'
-            }}
-          ></div>
+          <div style={{ margin: '28px 0', height: '1px', backgroundColor: '#E5E7EB' }}></div>
 
-          {/* Sign In Link */}
           <div className="text-center">
             <p className="text-sm" style={{ color: '#6B7280', fontWeight: 400 }}>
               Already have an account?{' '}
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="hover:underline"
-                style={{ 
-                  color: '#10B981',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  transition: 'color 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#059669'}
-                onMouseLeave={(e) => e.target.style.color = '#10B981'}
+                style={{ color: '#10B981', fontSize: '13px', fontWeight: 600, transition: 'color 0.2s ease' }}
+                onMouseEnter={e => e.target.style.color = '#059669'}
+                onMouseLeave={e => e.target.style.color = '#10B981'}
               >
                 Sign in here →
               </Link>
             </p>
           </div>
         </div>
-
-        {/* Security Badge */}
-        <p 
-          className="text-center text-xs mt-6" 
-          style={{ color: '#10B981', fontWeight: 500 }}
-        >
-           {/*Secure registration powered by JWT*/}
-        </p>
       </div>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        
-        * {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        
-        ::placeholder {
-          color: #9CA3AF;
-        }
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        ::placeholder { color: #9CA3AF; }
       `}</style>
     </div>
   );
