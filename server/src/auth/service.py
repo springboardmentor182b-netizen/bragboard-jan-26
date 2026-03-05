@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from jose import JWTError, jwt
@@ -26,85 +26,83 @@ def get_password_hash(password: str) -> str:
     """Alias for hash_password (for compatibility)."""
     return hash_password(password)
 
+def decode_access_token(token: str) -> dict:
+    """
+    Decode and validate a JWT access token.
+
+    Returns:
+        dict: The token payload (e.g. {"user_id": 1, "email": "...", "role": "..."})
+
+    Raises:
+        HTTPException 401: If the token is invalid or expired.
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+        return payload
+    except JWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+
 
 def authenticate_user(db: Session, email: str, password: str) -> User:
     """
     Verify credentials and check approval status.
-    
+
     Returns the user if credentials are valid AND user is approved.
     Raises HTTPException for pending/rejected/suspended users.
     Returns None for invalid credentials.
     """
     user = db.query(User).filter(User.email == email).first()
-    
-    # Check if user exists and password is correct
+
     if not user or not verify_password(password, user.password):
         return None
-    
-    # Check approval status
+
     if user.status == UserStatus.pending:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account is pending admin approval. Please wait for an administrator to approve your registration."
+            detail=(
+                "Your account is pending admin approval. "
+                "Please wait for an administrator to approve your registration."
+            ),
         )
-    
+
     if user.status == UserStatus.rejected:
         detail = "Your account registration was rejected."
         if user.rejection_reason:
             detail += f" Reason: {user.rejection_reason}"
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=detail
-        )
-    
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+
     if user.status == UserStatus.suspended:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been suspended. Please contact your administrator."
+            detail="Your account has been suspended. Please contact your administrator.",
         )
-    
-    # User is approved, return user
+
     return user
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a JWT access token."""
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return encoded_jwt
-
-
-def get_current_user(token: str, db: Session) -> User:
-    """Get user from JWT token."""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
+    # ─── FIX 2: datetime.utcnow() is deprecated in Python 3.12 ───────────────
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    if user is None:
-        raise credentials_exception
-    return user
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def register_new_user(db: Session, user_data) -> User:
     """
     Create a new user with hashed password and pending status.
     """
-    # Check if email already exists
     existing = db.query(User).filter(User.email == user_data.email).first()
     if existing:
         raise HTTPException(
@@ -112,19 +110,17 @@ def register_new_user(db: Session, user_data) -> User:
             detail="Email already registered",
         )
 
-    # Hash security answer if provided
     hashed_answer = None
     if hasattr(user_data, "security_answer") and user_data.security_answer:
         hashed_answer = hash_password(user_data.security_answer)
 
-    # Create user with pending status
     user = User(
         name=user_data.name,
         email=user_data.email,
         password=hash_password(user_data.password),
         department=user_data.department,
-        role=user_data.role if hasattr(user_data, "role") else None,  # Will use default from model
-        status=UserStatus.pending,  # New users start as pending
+        role=user_data.role if hasattr(user_data, "role") else None,
+        status=UserStatus.pending,
         security_question=getattr(user_data, "security_question", None),
         security_answer=hashed_answer,
     )

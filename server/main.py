@@ -20,7 +20,6 @@ except Exception as e:
     print(f"⚠️  AdminLog import skipped: {e}")
 
 # ─── Create tables ────────────────────────────────────────────────────────────
-# Runs once on startup; safe to call repeatedly (CREATE TABLE IF NOT EXISTS)
 Base.metadata.create_all(bind=engine)
 
 # ─── App setup ────────────────────────────────────────────────────────────────
@@ -44,10 +43,14 @@ from src.leaderboard.controller import router as leaderboard_router
 from src.shoutouts.controller import router as shoutouts_router
 from src.users.controller import router as users_router
 
+
+from src.admin.controller import router as admin_router
+
 app.include_router(auth_router)
 app.include_router(leaderboard_router)
 app.include_router(shoutouts_router, prefix="/shoutouts", tags=["Shoutouts"])
 app.include_router(users_router, prefix="/users", tags=["Users"])
+app.include_router(admin_router)   # ← registers /admin/*
 
 
 # ─── Health endpoints ─────────────────────────────────────────────────────────

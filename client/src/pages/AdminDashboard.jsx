@@ -18,6 +18,12 @@ const Icon = {
       <circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
   ),
+  // ✅ NEW: Clock icon for Pending Approvals nav item
+  Clock: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+  ),
   Shield: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
@@ -62,6 +68,16 @@ const Icon = {
   Activity: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+  ),
+  Check: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  ),
+  X: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
     </svg>
   ),
 };
@@ -131,13 +147,82 @@ function ErrorBanner({ message }) {
   );
 }
 
+// ─── Inline Confirm Dialog (replaces browser confirm/alert) ──────────────────
+function ConfirmDialog({ isOpen, title, message, confirmLabel, confirmColor = '#10B981', onConfirm, onCancel, children }) {
+  if (!isOpen) return null;
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, backdropFilter: 'blur(2px)',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 16, padding: '28px 28px 24px',
+        width: '100%', maxWidth: 420, boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+        animation: 'popIn 0.18s ease',
+      }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, color: '#111827', margin: '0 0 8px 0' }}>{title}</h3>
+        <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 20px 0', lineHeight: 1.5 }}>{message}</p>
+        {children}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '9px 20px', borderRadius: 8, border: '1px solid #E5E7EB',
+              background: '#fff', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: '9px 20px', borderRadius: 8, border: 'none',
+              background: confirmColor, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+      <style>{`@keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }`}</style>
+    </div>
+  );
+}
+
+// ─── Toast notification ───────────────────────────────────────────────────────
+function Toast({ toast }) {
+  if (!toast) return null;
+  const colors = {
+    success: { bg: '#F0FDF4', border: '#86EFAC', text: '#166534' },
+    error: { bg: '#FEF2F2', border: '#FECACA', text: '#991B1B' },
+  };
+  const c = colors[toast.type] || colors.success;
+  return (
+    <div style={{
+      position: 'fixed', bottom: 24, right: 24, zIndex: 2000,
+      background: c.bg, border: `1px solid ${c.border}`, borderRadius: 10,
+      padding: '14px 20px', color: c.text, fontSize: 14, fontWeight: 600,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+      animation: 'slideUp 0.25s ease',
+      display: 'flex', alignItems: 'center', gap: 10, maxWidth: 360,
+    }}>
+      <span style={{ fontSize: 18 }}>{toast.type === 'success' ? '✅' : '❌'}</span>
+      {toast.message}
+      <style>{`@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
+    </div>
+  );
+}
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
-function AdminSidebar({ view, setView, onLogout, user }) {
+function AdminSidebar({ view, setView, onLogout, user, pendingCount }) {
+  // ✅ Added 'approvals' as a nav item with a live badge for pending count
   const nav = [
-    { id: 'analytics', label: 'Analytics', Icon: Icon.Bar },
-    { id: 'users', label: 'User Management', Icon: Icon.Users },
-    { id: 'moderation', label: 'Moderation', Icon: Icon.Shield },
-    { id: 'logs', label: 'System Logs', Icon: Icon.Log },
+    { id: 'analytics',  label: 'Analytics',        Icon: Icon.Bar    },
+    { id: 'approvals',  label: 'Pending Approvals', Icon: Icon.Clock, badge: pendingCount },
+    { id: 'users',      label: 'User Management',   Icon: Icon.Users  },
+    { id: 'moderation', label: 'Moderation',        Icon: Icon.Shield },
+    { id: 'logs',       label: 'System Logs',       Icon: Icon.Log    },
   ];
 
   return (
@@ -171,7 +256,7 @@ function AdminSidebar({ view, setView, onLogout, user }) {
         <p style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.8px', padding: '4px 10px 8px', margin: 0 }}>
           Management
         </p>
-        {nav.map(({ id, label, Icon: I }) => {
+        {nav.map(({ id, label, Icon: I, badge }) => {
           const active = view === id;
           return (
             <button
@@ -183,12 +268,24 @@ function AdminSidebar({ view, setView, onLogout, user }) {
                 fontSize: 13, fontWeight: active ? 600 : 500, marginBottom: 2,
                 background: active ? '#EEF2FF' : 'transparent',
                 color: active ? '#4F46E5' : '#6B7280',
-                transition: 'all 0.15s',
+                transition: 'all 0.15s', justifyContent: 'space-between',
               }}
               onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#1F2937'; } }}
               onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B7280'; } }}
             >
-              <I /> {label}
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <I /> {label}
+              </span>
+              {/* ✅ Live badge — shows count of pending registrations */}
+              {badge > 0 && (
+                <span style={{
+                  background: '#EF4444', color: '#fff', fontSize: 10, fontWeight: 800,
+                  padding: '2px 7px', borderRadius: 20, minWidth: 18, textAlign: 'center',
+                  animation: 'pulse 2s infinite',
+                }}>
+                  {badge}
+                </span>
+              )}
             </button>
           );
         })}
@@ -215,6 +312,8 @@ function AdminSidebar({ view, setView, onLogout, user }) {
           </button>
         </div>
       </div>
+
+      <style>{`@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.7; } }`}</style>
     </aside>
   );
 }
@@ -268,7 +367,6 @@ function AnalyticsView({ user }) {
 
   return (
     <div>
-      {/* Welcome banner */}
       <div style={{
         background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
         borderRadius: 16, padding: '24px 28px', marginBottom: 24, color: '#fff',
@@ -284,7 +382,6 @@ function AnalyticsView({ user }) {
       {error && <ErrorBanner message={error} />}
       {loading ? <Spinner /> : (
         <>
-          {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 14, marginBottom: 24 }}>
             <StatCard label="Total Employees" value={stats?.total_users} sub="Registered accounts" iconBg="#EEF2FF">
               <span style={{ color: '#4F46E5' }}><Icon.Users /></span>
@@ -300,9 +397,7 @@ function AnalyticsView({ user }) {
             </StatCard>
           </div>
 
-          {/* Two-column */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-            {/* Top contributors */}
             <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid #F3F4F6' }}>
                 <h4 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0 }}>🏆 Top Contributors</h4>
@@ -329,7 +424,6 @@ function AnalyticsView({ user }) {
               )}
             </div>
 
-            {/* Department stats */}
             <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid #F3F4F6' }}>
                 <h4 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0 }}>📊 Department Engagement</h4>
@@ -366,12 +460,328 @@ function AnalyticsView({ user }) {
   );
 }
 
+// ─── ✅ NEW: Pending Approvals View ────────────────────────────────────────────
+// Replaces the old Python script workflow entirely.
+// Admin can review who registered, then approve or reject inline — no terminal needed.
+function PendingApprovalsView({ onPendingCountChange }) {
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState('');
+  const [processing, setProcessing]     = useState(null);   // userId currently being actioned
+  const [toast, setToast]               = useState(null);
+
+  // Reject dialog state
+  const [rejectDialog, setRejectDialog] = useState({ open: false, user: null });
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  // Approve dialog state
+  const [approveDialog, setApproveDialog] = useState({ open: false, user: null });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await adminAPI.getPendingUsers();
+      const data = res.data || [];
+      setPendingUsers(data);
+      onPendingCountChange(data.length);
+    } catch {
+      setError('Failed to load pending users. Make sure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  }, [onPendingCountChange]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // ── Approve ──────────────────────────────────────────────────────────────
+  const confirmApprove = (user) => setApproveDialog({ open: true, user });
+
+  const handleApprove = async () => {
+    const { user } = approveDialog;
+    setApproveDialog({ open: false, user: null });
+    setProcessing(user.id);
+    try {
+      await adminAPI.approveUser(user.id);
+      const updated = pendingUsers.filter(u => u.id !== user.id);
+      setPendingUsers(updated);
+      onPendingCountChange(updated.length);
+      showToast(`${user.name} approved — they can now log in!`);
+    } catch (err) {
+      showToast(`Failed to approve: ${err.response?.data?.detail || err.message}`, 'error');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  // ── Reject ───────────────────────────────────────────────────────────────
+  const confirmReject = (user) => {
+    setRejectionReason('');
+    setRejectDialog({ open: true, user });
+  };
+
+  const handleReject = async () => {
+    const { user } = rejectDialog;
+    setRejectDialog({ open: false, user: null });
+    setProcessing(user.id);
+    try {
+      await adminAPI.rejectUser(user.id);
+      const updated = pendingUsers.filter(u => u.id !== user.id);
+      setPendingUsers(updated);
+      onPendingCountChange(updated.length);
+      showToast(`${user.name}'s registration has been rejected.`, 'error');
+    } catch (err) {
+      showToast(`Failed to reject: ${err.response?.data?.detail || err.message}`, 'error');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  return (
+    <div>
+      {/* Section header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+        <div>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 3px 0' }}>
+            Pending Approvals
+          </h3>
+          <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>
+            Review new registrations — approve or reject access
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {pendingUsers.length > 0 && (
+            <Badge label={`${pendingUsers.length} waiting`} color="#DC2626" bg="#FEF2F2" />
+          )}
+          <button
+            onClick={load}
+            style={{
+              border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8,
+              padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: '#374151',
+            }}
+          >
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* How it works banner (shown when there are no pending yet — helps team understand flow) */}
+      {!loading && !error && pendingUsers.length === 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, #EEF2FF, #F0FDF4)',
+          border: '1px solid #C7D2FE', borderRadius: 14,
+          padding: '32px 28px', textAlign: 'center', marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#374151', margin: '0 0 8px 0' }}>
+            All clear — no pending approvals
+          </h3>
+          <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 20px 0', lineHeight: 1.6 }}>
+            When someone registers, they'll appear here.<br/>
+            Approve them to grant access, or reject to deny.
+          </p>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 24,
+            background: '#fff', borderRadius: 10, padding: '14px 24px',
+            border: '1px solid #E5E7EB',
+          }}>
+            {[
+              { icon: '📝', step: '1. User registers' },
+              { icon: '⏳', step: '2. Status: pending' },
+              { icon: '✅', step: '3. Admin approves here' },
+              { icon: '🔓', step: '4. User can log in' },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</div>
+                <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 500 }}>{s.step}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {error && <ErrorBanner message={error} />}
+      {loading && <Spinner />}
+
+      {/* Pending users table */}
+      {!loading && pendingUsers.length > 0 && (
+        <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                {['User', 'Email', 'Department', 'Registered', 'Actions'].map((h, i) => (
+                  <th key={h} style={{
+                    padding: '12px 18px', textAlign: i === 4 ? 'right' : 'left',
+                    fontSize: 11, fontWeight: 700, color: '#9CA3AF',
+                    textTransform: 'uppercase', letterSpacing: '0.5px',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {pendingUsers.map((user, idx) => {
+                const busy = processing === user.id;
+                return (
+                  <tr key={user.id} style={{
+                    borderBottom: idx < pendingUsers.length - 1 ? '1px solid #F3F4F6' : 'none',
+                    background: busy ? '#FEFCE8' : '#fff',
+                    transition: 'background 0.2s',
+                  }}>
+                    {/* Name + avatar */}
+                    <td style={{ padding: '14px 18px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0,
+                        }}>
+                          {initials(user.name)}
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: '0 0 3px 0' }}>
+                            {user.name}
+                          </p>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, color: '#D97706',
+                            background: '#FFFBEB', border: '1px solid #FDE68A',
+                            padding: '2px 7px', borderRadius: 4,
+                          }}>
+                            ⏳ PENDING
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Email */}
+                    <td style={{ padding: '14px 18px', fontSize: 13, color: '#6B7280' }}>
+                      {user.email}
+                    </td>
+
+                    {/* Department */}
+                    <td style={{ padding: '14px 18px', fontSize: 13, color: '#6B7280' }}>
+                      {user.department || '—'}
+                    </td>
+
+                    {/* Registered date */}
+                    <td style={{ padding: '14px 18px', fontSize: 12, color: '#9CA3AF' }}>
+                      {user.joined_at
+                        ? new Date(user.joined_at).toLocaleDateString('en-GB', {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                          })
+                        : '—'}
+                    </td>
+
+                    {/* Actions */}
+                    <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => confirmApprove(user)}
+                          disabled={busy}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            padding: '7px 16px', borderRadius: 7, border: 'none',
+                            background: busy ? '#D1FAE5' : '#10B981', color: '#fff',
+                            fontSize: 12, fontWeight: 700,
+                            cursor: busy ? 'wait' : 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => { if (!busy) e.currentTarget.style.background = '#059669'; }}
+                          onMouseLeave={e => { if (!busy) e.currentTarget.style.background = '#10B981'; }}
+                        >
+                          <Icon.Check />
+                          {busy ? 'Processing…' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => confirmReject(user)}
+                          disabled={busy}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            padding: '7px 16px', borderRadius: 7,
+                            border: '1px solid #FECACA',
+                            background: busy ? '#FEF2F2' : '#fff', color: '#DC2626',
+                            fontSize: 12, fontWeight: 700,
+                            cursor: busy ? 'wait' : 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => { if (!busy) e.currentTarget.style.background = '#FEF2F2'; }}
+                          onMouseLeave={e => { if (!busy) e.currentTarget.style.background = '#fff'; }}
+                        >
+                          <Icon.X />
+                          {busy ? 'Processing…' : 'Reject'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Approve confirmation dialog ───────────────────────────────────── */}
+      <ConfirmDialog
+        isOpen={approveDialog.open}
+        title={`Approve ${approveDialog.user?.name}?`}
+        message={`${approveDialog.user?.email} will be granted access to BragBoard and can log in immediately.`}
+        confirmLabel="✓ Yes, Approve"
+        confirmColor="#10B981"
+        onConfirm={handleApprove}
+        onCancel={() => setApproveDialog({ open: false, user: null })}
+      />
+
+      {/* ── Reject confirmation dialog (with optional reason) ────────────── */}
+      <ConfirmDialog
+        isOpen={rejectDialog.open}
+        title={`Reject ${rejectDialog.user?.name}?`}
+        message={`${rejectDialog.user?.email} will not be able to access BragBoard.`}
+        confirmLabel="✕ Yes, Reject"
+        confirmColor="#EF4444"
+        onConfirm={handleReject}
+        onCancel={() => setRejectDialog({ open: false, user: null })}
+      >
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>
+            Reason (optional)
+          </label>
+          <textarea
+            value={rejectionReason}
+            onChange={e => setRejectionReason(e.target.value)}
+            placeholder="e.g. Not an employee, duplicate account…"
+            rows={2}
+            style={{
+              width: '100%', border: '1px solid #E5E7EB', borderRadius: 8,
+              padding: '8px 12px', fontSize: 13, outline: 'none', resize: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+      </ConfirmDialog>
+
+      <Toast toast={toast} />
+    </div>
+  );
+}
+
 // ─── User Management view ─────────────────────────────────────────────────────
 function UserManagementView() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [changingId, setChangingId] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, user: null, newRole: '' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -383,15 +793,21 @@ function UserManagementView() {
 
   useEffect(() => { load(); }, [load]);
 
-  const toggleRole = async (u) => {
+  const promptToggleRole = (u) => {
     const newRole = u.role === 'admin' ? 'employee' : 'admin';
-    if (!window.confirm(`Change ${u.name}'s role to "${newRole}"?`)) return;
-    setChangingId(u.id);
+    setConfirmDialog({ open: true, user: u, newRole });
+  };
+
+  const handleToggleRole = async () => {
+    const { user, newRole } = confirmDialog;
+    setConfirmDialog({ open: false, user: null, newRole: '' });
+    setChangingId(user.id);
     try {
-      await adminAPI.changeUserRole(u.id, newRole);
-      setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, role: newRole } : x));
+      await adminAPI.changeUserRole(user.id, newRole);
+      setUsers((prev) => prev.map((x) => x.id === user.id ? { ...x, role: newRole } : x));
+      showToast(`${user.name}'s role changed to ${newRole}.`);
     } catch {
-      alert('Role change failed. You may not be able to change your own role.');
+      showToast('Role change failed. You cannot change your own role.', 'error');
     } finally {
       setChangingId(null);
     }
@@ -413,7 +829,7 @@ function UserManagementView() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
-                {['User', 'Department', 'Role', 'Joined', 'Action'].map((h) => (
+                {['User', 'Department', 'Role', 'Status', 'Joined', 'Action'].map((h) => (
                   <th key={h} style={{ padding: '11px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {h}
                   </th>
@@ -440,13 +856,20 @@ function UserManagementView() {
                       bg={u.role === 'admin' ? '#FEF2F2' : '#EEF2FF'}
                     />
                   </td>
+                  <td style={{ padding: '13px 18px' }}>
+                    <Badge
+                      label={u.status || 'approved'}
+                      color={u.status === 'pending' ? '#D97706' : u.status === 'suspended' ? '#DC2626' : '#059669'}
+                      bg={u.status === 'pending' ? '#FFFBEB' : u.status === 'suspended' ? '#FEF2F2' : '#F0FDF4'}
+                    />
+                  </td>
                   <td style={{ padding: '13px 18px', fontSize: 12, color: '#9CA3AF' }}>
                     {u.joined_at ? new Date(u.joined_at).toLocaleDateString() : '—'}
                   </td>
                   <td style={{ padding: '13px 18px' }}>
                     <button
                       disabled={changingId === u.id}
-                      onClick={() => toggleRole(u)}
+                      onClick={() => promptToggleRole(u)}
                       style={{
                         fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 7,
                         border: `1px solid ${u.role === 'admin' ? '#FECACA' : '#C7D2FE'}`,
@@ -467,6 +890,17 @@ function UserManagementView() {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        title={`Change role to "${confirmDialog.newRole}"?`}
+        message={`${confirmDialog.user?.name} will ${confirmDialog.newRole === 'admin' ? 'gain admin access to this dashboard' : 'lose admin access'}.`}
+        confirmLabel="Confirm"
+        confirmColor="#4F46E5"
+        onConfirm={handleToggleRole}
+        onCancel={() => setConfirmDialog({ open: false, user: null, newRole: '' })}
+      />
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -478,6 +912,13 @@ function ModerationView() {
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
   const [search, setSearch] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   useEffect(() => {
     adminAPI.listShoutouts(100)
@@ -486,14 +927,16 @@ function ModerationView() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Permanently delete this shoutout?')) return;
+  const handleDelete = async () => {
+    const id = deleteDialog.id;
+    setDeleteDialog({ open: false, id: null });
     setDeletingId(id);
     try {
       await adminAPI.deleteShoutout(id);
       setShoutouts((prev) => prev.filter((s) => s.id !== id));
+      showToast('Shoutout deleted.');
     } catch {
-      alert('Delete failed — shoutout may already be removed.');
+      showToast('Delete failed — shoutout may already be removed.', 'error');
     } finally {
       setDeletingId(null);
     }
@@ -515,10 +958,7 @@ function ModerationView() {
           placeholder="Search…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            border: '1px solid #E5E7EB', borderRadius: 8, padding: '7px 12px',
-            fontSize: 13, outline: 'none', width: 200,
-          }}
+          style={{ border: '1px solid #E5E7EB', borderRadius: 8, padding: '7px 12px', fontSize: 13, outline: 'none', width: 200 }}
         />
       </div>
 
@@ -556,9 +996,7 @@ function ModerationView() {
                     {relativeTime(s.created_at)}
                   </span>
                 </div>
-                <p style={{ fontSize: 13, color: '#374151', margin: '0 0 8px 0', lineHeight: 1.5 }}>
-                  {s.message}
-                </p>
+                <p style={{ fontSize: 13, color: '#374151', margin: '0 0 8px 0', lineHeight: 1.5 }}>{s.message}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Badge label={`❤️ ${s.likes}`} color="#DC2626" bg="#FEF2F2" />
                   {s.tags && <Badge label={s.tags} color="#6B7280" bg="#F3F4F6" />}
@@ -566,7 +1004,7 @@ function ModerationView() {
               </div>
               <button
                 disabled={deletingId === s.id}
-                onClick={() => handleDelete(s.id)}
+                onClick={() => setDeleteDialog({ open: true, id: s.id })}
                 style={{
                   padding: '6px 12px', borderRadius: 8, border: '1px solid #FECACA',
                   background: '#FEF2F2', color: '#DC2626', cursor: 'pointer',
@@ -582,6 +1020,17 @@ function ModerationView() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteDialog.open}
+        title="Delete this shoutout?"
+        message="This action is permanent and cannot be undone."
+        confirmLabel="Delete"
+        confirmColor="#DC2626"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteDialog({ open: false, id: null })}
+      />
+      <Toast toast={toast} />
     </div>
   );
 }
@@ -610,7 +1059,7 @@ function SystemLogsView() {
           <p style={{ fontSize: 40, margin: '0 0 10px 0' }}>📋</p>
           <p style={{ fontSize: 15, fontWeight: 600, color: '#374151', margin: '0 0 4px 0' }}>No logs yet</p>
           <p style={{ fontSize: 13, color: '#9CA3AF' }}>
-            Admin actions (role changes, deletions) will appear here once the admin_logs table is migrated.
+            Admin actions (approvals, role changes, deletions) will appear here.
           </p>
         </div>
       ) : (
@@ -641,10 +1090,11 @@ function SystemLogsView() {
 // ─── Top header bar ───────────────────────────────────────────────────────────
 function TopBar({ view, user }) {
   const titles = {
-    analytics: { t: 'Analytics Overview', s: 'Monitor team recognition metrics' },
-    users: { t: 'User Management', s: 'Manage members and roles' },
-    moderation: { t: 'Moderation Queue', s: 'Review and remove content' },
-    logs: { t: 'System Logs', s: 'Track admin actions' },
+    analytics:  { t: 'Analytics Overview',     s: 'Monitor team recognition metrics' },
+    approvals:  { t: 'Pending Approvals',       s: 'Review and approve new registrations' },
+    users:      { t: 'User Management',         s: 'Manage members and roles' },
+    moderation: { t: 'Moderation Queue',        s: 'Review and remove content' },
+    logs:       { t: 'System Logs',             s: 'Track admin actions' },
   };
   const { t, s } = titles[view] || titles.analytics;
 
@@ -674,16 +1124,26 @@ function AdminDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [view, setView] = useState('analytics');
+  // ✅ Shared pending count — sidebar badge + fetched from PendingApprovalsView
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     if (user && user.role !== 'admin') navigate('/dashboard');
   }, [user, navigate]);
+
+  // Fetch pending count on mount so the badge shows even before visiting the tab
+  useEffect(() => {
+    adminAPI.getPendingUsers()
+      .then(r => setPendingCount((r.data || []).length))
+      .catch(() => {}); // silently ignore — badge just stays at 0
+  }, []);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const renderView = () => {
     switch (view) {
       case 'analytics':  return <AnalyticsView user={user} />;
+      case 'approvals':  return <PendingApprovalsView onPendingCountChange={setPendingCount} />;
       case 'users':      return <UserManagementView />;
       case 'moderation': return <ModerationView />;
       case 'logs':       return <SystemLogsView />;
@@ -693,7 +1153,13 @@ function AdminDashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F1F5F9', display: 'flex' }}>
-      <AdminSidebar view={view} setView={setView} onLogout={handleLogout} user={user} />
+      <AdminSidebar
+        view={view}
+        setView={setView}
+        onLogout={handleLogout}
+        user={user}
+        pendingCount={pendingCount}
+      />
       <main style={{ paddingLeft: 240, flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <TopBar view={view} user={user} />
         <div style={{ flex: 1, padding: '24px 28px', maxWidth: 1080, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
