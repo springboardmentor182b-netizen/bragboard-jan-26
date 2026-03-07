@@ -1,135 +1,209 @@
+"""
+Admin API endpoints.
+All routes are protected by the `get_current_admin_user` dependency.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-
 from src.database.connection import get_db
-from src.auth.service import get_current_user
-from src.entities.user import User, UserRole
-from src.admin import service
-from src.admin.models import AdminLogResponse, ChangeRoleRequest
+from src.auth.dependencies import get_current_admin_user
+from src.entities.user import User
+from src.admin import service, models
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
-def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Guard: only admins may proceed."""
-    if current_user.role != UserRole.admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
-        )
-    return current_user
+# ═══════════════════════════════════════════════════════════════════════════
+#  ANALYTICS
+# ═══════════════════════════════════════════════════════════════════════════
 
-
-# ─── Analytics Endpoints ──────────────────────────────────────────────────────
-
-@router.get("/stats")
-def get_stats(admin: User = Depends(require_admin), db: Session = Depends(get_db)):
-    """
-    Platform-wide overview stats.
-    Returns total_users, total_shoutouts, total_likes, active_this_week.
-    """
-    return service.get_platform_stats(db)
-
-
-@router.get("/analytics/top-contributors")
-def top_contributors(
-    limit: int = Query(10, ge=1, le=50),
-    admin: User = Depends(require_admin),
+@router.get("/analytics", response_model=models.AnalyticsResponse)
+def get_analytics(
     db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
 ):
-    """Users ranked by shoutouts sent."""
-    return service.get_top_contributors(db, limit)
+    """Dashboard analytics: aggregate stats, top performers, and category breakdown."""
+    stats = service.get_analytics_stats(db)
+    top_performers = service.get_top_performers(db)
+    category_stats = service.get_category_stats(db)
+
+    return {
+        "stats": stats,
+        "top_performers": top_performers,
+        "category_stats": category_stats,
+    }
 
 
-@router.get("/analytics/most-appreciated")
-def most_appreciated(
-    limit: int = Query(10, ge=1, le=50),
-    admin: User = Depends(require_admin),
+# ═══════════════════════════════════════════════════════════════════════════
+#  USER MANAGEMENT
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/users", response_model=List[models.UserAdminResponse])
+def get_all_users(
     db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
 ):
-    """Users ranked by shoutouts received."""
-    return service.get_most_appreciated(db, limit)
+    """List all users with full details for admin management."""
+    return service.get_all_users_admin(db)
 
 
-@router.get("/analytics/departments")
-def department_stats(
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Engagement stats broken down by department."""
-    return service.get_department_stats(db)
-
-
-# ─── User Management Endpoints ────────────────────────────────────────────────
-
-@router.get("/users")
-def list_users(admin: User = Depends(require_admin), db: Session = Depends(get_db)):
-    """Return all users (id, name, email, department, role, joined_at)."""
-    return service.list_all_users(db)
-
-
-@router.patch("/users/{user_id}/role")
-def change_role(
+@router.put("/users/{user_id}/role", response_model=models.UserAdminResponse)
+def change_user_role(
     user_id: int,
-    body: ChangeRoleRequest,
-    admin: User = Depends(require_admin),
+    role_data: models.UserRoleUpdate,
     db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
 ):
-    """
-    Promote or demote a user.
-    Body: { "role": "admin" | "employee" }
-    """
+    """Change a user's role (employee ↔ admin)."""
+    if role_data.role not in ("employee", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Role must be 'employee' or 'admin'",
+        )
+
+    # Prevent admin from demoting themselves
+    if user_id == admin.id and role_data.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot demote yourself",
+        )
+
+    result = service.update_user_role(db, user_id, role_data.role)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Log the action
+    service.log_admin_action(
+        db, admin.id, "change_role", "user", user_id,
+        f"Changed role to {role_data.role}",
+    )
+
+    return result
+
+
+@router.delete("/users/{user_id}", response_model=models.UserDeleteResponse)
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
+):
+    """Delete a user account."""
+    # Prevent admin from deleting themselves
     if user_id == admin.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Admins cannot change their own role",
+            detail="You cannot delete your own account",
         )
-    try:
-        updated = service.change_user_role(db, user_id, body.role)
-        service.log_admin_action(db, admin.id, f"Changed role to {body.role}", user_id, "user")
-        return updated
-    except LookupError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    # Get user info before deletion for audit log
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    target_name = target_user.name
+    success = service.delete_user(db, user_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Log the action
+    service.log_admin_action(
+        db, admin.id, "delete_user", "user", user_id,
+        f"Deleted user: {target_name}",
+    )
+
+    return {"message": f"User '{target_name}' deleted successfully", "deleted_user_id": user_id}
 
 
-# ─── Moderation Endpoints ────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+#  MODERATION
+# ═══════════════════════════════════════════════════════════════════════════
 
-@router.get("/shoutouts")
-def list_shoutouts(
-    limit: int = Query(50, ge=1, le=200),
-    admin: User = Depends(require_admin),
+@router.get("/moderation", response_model=List[models.FlaggedShoutoutResponse])
+def get_moderation_queue(
     db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
 ):
-    """All shoutouts with sender/recipient details — for moderation review."""
-    return service.list_all_shoutouts(db, limit)
+    """Get all flagged shoutouts for review."""
+    return service.get_flagged_shoutouts(db)
+
+
+@router.get("/moderation/all", response_model=List[models.FlaggedShoutoutResponse])
+def get_all_shoutouts_for_moderation(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
+):
+    """Get ALL shoutouts (for flagging from the admin panel)."""
+    return service.get_all_shoutouts_admin(db)
+
+
+@router.put("/shoutouts/{shoutout_id}/flag", response_model=models.FlagActionResponse)
+def flag_shoutout(
+    shoutout_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
+):
+    """Flag a shoutout for moderation."""
+    result = service.flag_shoutout(db, shoutout_id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shoutout not found")
+
+    service.log_admin_action(
+        db, admin.id, "flag_shoutout", "shoutout", shoutout_id,
+        "Flagged shoutout for review",
+    )
+
+    return result
+
+
+@router.put("/shoutouts/{shoutout_id}/unflag", response_model=models.FlagActionResponse)
+def unflag_shoutout(
+    shoutout_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
+):
+    """Remove flag from a shoutout (approve it)."""
+    result = service.unflag_shoutout(db, shoutout_id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shoutout not found")
+
+    service.log_admin_action(
+        db, admin.id, "unflag_shoutout", "shoutout", shoutout_id,
+        "Approved shoutout (removed flag)",
+    )
+
+    return result
 
 
 @router.delete("/shoutouts/{shoutout_id}")
 def delete_shoutout(
     shoutout_id: int,
-    admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
 ):
-    """Hard-delete a shoutout (moderation action)."""
-    try:
-        result = service.delete_shoutout(db, shoutout_id)
-        service.log_admin_action(db, admin.id, "Deleted shoutout", shoutout_id, "shoutout")
-        return result
-    except LookupError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    """Permanently delete a shoutout."""
+    success = service.delete_shoutout(db, shoutout_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shoutout not found")
+
+    service.log_admin_action(
+        db, admin.id, "delete_shoutout", "shoutout", shoutout_id,
+        "Deleted shoutout permanently",
+    )
+
+    return {"message": "Shoutout deleted successfully", "deleted_shoutout_id": shoutout_id}
 
 
-# ─── Admin Logs Endpoint ─────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+#  AUDIT LOGS
+# ═══════════════════════════════════════════════════════════════════════════
 
-@router.get("/logs", response_model=List[AdminLogResponse])
-def get_logs(
+@router.get("/logs", response_model=List[models.AuditLogResponse])
+def get_audit_logs(
     limit: int = Query(50, ge=1, le=200),
-    admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin_user),
 ):
-    """Recent admin action log entries."""
-    return service.get_admin_logs(db, limit)
+    """Get recent admin audit logs."""
+    return service.get_audit_logs(db, limit)

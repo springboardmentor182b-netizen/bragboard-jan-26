@@ -1,59 +1,41 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# Import all entity models so they are registered with Base
-import src.entities  # noqa: F401
-
-from src.database.connection import engine
-from src.database.core import create_tables
-
+from src.database.connection import Base, engine
 from src.auth.controller import router as auth_router
-from src.users.controller import router as users_router
-from src.shoutouts.controller import router as shoutouts_router
-from src.comments.controller import router as comments_router
-from src.reactions.controller import router as reactions_router
-from src.reports.controller import router as reports_router
-from src.admin.controller import router as admin_router
 from src.leaderboard.controller import router as leaderboard_router
+from src.shoutouts.controller import router as shoutouts_router
+from src.users.controller import router as users_router  # ← ADDED
+from src.admin.controller import router as admin_router
 
+# Import all entities so SQLAlchemy registers them before create_all
+from src.entities import user, shoutout, audit_log  # noqa: F401
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Startup: create all database tables."""
-    create_tables(engine)
-    yield
-
+# Create all tables on startup
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="BragBoard API",
-    description="Peer-recognition shoutout platform",
-    version="1.0.0",
-    lifespan=lifespan,
+    description="Internal Employee Recognition Platform",
+    version="1.0.0"
 )
 
-# CORS — allow all origins in development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mount all routes
+# Register all routers
 app.include_router(auth_router)
-app.include_router(users_router)
-app.include_router(shoutouts_router)
-app.include_router(comments_router)
-app.include_router(reactions_router)
-app.include_router(reports_router)
-app.include_router(admin_router)
 app.include_router(leaderboard_router)
+app.include_router(shoutouts_router, prefix="/shoutouts", tags=["Shoutouts"])
+app.include_router(users_router, prefix="/users", tags=["Users"])  # ← ADDED
+app.include_router(admin_router)  # Admin endpoints at /admin/*
 
 
-@app.get("/", tags=["Root"])
+@app.get("/")
 def root():
     return {
         "message": "Welcome to BragBoard API",
@@ -62,6 +44,6 @@ def root():
     }
 
 
-@app.get("/health", tags=["Health"])
+@app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "healthy"}

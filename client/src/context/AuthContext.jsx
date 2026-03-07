@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
   };
 
-
   // Call this after role changes to update stored user without full re-login
   const refreshUser = (updatedUser) => {
     setUser(updatedUser);
