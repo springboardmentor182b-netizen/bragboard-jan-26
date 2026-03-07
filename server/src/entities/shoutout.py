@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.orm import relationship  # 1. Added this import
 from datetime import datetime
 from src.database.core import Base
 
@@ -10,3 +11,6 @@ class Shoutout(Base):
     receiver = Column(String)
     content = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # 2. ADD THIS LINE: This creates the "Two-Way Street" link to the Reports table
+    reports = relationship("Report", back_populates="shoutout")
