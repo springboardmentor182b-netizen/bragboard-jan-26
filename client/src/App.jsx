@@ -4,22 +4,16 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import ForgotPassword from './pages/forgotpassword';
-import UserManagement from './pages/UserManagement';
-import AdminLayout from './layout/AdminLayout';
+import ForgotPassword from './pages/forgotpassword';  // ← lowercase
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, user, loading } = useAuth();
-  if (loading) return null;
-  const authed = typeof isAuthenticated === 'function' ? isAuthenticated() : !!user;
-  return authed ? children : <Navigate to="/login" />;
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated() ? children : <Navigate to="/login" />;
 }
 
 function AdminRoute({ children }) {
-  const { isAuthenticated, user, loading } = useAuth();
-  if (loading) return null;
-  const authed = typeof isAuthenticated === 'function' ? isAuthenticated() : !!user;
-  if (!authed) return <Navigate to="/login" />;
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated()) return <Navigate to="/login" />;
   if (user?.role !== 'admin') return <Navigate to="/dashboard" />;
   return children;
 }
@@ -39,28 +33,17 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/admin-dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-
-      {/* Admin panel (layout-based) */}
-      <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-        <Route index element={<Navigate to="users" replace />} />
-        <Route path="users" element={<UserManagement />} />
-      </Route>
-
-      {/* Convenience redirects */}
-      <Route path="/usermanagement" element={<Navigate to="/admin/users" replace />} />
-      <Route path="/signin" element={<Navigate to="/login" replace />} />
-      <Route path="/signup" element={<Navigate to="/register" replace />} />
     </Routes>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <AppRoutes />
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

@@ -1,25 +1,75 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import '../styles/theme.css';
 
-const API_URL = '/api';
-
-// ─── SVG Icons ────────────────────────────────────────────────────────────────
-function HomeIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" /></svg>; }
-function UserIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>; }
-function TrophyIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 15l-2 5h4l-2-5zm0 0a5 5 0 005-5V4H7v6a5 5 0 005 5zM7 4H4v3a3 3 0 003 3m10-6h3v3a3 3 0 01-3 3" /></svg>; }
-function UsersIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2m22 0v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75M9 11a4 4 0 100-8 4 4 0 000 8z" /></svg>; }
-function PlusIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" /></svg>; }
-function HeartIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>; }
-function SearchIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>; }
-function LogOutIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9" /></svg>; }
+// ─── Icons (inline SVG) ──────────────────────────────────────────────────────
+const HomeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+);
+const UserIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+const TrophyIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+    <path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+    <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+  </svg>
+);
+const UsersIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+);
+const PlusIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14"/><path d="M12 5v14"/>
+  </svg>
+);
+const SearchIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+  </svg>
+);
+const HeartIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+  </svg>
+);
+const ChatIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const LogOutIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
+  </svg>
+);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const getInitials = (name) =>
   name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
-function DashboardSidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }) {
+function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }) {
   const navItems = [
     { id: 'feed', label: 'Activity Feed', icon: HomeIcon },
     { id: 'my-shoutouts', label: 'My Shout-outs', icon: UserIcon },
@@ -84,8 +134,8 @@ function DashboardSidebar({ currentView, onViewChange, onLogout, user, onCreateS
                 color: active ? '#4F46E5' : '#6B7280',
                 transition: 'all 0.15s ease'
               }}
-              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#1F2937'; } }}
-              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B7280'; } }}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#1F2937'; }}}
+              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B7280'; }}}
             >
               <Icon />
               {label}
@@ -137,6 +187,7 @@ function DashboardSidebar({ currentView, onViewChange, onLogout, user, onCreateS
 function ShoutoutCard({ shoutout }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(shoutout.likes || 0);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   // Normalise fields — handle both API format and any legacy format
   const authorName = shoutout.sender?.name || shoutout.author || 'Unknown';
@@ -156,7 +207,7 @@ function ShoutoutCard({ shoutout }) {
     await fetch(`${API_URL}/shoutouts/${shoutout.id}/like`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }).catch(() => { });
+    }).catch(() => {});
   };
 
   return (
@@ -240,6 +291,7 @@ function CreateShoutoutModal({ onClose, currentUser, onSuccess }) {
   const [tags, setTags] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   // Load all users to pick recipient from
   useEffect(() => {
@@ -371,6 +423,7 @@ function FeedView({ user }) {
   const [showModal, setShowModal] = useState(false);
   const [shoutouts, setShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const loadShoutouts = () => {
     fetch(`${API_URL}/shoutouts/`, {
@@ -384,7 +437,7 @@ function FeedView({ user }) {
   useEffect(() => { loadShoutouts(); }, []);
 
   const filtered = shoutouts.filter(s => {
-    const tagList = s.tags ? (Array.isArray(s.tags) ? s.tags : s.tags.split(',').map(t => t.trim())) : [];
+    const tagList = s.tags ? s.tags.split(',').map(t => t.trim()) : [];
     const matchFilter = filter === 'all' || tagList.some(t => t.toLowerCase() === filter.toLowerCase());
     const matchSearch = search === '' ||
       s.message?.toLowerCase().includes(search.toLowerCase()) ||
@@ -486,6 +539,7 @@ function FeedView({ user }) {
 function MyShoutoutsView({ user }) {
   const [shoutouts, setShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
     if (!user?.id) return;
@@ -521,6 +575,7 @@ function MyShoutoutsView({ user }) {
 function LeaderboardView() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const medals = ['🥇', '🥈', '🥉'];
 
   useEffect(() => {
@@ -581,12 +636,11 @@ function LeaderboardView() {
 function DepartmentsView() {
   const [depts, setDepts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const deptEmojis = { Engineering: '⚙️', Product: '🎯', Design: '🎨', Marketing: '📢', Sales: '💼', HR: '🤝' };
 
   useEffect(() => {
-    fetch(`${API_URL}/leaderboard/departments`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
+    fetch(`${API_URL}/leaderboard/departments`)
       .then(res => res.json())
       .then(data => { setDepts(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(err => { console.error('Departments fetch failed:', err); setLoading(false); });
@@ -630,14 +684,21 @@ function Dashboard() {
   const [currentView, setCurrentView] = useState('feed');
   const [showModal, setShowModal] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = () => { logout(); navigate('/login'); };
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'feed': return <FeedView user={user} />;
+      case 'my-shoutouts': return <MyShoutoutsView user={user} />;
+      case 'leaderboard': return <LeaderboardView />;
+      case 'departments': return <DepartmentsView />;
+      default: return <FeedView user={user} />;
+    }
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
-      <DashboardSidebar
+    <div style={{ minHeight: '100vh', background: '#F1F5F9', display: 'flex' }}>
+      <Sidebar
         currentView={currentView}
         onViewChange={setCurrentView}
         onLogout={handleLogout}
@@ -645,12 +706,10 @@ function Dashboard() {
         onCreateShoutout={() => setShowModal(true)}
       />
 
-      <main style={{ flex: 1, marginLeft: '256px', padding: '32px' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          {currentView === 'feed' && <FeedView user={user} />}
-          {currentView === 'my-shoutouts' && <MyShoutoutsView user={user} />}
-          {currentView === 'leaderboard' && <LeaderboardView />}
-          {currentView === 'departments' && <DepartmentsView />}
+      {/* Main Content */}
+      <main style={{ paddingLeft: '256px', flex: 1, minHeight: '100vh' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 32px' }}>
+          {renderView()}
         </div>
       </main>
 

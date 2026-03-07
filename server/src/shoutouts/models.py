@@ -1,16 +1,15 @@
-from datetime import datetime
-from typing import List, Optional
-
 from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime
 
 
 # ── Request schemas ─────────────────────────────────────────────────────────
 
 class ShoutoutCreate(BaseModel):
+    sender_id: int
     message: str
     recipient_ids: List[int]
-    tags: Optional[List[str]] = []
-
+    tags: List[str]
 
 
 # ── Nested summary schemas ───────────────────────────────────────────────────
@@ -34,23 +33,14 @@ class RecipientSummary(BaseModel):
 
 # ── Response schemas ─────────────────────────────────────────────────────────
 
-class ShoutoutRecipientResponse(BaseModel):
-    id: int
-    recipient_id: int
-
-    class Config:
-        from_attributes = True
-
-
 class ShoutoutResponse(BaseModel):
     id: int
-    sender_id: int
-    sender: Optional[UserSummary] = None
+    sender: UserSummary
     message: str
     tags: Optional[str] = None
+    likes: Optional[int] = 0
     created_at: datetime
-    likes: int = 0
-    shoutout_recipients: List[ShoutoutRecipientResponse] = []
+    recipients: Optional[List[RecipientSummary]] = []
 
     class Config:
         from_attributes = True
