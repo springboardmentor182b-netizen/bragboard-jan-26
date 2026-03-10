@@ -1,14 +1,24 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AdminRoutes from './admin/adminRoutes';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import AdminPanel from './pages/AdminPanel';
+import Sidebar from './components/Sidebar'; // The file we created earlier
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path='/' element={<Navigate to='/admin' replace />} />
-        <Route path='/admin/*' element={<AdminRoutes />} />
-      </Routes>
-    </BrowserRouter>
+    <Router>
+      <div style={{ display: 'flex' }}>
+        {/* Sidebar will now stay on the left for all routes */}
+        <Sidebar /> 
+        
+        <div style={{ flex: 1, minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
+          <Routes>
+            {/* When you finish Home, it will go here */}
+            <Route path="/" element={<div>User Home Page (Coming Soon)</div>} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin/reports" element={<AdminPanel />} />
+          </Routes>
+        </div>
+      </div>
+    </Router>
   );
 }
 
