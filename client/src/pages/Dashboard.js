@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import CreateShoutOut from '../components/CreateShoutOut';
 import ShoutOutFeed from '../components/ShoutOutFeed';
+import { useAuth } from '../context/AuthContext';
 
 import Leaderboard from '../components/Leaderboard';
 import Profile from '../pages/Profile';
@@ -10,6 +11,7 @@ import Profile from '../pages/Profile';
 import MyShoutOuts from './MyShoutOuts';
 
 const Dashboard = () => {
+    const { user } = useAuth();
     return (
         <div className="min-h-screen bg-brand-light-bg">
             {/* Top Navigation Bar */}
@@ -24,9 +26,9 @@ const Dashboard = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3 cursor-pointer">
-                    <span className="font-semibold text-gray-700">John Doe</span>
+                    <span className="font-semibold text-gray-700">{user?.full_name || 'User'}</span>
                     <div className="w-10 h-10 rounded-full bg-brand-orange text-white flex items-center justify-center font-bold">
-                        JD
+                        {user?.full_name ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
                     </div>
                 </div>
             </header>

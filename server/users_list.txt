@@ -1,10 +1,7 @@
-Total users: 3
-EMAIL: jane@example.com
-USERNAME: jane_doe
+Total users: 2
+EMAIL: final_test@example.com
+USERNAME: final_test_user
 --------------------
-EMAIL: john@example.com
-USERNAME: john_smith
---------------------
-EMAIL: alex@example.com
-USERNAME: alex_jones
+EMAIL: ananyams2015@gmail.com
+USERNAME: ANANYA M S
 --------------------

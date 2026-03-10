@@ -15,10 +15,17 @@ class User(Base):
     profile_picture = Column(String, nullable=True)
     job_title = Column(String, default="Team Member")
     department = Column(String, default="General")
+    
+    password_hash = Column(String, nullable=False)
+    dob = Column(String, nullable=True) # Storing as string for simplicity, can use Date
+    work = Column(String, nullable=True)
+    company_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
 
     # Relationships
     sent_shoutouts = relationship("ShoutOut", back_populates="sender", foreign_keys="[ShoutOut.sender_id]")
     received_shoutouts = relationship("ShoutOut", back_populates="recipient", foreign_keys="[ShoutOut.recipient_id]")
+    security_questions = relationship("SecurityQuestion", back_populates="user", cascade="all, delete-orphan")
 
 class ShoutOut(Base):
     __tablename__ = "shoutouts"
@@ -67,4 +74,14 @@ class Report(Base):
 
     user = relationship("User")
     shoutout = relationship("ShoutOut", back_populates="reports")
+
+class SecurityQuestion(Base):
+    __tablename__ = "security_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    question = Column(String)
+    answer_hash = Column(String)
+
+    user = relationship("User", back_populates="security_questions")
 
