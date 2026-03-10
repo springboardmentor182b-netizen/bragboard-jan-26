@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const CURRENT_USER_ID = 1;
 
-const CreateShoutout = () => {
+const CreateShoutout = ({ currentUserId }) => {
   const [users, setUsers] = useState([]);
   const [tags, setTags] = useState([]);
   const [formData, setFormData] = useState({
@@ -20,19 +19,21 @@ const CreateShoutout = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/users/`);
+      const response = await fetch(`${API_BASE}/api/users/`);
       const data = await response.json();
-      setUsers(data.filter(u => u.id !== CURRENT_USER_ID));
+      const filteredUsers = Array.isArray(data) ? data.filter(u => u.id !== currentUserId) : [];
+      setUsers(filteredUsers);
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      setUsers([]);
     }
   };
 
   const fetchTags = async () => {
     try {
-      const response = await fetch(`${API_BASE}/shoutouts/tags`);
+      const response = await fetch(`${API_BASE}/api/shoutouts/tags`);
       const data = await response.json();
-      setTags(data);
+      setTags(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch tags:', error);
       setTags([
@@ -66,11 +67,11 @@ const CreateShoutout = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/shoutouts/`, {
+      const response = await fetch(`${API_BASE}/api/shoutouts/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sender_id: CURRENT_USER_ID,
+          sender_id: currentUserId,
           ...formData
         })
       });
@@ -124,23 +125,29 @@ const CreateShoutout = () => {
 
           <div className="mb-6">
             <label className="block text-[#213555] font-semibold mb-3">Choose employees to recognize</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-2 border border-gray-200 rounded-lg">
-              {users.map(user => (
-                <button
-                  key={user.id}
-                  type="button"
-                  onClick={() => toggleRecipient(user.id)}
-                  className={`text-left px-4 py-3 rounded-lg border-2 transition-all ${
-                    formData.recipient_ids.includes(user.id)
-                      ? 'border-[#213555] bg-[#213555] text-white'
-                      : 'border-gray-200 bg-white text-[#213555] hover:border-[#D8C4B6]'
-                  }`}
-                >
-                  <p className="font-semibold">{user.name}</p>
-                  <p className="text-xs opacity-80">({user.department})</p>
-                </button>
-              ))}
-            </div>
+            {users.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                {users.map(user => (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => toggleRecipient(user.id)}
+                    className={`text-left px-4 py-3 rounded-lg border-2 transition-all ${
+                      formData.recipient_ids.includes(user.id)
+                        ? 'border-[#213555] bg-[#213555] text-white'
+                        : 'border-gray-200 bg-white text-[#213555] hover:border-[#D8C4B6]'
+                    }`}
+                  >
+                    <p className="font-semibold">{user.name}</p>
+                    <p className="text-xs opacity-80">({user.department})</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-4 border border-gray-200 rounded-lg">
+                <p className="text-[#3E5879]">No users found. Please create users first.</p>
+              </div>
+            )}
             <p className="text-xs text-[#3E5879] mt-2">{formData.recipient_ids.length} employee(s) selected</p>
           </div>
 

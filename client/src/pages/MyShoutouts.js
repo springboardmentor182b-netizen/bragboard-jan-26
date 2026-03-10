@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const CURRENT_USER_ID = 1;
 
-const MyShoutouts = () => {
+const MyShoutouts = ({ currentUserId }) => {
   const [activeTab, setActiveTab] = useState('received');
   const [receivedShoutouts, setReceivedShoutouts] = useState([]);
   const [sentShoutouts, setSentShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchShoutouts();
-  }, []);
+    if (currentUserId) {
+      fetchShoutouts();
+    }
+  }, [currentUserId]);
 
   const fetchShoutouts = async () => {
     try {
       const [receivedRes, sentRes] = await Promise.all([
-        fetch(`${API_BASE}/shoutouts/user/${CURRENT_USER_ID}/received`),
-        fetch(`${API_BASE}/shoutouts/user/${CURRENT_USER_ID}/sent`)
+        fetch(`${API_BASE}/shoutouts/user/${currentUserId}/received`),
+        fetch(`${API_BASE}/shoutouts/user/${currentUserId}/sent`)
       ]);
       
       const receivedData = await receivedRes.json();
@@ -80,6 +81,14 @@ const MyShoutouts = () => {
       </div>
     </div>
   );
+
+  if (!currentUserId) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-[#3E5879]">Please log in to view your shoutouts.</p>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -8,6 +8,9 @@ import Leaderboard from './pages/Leaderboard';
 import MyProfile from './pages/MyProfile';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+// TODO: Replace with actual authentication
+// For now, using ID 1 as temporary current user
 const CURRENT_USER_ID = 1;
 
 function App() {
@@ -36,21 +39,23 @@ function App() {
   };
 
   const renderPage = () => {
+    const currentUserId = currentUser?.id || CURRENT_USER_ID;
+    
     switch(currentPage) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard currentUserId={currentUserId} />;
       case 'create':
-        return <CreateShoutout />;
+        return <CreateShoutout currentUserId={currentUserId} />;
       case 'feed':
         return <ShoutoutFeed />;
       case 'myshoutouts':
-        return <MyShoutouts />;
+        return <MyShoutouts currentUserId={currentUserId} />;
       case 'leaderboard':
-        return <Leaderboard />;
+        return <Leaderboard currentUserId={currentUserId} />;
       case 'profile':
-        return <MyProfile />;
+        return <MyProfile currentUserId={currentUserId} />;
       default:
-        return <Dashboard />;
+        return <Dashboard currentUserId={currentUserId} />;
     }
   };
 

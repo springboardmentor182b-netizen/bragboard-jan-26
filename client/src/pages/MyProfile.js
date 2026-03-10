@@ -2,29 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { Award, Send, Trophy, Calendar } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const CURRENT_USER_ID = 1;
 
-const MyProfile = () => {
+const MyProfile = ({ currentUserId }) => {
   const [userStats, setUserStats] = useState(null);
   const [receivedShoutouts, setReceivedShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (currentUserId) {
+      fetchProfile();
+    }
+  }, [currentUserId]);
 
   const fetchProfile = async () => {
     try {
       const [statsRes, receivedRes] = await Promise.all([
-        fetch(`${API_BASE}/users/${CURRENT_USER_ID}/stats`),
-        fetch(`${API_BASE}/shoutouts/user/${CURRENT_USER_ID}/received`)
+        fetch(`${API_BASE}/api/users/${currentUserId}/stats`),
+        fetch(`${API_BASE}/api/shoutouts/user/${currentUserId}/received`)
       ]);
       
       const statsData = await statsRes.json();
       const receivedData = await receivedRes.json();
       
       setUserStats(statsData);
-      setReceivedShoutouts(receivedData.slice(0, 3));
+      setReceivedShoutouts(Array.isArray(receivedData) ? receivedData.slice(0, 3) : []);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     }
@@ -41,6 +42,14 @@ const MyProfile = () => {
     </div>
   );
 
+  if (!currentUserId) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-[#3E5879]">Please log in to view your profile.</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="bg-white border-b border-gray-200 px-8 py-6">
@@ -52,22 +61,24 @@ const MyProfile = () => {
         <div className="flex justify-center items-center h-64">
           <div className="w-12 h-12 border-4 border-[#213555] border-t-transparent rounded-full animate-spin"></div>
         </div>
-      ) : userStats ? (
+      ) : userStats && userStats.user ? (
         <div className="p-8 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg p-6 border border-gray-200 text-center mb-6">
                 <div className="w-24 h-24 rounded-full bg-[#213555] flex items-center justify-center text-white font-bold text-3xl mx-auto mb-4">
-                  {userStats.user.name.split(' ').map(n => n[0]).join('')}
+                  {userStats.user.name ? userStats.user.name.split(' ').map(n => n[0]).join('') : 'U'}
                 </div>
-                <h2 className="text-2xl font-bold text-[#213555] mb-1">{userStats.user.name}</h2>
-                <p className="text-[#3E5879] mb-1">{userStats.user.email}</p>
-                <p className="text-sm font-semibold text-[#213555] mb-1">{userStats.user.job_title}</p>
-                <p className="text-sm text-[#3E5879] mb-4">{userStats.user.department}</p>
-                <div className="flex items-center justify-center gap-2 text-sm text-[#3E5879]">
-                  <Calendar className="w-4 h-4" />
-                  <span>Joined {new Date(userStats.user.joined_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                </div>
+                <h2 className="text-2xl font-bold text-[#213555] mb-1">{userStats.user.name || 'User'}</h2>
+                <p className="text-[#3E5879] mb-1">{userStats.user.email || ''}</p>
+                <p className="text-sm font-semibold text-[#213555] mb-1">{userStats.user.job_title || ''}</p>
+                <p className="text-sm text-[#3E5879] mb-4">{userStats.user.department || ''}</p>
+                {userStats.user.joined_at && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-[#3E5879]">
+                    <Calendar className="w-4 h-4" />
+                    <span>Joined {new Date(userStats.user.joined_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
+                )}
               </div>
 
               {userStats.top_tags && userStats.top_tags.length > 0 && (
@@ -99,19 +110,19 @@ const MyProfile = () => {
                 <StatBox
                   icon={Award}
                   label="Shoutouts Received"
-                  value={userStats.shoutouts_received}
+                  value={userStats.shoutouts_received || 0}
                   color="bg-[#213555]"
                 />
                 <StatBox
                   icon={Send}
                   label="Shoutouts Given"
-                  value={userStats.shoutouts_given}
+                  value={userStats.shoutouts_given || 0}
                   color="bg-[#3E5879]"
                 />
                 <StatBox
                   icon={Trophy}
                   label="Leaderboard Rank"
-                  value={`#${userStats.leaderboard_rank}`}
+                  value={`#${userStats.leaderboard_rank || 0}`}
                   color="bg-[#D8C4B6] text-[#213555]"
                 />
               </div>
@@ -133,15 +144,17 @@ const MyProfile = () => {
                       <div key={shoutout.id} className="p-4 bg-[#F5EFE7] rounded-lg">
                         <div className="flex items-start gap-3 mb-2">
                           <div className="w-10 h-10 rounded-full bg-[#213555] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                            {shoutout.sender.name.split(' ').map(n => n[0]).join('')}
+                            {shoutout.sender && shoutout.sender.name ? shoutout.sender.name.split(' ').map(n => n[0]).join('') : 'U'}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-[#213555]">{shoutout.sender.name} recognized you</p>
+                            <p className="font-semibold text-[#213555]">
+                              {shoutout.sender && shoutout.sender.name ? `${shoutout.sender.name} recognized you` : 'Someone recognized you'}
+                            </p>
                             <p className="text-sm text-[#213555] mt-1">{shoutout.message}</p>
                           </div>
                         </div>
                         <div className="flex gap-2 flex-wrap ml-13">
-                          {shoutout.tags.map((tag, idx) => (
+                          {shoutout.tags && shoutout.tags.map((tag, idx) => (
                             <span key={idx} className="px-2 py-1 bg-[#D8C4B6] text-[#213555] text-xs rounded-full font-medium">
                               {tag}
                             </span>

@@ -50,23 +50,32 @@ const Sidebar = ({ currentPage, setCurrentPage, currentUser }) => {
         </div>
       </nav>
 
-      {currentUser && (
-        <div className="p-4 border-t border-[#3E5879]">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-[#D8C4B6] flex items-center justify-center text-[#213555] font-bold text-sm">
-              {currentUser.name.split(' ').map(n => n[0]).join('')}
+      <div className="p-4 border-t border-[#3E5879]">
+        {currentUser ? (
+          <>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#D8C4B6] flex items-center justify-center text-[#213555] font-bold text-sm">
+                {currentUser.name ? currentUser.name.split(' ').map(n => n[0]).join('') : 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate">{currentUser.name || 'User'}</p>
+                <p className="text-xs text-[#D8C4B6] truncate">{currentUser.email || ''}</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{currentUser.name}</p>
-              <p className="text-xs text-[#D8C4B6] truncate">{currentUser.email}</p>
+            <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#3E5879] hover:bg-[#3E5879]/80 rounded-lg transition-colors">
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </>
+        ) : (
+          <div className="text-center">
+            <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center mx-auto mb-2">
+              <UserCircle className="w-6 h-6" />
             </div>
+            <p className="text-xs text-[#D8C4B6]">Loading user...</p>
           </div>
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#3E5879] hover:bg-[#3E5879]/80 rounded-lg transition-colors">
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
