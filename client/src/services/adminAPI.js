@@ -19,6 +19,8 @@ const adminAPI = {
     api.get(`/admin/shoutouts?limit=${limit}`),
   deleteShoutout: (shoutoutId) =>
     api.delete(`/admin/shoutouts/${shoutoutId}`),
+  getReports: () => api.get('/reports/'),
+  deleteReport: (reportId) => api.delete(`/reports/${reportId}`),
 
   // ── Logs ──────────────────────────────────────────────────────────────────
   getLogs: (limit = 50) => api.get(`/admin/logs?limit=${limit}`),

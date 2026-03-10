@@ -187,7 +187,7 @@ def list_all_users(db: Session) -> list[dict]:
             "name": u.name,
             "email": u.email,
             "department": u.department or "—",
-            "role": u.role.value if u.role else "employee",
+            "role": u.role if u.role else "employee",
             "joined_at": u.joined_at.isoformat() if u.joined_at else None,
         }
         for u in users
@@ -203,7 +203,7 @@ def change_user_role(db: Session, target_user_id: int, new_role: str) -> dict:
     if not user:
         raise LookupError(f"User {target_user_id} not found")
 
-    user.role = UserRole[new_role]
+    user.role = new_role
     db.commit()
     db.refresh(user)
 
@@ -211,7 +211,7 @@ def change_user_role(db: Session, target_user_id: int, new_role: str) -> dict:
         "id": user.id,
         "name": user.name,
         "email": user.email,
-        "role": user.role.value,
+        "role": user.role,
     }
 
 
@@ -228,7 +228,7 @@ def list_all_shoutouts(db: Session, limit: int = 50) -> list[dict]:
 
     result = []
     for s in shoutouts:
-        recipient_names = [r.recipient.name for r in s.recipients if r.recipient]
+        recipient_names = [r.recipient.name for r in s.shoutout_recipients if r.recipient]
         result.append(
             {
                 "id": s.id,

@@ -1,5 +1,10 @@
+import os
+
 from pydantic_settings import BaseSettings
 from typing import List, Optional
+
+# Compute absolute path to server/.env so it loads correctly regardless of CWD
+_ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".env")
 
 
 class Settings(BaseSettings):
@@ -12,7 +17,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "bragboard_user"
     POSTGRES_PASSWORD: str = "bragboard_pass"
     POSTGRES_DB: str = "bragboard_db"
-    POSTGRES_HOST: str = "db"
+    POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
 
     # JWT Configuration
@@ -40,7 +45,7 @@ class Settings(BaseSettings):
         return self.CORS_ORIGINS.split(",")
 
     class Config:
-        env_file = ".env"
+        env_file = _ENV_FILE
         extra = "ignore"
 
 

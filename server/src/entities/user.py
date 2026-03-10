@@ -1,9 +1,16 @@
+import enum
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Enum
 from sqlalchemy.orm import relationship
 
 from src.database.core import Base
+
+
+class UserRole(enum.Enum):
+    user = "user"
+    employee = "employee"
+    admin = "admin"
 
 
 class User(Base):

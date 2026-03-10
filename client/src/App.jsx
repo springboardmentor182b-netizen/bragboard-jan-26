@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ForgotPassword from './pages/forgotpassword';
 import UserManagement from './pages/UserManagement';
+import ModerationQueue from './pages/ModerationQueue';
 import AdminLayout from './layout/AdminLayout';
 
 function ProtectedRoute({ children }) {
@@ -44,6 +45,7 @@ function AppRoutes() {
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<Navigate to="users" replace />} />
         <Route path="users" element={<UserManagement />} />
+        <Route path="moderation" element={<ModerationQueue />} />
       </Route>
 
       {/* Convenience redirects */}
