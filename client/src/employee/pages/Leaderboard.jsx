@@ -5,7 +5,7 @@ export default function Leaderboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_API_URL}/users/leaderboard`)
+        fetch(`${process.env.REACT_APP_API_URL}/users/leaderboard`)
             .then(res => res.json())
             .then(data => {
                 setLeaderboard(data);

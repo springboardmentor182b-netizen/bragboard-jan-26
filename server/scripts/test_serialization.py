@@ -3,7 +3,7 @@ import os
 sys.path.append(os.getcwd())
 from src.core.database import SessionLocal
 from src.entities.shoutout import Shoutout
-from app.api.v1.shoutouts.schemas import ShoutoutOut
+from src.api.v1.shoutouts.schemas import ShoutoutOut
 from sqlalchemy.orm import joinedload
 
 def test():

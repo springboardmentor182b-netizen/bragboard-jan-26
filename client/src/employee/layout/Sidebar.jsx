@@ -52,7 +52,7 @@ export default function EmployeeSidebar() {
     const [user, setUser] = useState(null);
 
     const fetchUser = () => {
-        fetch(`${import.meta.env.VITE_API_URL}/users/me`)
+        fetch(`${process.env.REACT_APP_API_URL}/users/me`)
             .then(res => res.json())
             .then(data => setUser(data))
             .catch(err => console.error('Error fetching sidebar user:', err));

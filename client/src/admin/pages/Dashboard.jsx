@@ -7,7 +7,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ users: 0, shoutouts: 0, reports: 0 });
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/admin/stats`)
+    fetch(`${process.env.REACT_APP_API_URL}/admin/stats`)
       .then((res) => res.json())
       .then((data) => setStats(data))
       .catch((err) => console.error("Error fetching stats:", err));

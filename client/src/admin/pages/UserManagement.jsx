@@ -4,7 +4,7 @@ export default function UserManagement() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/users/`)
+    fetch(`${process.env.REACT_APP_API_URL}/users/`)
       .then((res) => res.json())
       .then((data) => setUsers(data))
       .catch((err) => console.error("Error fetching users:", err));

@@ -25,7 +25,7 @@ export default function ShoutoutCard({ shoutout, onUpdate }) {
         if (isReacting) return;
         setIsReacting(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/shoutouts/${shoutout.id}/react`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/shoutouts/${shoutout.id}/react`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type })
@@ -44,7 +44,7 @@ export default function ShoutoutCard({ shoutout, onUpdate }) {
         e.preventDefault();
         if (!newComment.trim()) return;
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/shoutouts/${shoutout.id}/comment`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/shoutouts/${shoutout.id}/comment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: newComment })

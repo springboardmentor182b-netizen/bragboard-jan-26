@@ -10,11 +10,11 @@ export default function MyActivity() {
         setLoading(true);
         let url = '';
         if (activeTab === 'Shout-outs Sent' || activeTab === 'Shout-outs Received') {
-            url = `${import.meta.env.VITE_API_URL}/shoutouts/mine`;
+            url = `${process.env.REACT_APP_API_URL}/shoutouts/mine`;
         } else if (activeTab === 'Comments Sent') {
-            url = `${import.meta.env.VITE_API_URL}/shoutouts/comments/mine?sent=true`;
+            url = `${process.env.REACT_APP_API_URL}/shoutouts/comments/mine?sent=true`;
         } else if (activeTab === 'Comments Received') {
-            url = `${import.meta.env.VITE_API_URL}/shoutouts/comments/mine?sent=false`;
+            url = `${process.env.REACT_APP_API_URL}/shoutouts/comments/mine?sent=false`;
         }
 
         try {

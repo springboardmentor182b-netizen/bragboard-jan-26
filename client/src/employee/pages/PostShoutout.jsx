@@ -13,7 +13,7 @@ export default function PostShoutout() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_API_URL}/users/`)
+        fetch(`${process.env.REACT_APP_API_URL}/users/`)
             .then(res => res.json())
             .then(data => setUsers(data))
             .catch(err => console.error('Error fetching users:', err));
@@ -30,7 +30,7 @@ export default function PostShoutout() {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/shoutouts/`, {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/shoutouts/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

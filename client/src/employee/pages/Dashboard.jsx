@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ShoutoutCard from '../components/ShoutoutCard';
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const [stats, setStats] = useState({ total_this_week: 0, top_value: 'Determining...', your_kudos: 0 });
     const [shoutouts, setShoutouts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -10,8 +12,8 @@ export default function Dashboard() {
         const fetchData = async () => {
             try {
                 const [statsRes, shoutoutsRes] = await Promise.all([
-                    fetch(`${import.meta.env.VITE_API_URL}/shoutouts/stats`),
-                    fetch(`${import.meta.env.VITE_API_URL}/shoutouts/`)
+                    fetch(`${process.env.REACT_APP_API_URL}/shoutouts/stats`),
+                    fetch(`${process.env.REACT_APP_API_URL}/shoutouts/`)
                 ]);
                 const statsData = await statsRes.json();
                 const shoutoutsData = await shoutoutsRes.json();
@@ -66,7 +68,10 @@ export default function Dashboard() {
             </div>
 
             {/* Hero Leaderboard CTA */}
-            <div className="bg-gradient-to-r from-orange-500 to-rose-500 rounded-[2.5rem] p-8 text-white flex items-center justify-between shadow-xl shadow-orange-200/50 cursor-pointer hover:scale-[1.01] transition-transform">
+            <div
+                onClick={() => navigate('/leaderboard')}
+                className="bg-gradient-to-r from-orange-500 to-rose-500 rounded-[2.5rem] p-8 text-white flex items-center justify-between shadow-xl shadow-orange-200/50 cursor-pointer hover:scale-[1.01] transition-transform"
+            >
                 <div className="flex items-center gap-6">
                     <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-3xl">
                         🏆
@@ -85,7 +90,12 @@ export default function Dashboard() {
             <div>
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-2xl font-bold text-gray-900">Latest Shout-outs</h3>
-                    <button className="text-sm font-bold text-gray-400 hover:text-orange-500 transition-colors">View All</button>
+                    <button
+                        onClick={() => navigate('/feed')}
+                        className="text-sm font-bold text-gray-400 hover:text-orange-500 transition-colors"
+                    >
+                        View All
+                    </button>
                 </div>
 
                 {loading ? (
@@ -105,7 +115,12 @@ export default function Dashboard() {
                         <div className="text-4xl mb-4">✨</div>
                         <h4 className="text-xl font-bold text-gray-800">No shout-outs yet</h4>
                         <p className="text-gray-500 mt-2 max-w-xs mx-auto">Be the first to recognize a colleague's hard work!</p>
-                        <button className="mt-6 px-8 py-3 bg-gray-900 text-white font-bold rounded-2xl hover:bg-orange-500 transition-colors">Post a Shout-out</button>
+                        <button
+                            onClick={() => navigate('/post-shoutout')}
+                            className="mt-6 px-8 py-3 bg-gray-900 text-white font-bold rounded-2xl hover:bg-orange-500 transition-colors"
+                        >
+                            Post a Shout-out
+                        </button>
                     </div>
                 )}
             </div>

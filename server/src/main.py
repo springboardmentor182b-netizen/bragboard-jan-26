@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.admin.router import router as admin_router
-from app.api.v1.users.router import router as users_router
-from app.api.v1.shoutouts.router import router as shoutouts_router
+from src.api.v1.admin.router import router as admin_router
+from src.api.v1.users.router import router as users_router
+from src.api.v1.shoutouts.router import router as shoutouts_router
 
 app = FastAPI()
 
