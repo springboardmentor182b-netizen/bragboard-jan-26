@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 
@@ -25,6 +25,8 @@ const Login = () => {
         setLoading(false);
     };
 
+    const message = useNavigate().state?.message;
+
     return (
         <div className="min-h-screen bg-brand-light-bg flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md border border-gray-100">
@@ -39,6 +41,12 @@ const Login = () => {
                 {error && (
                     <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm flex items-center justify-center">
                         {error}
+                    </div>
+                )}
+
+                {message && (
+                    <div className="bg-green-50 text-green-600 p-3 rounded-lg mb-6 text-sm flex items-center justify-center">
+                        {message}
                     </div>
                 )}
 
@@ -85,6 +93,13 @@ const Login = () => {
                         {loading ? 'Signing in...' : 'Sign In'}
                         {!loading && <ArrowRight size={18} />}
                     </button>
+
+                    <div className="flex flex-col items-center gap-2 mt-4">
+                        <Link to="/forgot-password" title='forgot password' className="text-sm text-brand-orange font-semibold hover:underline">Forgot Password?</Link>
+                        <p className="text-sm text-gray-500">
+                            Don't have an account? <Link to="/signup" title='signup' className="text-brand-orange font-bold hover:underline">Create Account</Link>
+                        </p>
+                    </div>
                 </form>
             </div>
         </div>

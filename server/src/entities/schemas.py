@@ -9,9 +9,29 @@ class UserBase(BaseModel):
     job_title: Optional[str] = "Team Member"
     department: Optional[str] = "General"
     profile_picture: Optional[str] = None
+    dob: Optional[str] = None
+    work: Optional[str] = None
+    company_name: Optional[str] = None
+    phone_number: Optional[str] = None
+
+class SecurityQuestionBase(BaseModel):
+    question: str
+
+class SecurityQuestionCreate(SecurityQuestionBase):
+    answer: str
+
+class SecurityQuestion(SecurityQuestionBase):
+    id: int
+    user_id: int
+
+    class Config:
+        orm_mode = True
 
 class UserCreate(UserBase):
     password: str
+    job_title: Optional[str] = "Team Member"
+    department: Optional[str] = "General"
+    security_questions: List[SecurityQuestionCreate]
 
 class LoginRequest(BaseModel):
     email: str
@@ -28,6 +48,26 @@ class User(UserBase):
 
     class Config:
         orm_mode = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class SecurityQuestionVerify(BaseModel):
+    email: str
+    question: str
+    answer: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    security_answer: str
+    new_password: str
 
 class ShoutOutBase(BaseModel):
     content: str
