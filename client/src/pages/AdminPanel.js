@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { Users, FileText, BarChart3 } from 'lucide-react';
+import { Users, FileText, BarChart3, Trophy } from 'lucide-react';
 import Dashboard from './Dashboard';
 import UserManagement from './admin/UserManagement';
 import ShoutoutsManagement from './admin/ShoutoutsManagement';
-import Reports from './Reports'; // Make sure path is correct
+import Reports from './Reports';
+import Leaderboard from './Leaderboard';
+
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'users', label: 'Users Management', icon: Users },
-    { id: 'shoutouts', label: 'Shout-outs Management', icon: FileText },
-    { id: 'reports', label: 'Reports', icon: BarChart3 }, // Added Reports tab
+    { id: 'dashboard',   label: 'Dashboard',             icon: BarChart3 },
+    { id: 'users',       label: 'Users Management',      icon: Users     },
+    { id: 'shoutouts',   label: 'Shout-outs Management', icon: FileText  },
+    { id: 'reports',     label: 'Reports',               icon: BarChart3 },
+    { id: 'leaderboard', label: 'Leaderboard',           icon: Trophy    },
   ];
 
   const renderContent = () => {
@@ -23,7 +26,9 @@ const AdminPanel = () => {
       case 'shoutouts':
         return <ShoutoutsManagement />;
       case 'reports':
-        return <Reports />; // Added Reports case
+        return <Reports />;
+      case 'leaderboard':
+        return <Leaderboard />;
       default:
         return <Dashboard />;
     }

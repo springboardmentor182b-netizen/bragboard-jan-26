@@ -1,4 +1,4 @@
-import { useReports } from "../../features/reports/hooks/useReports";
+import useReports from "../../features/reports/hooks/useReports";
 import ReportCard from "../../features/reports/components/ReportCard";
 
 const STATUS_TABS = ["All", "pending", "resolved", "dismissed"];

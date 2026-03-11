@@ -8,13 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.database.connection import engine, Base
 from src.auth.controller import router as auth_router
 from src.users.controller import router as users_router
-from src.shoutouts.controller import router as shoutouts_router  # existing
-from src.reports.controller import router as reports_router      # ← ADD THIS
+from src.shoutouts.controller import router as shoutouts_router
+from src.reports.controller import router as reports_router
+from src.leaderboard.controller import router as leaderboard_router  # ← NEW
 
 # Import all models to create tables
 from src.users.models import User
-from src.shoutouts.models import ShoutOut                        # existing
-from src.reports.models import Report                            # ← ADD THIS
+from src.shoutouts.models import ShoutOut
+from src.reports.models import Report
 
 # Create database tables
 print("Creating database tables...")
@@ -44,10 +45,11 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth_router,      prefix="/api/auth",      tags=["Authentication"])
-app.include_router(users_router,     prefix="/api/users",     tags=["Users"])
-app.include_router(shoutouts_router, prefix="/api/shoutouts", tags=["Shoutouts"])  # existing
-app.include_router(reports_router,   prefix="/api/reports",   tags=["Reports"])    # ← ADD THIS
+app.include_router(auth_router,         prefix="/api/auth",         tags=["Authentication"])
+app.include_router(users_router,        prefix="/api/users",        tags=["Users"])
+app.include_router(shoutouts_router,    prefix="/api/shoutouts",    tags=["Shoutouts"])
+app.include_router(reports_router,      prefix="/api/reports",      tags=["Reports"])
+app.include_router(leaderboard_router,  prefix="/api/leaderboard",  tags=["Leaderboard"])  # ← NEW
 
 @app.get("/")
 async def root():
@@ -65,7 +67,7 @@ async def health_check():
         "api_version": "1.0.0"
     }
 
-if name == "main":
+if __name__ == "__main__":
     import uvicorn
     print("Starting BragBoard API server...")
     print("Server will run at: http://localhost:8000")
