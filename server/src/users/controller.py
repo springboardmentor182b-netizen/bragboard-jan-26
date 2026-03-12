@@ -5,25 +5,49 @@ import shutil
 import os
 from src.database.database import get_db
 from src.entities import models, schemas
+from src.auth.utils import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 @router.post("/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    from src.auth.utils import get_password_hash
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    # fake_hashed_password = user.password + "notreallyhashed" # Not used in models.User as seen in code
-    db_user = models.User(
+    
+    new_user = models.User(
         email=user.email, 
         username=user.username, 
-        full_name=user.full_name, 
-        role="employee" # default role
+        full_name=user.full_name,
+        dob=user.dob,
+        work=user.work,
+        company_name=user.company_name,
+        phone_number=user.phone_number,
+        job_title=user.job_title,
+        department=user.department,
+        password_hash=get_password_hash(user.password),
+        role="employee"
     )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.add(new_user)
+    db.flush() # Get user.id
+
+    for q in user.security_questions:
+        sq = models.SecurityQuestion(
+            user_id=new_user.id,
+            question=q.question,
+            answer_hash=get_password_hash(q.answer)
+        )
+        db.add(sq)
+
+    try:
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating user: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @router.get("/", response_model=List[schemas.User])
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
