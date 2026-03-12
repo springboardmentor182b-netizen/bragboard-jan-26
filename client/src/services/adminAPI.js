@@ -22,6 +22,16 @@ const adminAPI = {
   getReports: () => api.get('/reports/'),
   deleteReport: (reportId) => api.delete(`/reports/${reportId}`),
 
+  // ── Moderation Thread ─────────────────────────────────────────────────────
+  addModerationNote: (shoutoutId, message) =>
+    api.post('/moderation/notes', { shoutout_id: shoutoutId, message }),
+  getModerationNotes: (shoutoutId) =>
+    api.get(`/moderation/notes/${shoutoutId}`),
+  acceptShoutout: (shoutoutId) =>
+    api.post(`/moderation/accept/${shoutoutId}`),
+  rejectShoutout: (shoutoutId, reason) =>
+    api.post(`/moderation/reject/${shoutoutId}`, { reason }),
+
   // ── Logs ──────────────────────────────────────────────────────────────────
   getLogs: (limit = 50) => api.get(`/admin/logs?limit=${limit}`),
 };
