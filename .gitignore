@@ -7,13 +7,17 @@ __pycache__/
 dist/
 build/
 
-# [cite_start]Node/React [cite: 39-43]
+# Node/React
 node_modules/
 npm-debug.log*
 build/
+.env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# [cite_start]IDEs [cite: 47-48]
+# IDEs
 .vscode/
 .DS_Store
 Thumbs.db
