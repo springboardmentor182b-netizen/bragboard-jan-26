@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from src.database.db import SessionLocal
-from . import service
+from src.reports import service
 
 router = APIRouter()
 
@@ -27,3 +27,10 @@ def resolve_report(report_id: int, db: Session = Depends(get_db)):
 @router.delete("/admin/reports/shoutout/{shoutout_id}")
 def delete_shoutout(shoutout_id: int, db: Session = Depends(get_db)):
     return service.delete_shoutout(db, shoutout_id)
+
+router = APIRouter(prefix="/reports", tags=["Reports"])
+
+
+@router.post("/")
+def create_report(shoutout_id: int, reported_by: str, reason: str, db: Session = Depends(get_db)):
+    return service.create_report(db, shoutout_id, reported_by, reason)

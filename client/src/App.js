@@ -1,15 +1,7 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import AdminReportModeration from "./pages/AdminReportModeration";
+import AdminDashboard from "./features/admin/AdminDashboard";
 
 function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/admin/reports" element={<AdminReportModeration />} />
-      </Routes>
-    </Router>
-  );
+  return <AdminDashboard />;
 }
 
 export default App;
