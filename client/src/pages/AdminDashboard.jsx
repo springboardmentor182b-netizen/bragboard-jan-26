@@ -70,6 +70,17 @@ const Icon = {
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   ),
+  Flag: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+      <line x1="4" x2="4" y1="22" y2="15"/>
+    </svg>
+  ),
+  Dismiss: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+    </svg>
+  ),
   Check: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12"/>
@@ -218,11 +229,12 @@ function Toast({ toast }) {
 function AdminSidebar({ view, setView, onLogout, user, pendingCount }) {
   // ✅ Added 'approvals' as a nav item with a live badge for pending count
   const nav = [
-    { id: 'analytics',  label: 'Analytics',        Icon: Icon.Bar    },
-    { id: 'approvals',  label: 'Pending Approvals', Icon: Icon.Clock, badge: pendingCount },
-    { id: 'users',      label: 'User Management',   Icon: Icon.Users  },
-    { id: 'moderation', label: 'Moderation',        Icon: Icon.Shield },
-    { id: 'logs',       label: 'System Logs',       Icon: Icon.Log    },
+    { id: 'analytics',  label: 'Analytics',          Icon: Icon.Bar    },
+    { id: 'approvals',  label: 'Pending Approvals',   Icon: Icon.Clock, badge: pendingCount },
+    { id: 'users',      label: 'User Management',     Icon: Icon.Users  },
+    { id: 'moderation', label: 'Moderation',          Icon: Icon.Shield },
+    { id: 'reported',   label: 'Reported Shoutouts',  Icon: Icon.Flag   },
+    { id: 'logs',       label: 'System Logs',         Icon: Icon.Log    },
   ];
 
   return (
@@ -1087,6 +1099,241 @@ function SystemLogsView() {
   );
 }
 
+// ─── Reported Shoutouts view ──────────────────────────────────────────────────
+function ReportedShoutoutsView() {
+  const [reportedItems, setReportedItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, shoutoutId: null });
+  const [dismissDialog, setDismissDialog] = useState({ open: false, reportId: null, shoutoutId: null });
+  const [actionInProgress, setActionInProgress] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await adminAPI.getReportedShoutouts();
+      setReportedItems(res.data || []);
+    } catch {
+      setError('Failed to load reported shoutouts.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleDismissReport = async () => {
+    const { reportId, shoutoutId } = dismissDialog;
+    setDismissDialog({ open: false, reportId: null, shoutoutId: null });
+    setActionInProgress(`dismiss-${reportId}`);
+    try {
+      await adminAPI.dismissReport(reportId);
+      setReportedItems(prev =>
+        prev.map(item => {
+          if (item.shoutout_id !== shoutoutId) return item;
+          const updatedReports = item.reports.filter(r => r.report_id !== reportId);
+          return updatedReports.length === 0 ? null : { ...item, reports: updatedReports };
+        }).filter(Boolean)
+      );
+      showToast('Report dismissed.');
+    } catch {
+      showToast('Failed to dismiss report.', 'error');
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleDeleteShoutout = async () => {
+    const { shoutoutId } = deleteDialog;
+    setDeleteDialog({ open: false, shoutoutId: null });
+    setActionInProgress(`delete-${shoutoutId}`);
+    try {
+      await adminAPI.deleteReportedShoutout(shoutoutId);
+      setReportedItems(prev => prev.filter(item => item.shoutout_id !== shoutoutId));
+      showToast('Shoutout removed successfully.');
+    } catch {
+      showToast('Failed to delete shoutout.', 'error');
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+        <div>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 3px 0' }}>
+            Reported Shoutouts
+          </h3>
+          <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>
+            Review shoutouts flagged by employees — dismiss reports or remove content
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {reportedItems.length > 0 && (
+            <span style={{
+              background: '#FEF2F2', color: '#DC2626', fontSize: 11, fontWeight: 700,
+              padding: '3px 10px', borderRadius: 20,
+            }}>
+              {reportedItems.length} flagged
+            </span>
+          )}
+          <button
+            onClick={load}
+            style={{
+              border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8,
+              padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: '#374151',
+            }}
+          >
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      {error && <ErrorBanner message={error} />}
+      {loading && <Spinner />}
+
+      {!loading && reportedItems.length === 0 && !error && (
+        <div style={{
+          background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB',
+          padding: '48px 24px', textAlign: 'center',
+        }}>
+          <p style={{ fontSize: 40, margin: '0 0 10px 0' }}>🏳️</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: '#374151', margin: '0 0 4px 0' }}>
+            No reported shoutouts
+          </p>
+          <p style={{ fontSize: 13, color: '#9CA3AF' }}>
+            When employees flag a shoutout, it will appear here for review.
+          </p>
+        </div>
+      )}
+
+      {!loading && reportedItems.map(item => (
+        <div key={item.shoutout_id} style={{
+          background: '#fff', borderRadius: 14, border: '1px solid #FECACA',
+          marginBottom: 16, overflow: 'hidden',
+        }}>
+          {/* Shoutout content */}
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #FEF2F2' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: 12, flex: 1, minWidth: 0 }}>
+                <Avatar name={item.sender_name} size={36} color="#DC2626" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{item.sender_name}</span>
+                    {item.recipient_names?.length > 0 && (
+                      <>
+                        <span style={{ fontSize: 11, color: '#9CA3AF' }}>→</span>
+                        <span style={{ fontSize: 12, color: '#4F46E5', fontWeight: 600 }}>
+                          {item.recipient_names.join(', ')}
+                        </span>
+                      </>
+                    )}
+                    <span style={{ fontSize: 11, color: '#D1D5DB', marginLeft: 'auto' }}>
+                      {relativeTime(item.created_at)}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#374151', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+                    {item.message}
+                  </p>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <Badge label={`❤️ ${item.likes}`} color="#DC2626" bg="#FEF2F2" />
+                    {item.tags && <Badge label={item.tags} color="#6B7280" bg="#F3F4F6" />}
+                    <Badge
+                      label={`🚩 ${item.reports.length} report${item.reports.length !== 1 ? 's' : ''}`}
+                      color="#92400E"
+                      bg="#FFFBEB"
+                    />
+                  </div>
+                </div>
+              </div>
+              <button
+                disabled={actionInProgress === `delete-${item.shoutout_id}`}
+                onClick={() => setDeleteDialog({ open: true, shoutoutId: item.shoutout_id })}
+                style={{
+                  padding: '7px 14px', borderRadius: 8, border: '1px solid #FECACA',
+                  background: '#FEF2F2', color: '#DC2626', cursor: 'pointer',
+                  fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4,
+                  transition: 'all 0.15s', flexShrink: 0, whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
+                onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}
+              >
+                <Icon.Trash />
+                {actionInProgress === `delete-${item.shoutout_id}` ? 'Removing…' : 'Remove Shoutout'}
+              </button>
+            </div>
+          </div>
+
+          {/* Individual reports */}
+          <div style={{ background: '#FFFBEB' }}>
+            {item.reports.map((report, idx) => (
+              <div key={report.report_id} style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px',
+                borderBottom: idx < item.reports.length - 1 ? '1px solid #FEF3C7' : 'none',
+              }}>
+                <span style={{ fontSize: 14 }}>🚩</span>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#92400E' }}>{report.reason}</span>
+                  <span style={{ fontSize: 11, color: '#B45309', marginLeft: 8 }}>
+                    — {report.reported_by_name} · {relativeTime(report.reported_at)}
+                  </span>
+                </div>
+                <button
+                  disabled={actionInProgress === `dismiss-${report.report_id}`}
+                  onClick={() => setDismissDialog({ open: true, reportId: report.report_id, shoutoutId: item.shoutout_id })}
+                  style={{
+                    padding: '4px 10px', borderRadius: 6, border: '1px solid #FDE68A',
+                    background: '#fff', color: '#92400E', cursor: 'pointer',
+                    fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4,
+                    transition: 'all 0.15s', flexShrink: 0,
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#FFFBEB'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                >
+                  <Icon.Dismiss />
+                  Dismiss
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Delete shoutout confirm dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.open}
+        title="Remove this shoutout?"
+        message="The shoutout and all associated reports will be permanently deleted."
+        confirmLabel="Remove Shoutout"
+        confirmColor="#DC2626"
+        onConfirm={handleDeleteShoutout}
+        onCancel={() => setDeleteDialog({ open: false, shoutoutId: null })}
+      />
+
+      {/* Dismiss report confirm dialog */}
+      <ConfirmDialog
+        isOpen={dismissDialog.open}
+        title="Dismiss this report?"
+        message="The report will be removed and the shoutout will remain visible."
+        confirmLabel="Dismiss Report"
+        confirmColor="#F59E0B"
+        onConfirm={handleDismissReport}
+        onCancel={() => setDismissDialog({ open: false, reportId: null, shoutoutId: null })}
+      />
+
+      <Toast toast={toast} />
+    </div>
+  );
+}
+
 // ─── Top header bar ───────────────────────────────────────────────────────────
 function TopBar({ view, user }) {
   const titles = {
@@ -1094,6 +1341,7 @@ function TopBar({ view, user }) {
     approvals:  { t: 'Pending Approvals',       s: 'Review and approve new registrations' },
     users:      { t: 'User Management',         s: 'Manage members and roles' },
     moderation: { t: 'Moderation Queue',        s: 'Review and remove content' },
+    reported:   { t: 'Reported Shoutouts',      s: 'Review shoutouts flagged by employees' },
     logs:       { t: 'System Logs',             s: 'Track admin actions' },
   };
   const { t, s } = titles[view] || titles.analytics;
@@ -1146,6 +1394,7 @@ function AdminDashboard() {
       case 'approvals':  return <PendingApprovalsView onPendingCountChange={setPendingCount} />;
       case 'users':      return <UserManagementView />;
       case 'moderation': return <ModerationView />;
+      case 'reported':   return <ReportedShoutoutsView />;
       case 'logs':       return <SystemLogsView />;
       default:           return <AnalyticsView user={user} />;
     }

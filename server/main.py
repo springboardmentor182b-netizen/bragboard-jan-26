@@ -12,6 +12,7 @@ from src.entities.shoutout import Shoutout, ShoutoutRecipient  # noqa: F401
 from src.entities.shoutout_like import ShoutoutLike             # noqa: F401
 from src.entities.comment import Comment                        # noqa: F401
 from src.entities.reaction import Reaction                      # noqa: F401
+from src.entities.report import Report                          # noqa: F401
 
 # AdminLog is safe now (back_populates removed in fixed admin_log.py)
 try:
@@ -42,7 +43,7 @@ from src.auth.controller import router as auth_router
 from src.leaderboard.controller import router as leaderboard_router
 from src.shoutouts.controller import router as shoutouts_router
 from src.users.controller import router as users_router
-
+from src.reports.controller import router as reports_router
 
 from src.admin.controller import router as admin_router
 
@@ -50,6 +51,7 @@ app.include_router(auth_router)
 app.include_router(leaderboard_router)
 app.include_router(shoutouts_router, prefix="/shoutouts", tags=["Shoutouts"])
 app.include_router(users_router, prefix="/users", tags=["Users"])
+app.include_router(reports_router)
 app.include_router(admin_router)   # ← registers /admin/*
 
 

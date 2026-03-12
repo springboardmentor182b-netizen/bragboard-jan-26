@@ -229,6 +229,47 @@ def delete_shoutout(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
+# ─── Reported Shoutouts Endpoints ─────────────────────────────────────────────
+
+@router.get("/reported-shoutouts")
+def list_reported_shoutouts(
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Return all shoutouts that have been reported, with report details."""
+    return service.get_reported_shoutouts(db)
+
+
+@router.delete("/reports/{report_id}")
+def dismiss_report(
+    report_id: int,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Dismiss a report without deleting the shoutout."""
+    try:
+        result = service.dismiss_report(db, report_id)
+        service.log_admin_action(db, admin.id, "Dismissed report", report_id, "report")
+        return result
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.delete("/reported-shoutouts/{shoutout_id}")
+def delete_reported_shoutout(
+    shoutout_id: int,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete a reported shoutout and clear all its reports."""
+    try:
+        result = service.delete_reported_shoutout(db, shoutout_id)
+        service.log_admin_action(db, admin.id, "Removed reported shoutout", shoutout_id, "shoutout")
+        return result
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 # ─── Admin Logs Endpoint ─────────────────────────────────────────────────────
 
 @router.get("/logs", response_model=List[AdminLogResponse])

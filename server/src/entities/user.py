@@ -56,6 +56,9 @@ class User(Base):
         foreign_keys=[approved_by],
     )
 
+    # Reports submitted by this user
+    reports = relationship("Report", foreign_keys="Report.reported_by", back_populates="reporter")
+
     # ✅ FIXED: admin_logs relationship REMOVED here.
     # admin_log.py no longer uses back_populates="admin_logs".
     # AdminLog.admin_id is a plain ForeignKey; query it manually when needed:

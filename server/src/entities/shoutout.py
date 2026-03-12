@@ -17,7 +17,8 @@ class Shoutout(Base):
     # Relationships
     sender = relationship("User", foreign_keys=[sender_id], backref="sent_shoutouts")
     recipients = relationship("ShoutoutRecipient", back_populates="shoutout", cascade="all, delete-orphan")
-    like_records = relationship("ShoutoutLike", back_populates="shoutout", cascade="all, delete-orphan")  # ADD THIS
+    like_records = relationship("ShoutoutLike", back_populates="shoutout", cascade="all, delete-orphan")
+    reports = relationship("Report", back_populates="shoutout", cascade="all, delete-orphan")
 
 
 class ShoutoutRecipient(Base):

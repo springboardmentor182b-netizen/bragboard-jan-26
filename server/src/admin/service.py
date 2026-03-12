@@ -377,6 +377,65 @@ def delete_shoutout(db: Session, shoutout_id: int) -> dict:
     return {"message": "Shoutout deleted successfully", "shoutout_id": shoutout_id}
 
 
+# ─── Reported Shoutouts ───────────────────────────────────────────────────────
+
+def get_reported_shoutouts(db: Session) -> list[dict]:
+    """Return all shoutouts that have at least one report, with report details."""
+    from src.entities.report import Report
+
+    reports = db.query(Report).order_by(Report.created_at.desc()).all()
+
+    # Group reports by shoutout_id
+    shoutout_map: dict[int, dict] = {}
+    for r in reports:
+        sid = r.shoutout_id
+        if sid not in shoutout_map:
+            shoutout = db.query(Shoutout).filter(Shoutout.id == sid).first()
+            if not shoutout:
+                continue
+            recipient_names = [rec.recipient.name for rec in shoutout.recipients if rec.recipient]
+            shoutout_map[sid] = {
+                "shoutout_id": sid,
+                "sender_name": shoutout.sender.name if shoutout.sender else "Unknown",
+                "sender_email": shoutout.sender.email if shoutout.sender else "",
+                "message": shoutout.message,
+                "tags": shoutout.tags,
+                "likes": shoutout.likes or 0,
+                "created_at": shoutout.created_at.isoformat() if shoutout.created_at else None,
+                "recipient_names": recipient_names,
+                "reports": [],
+            }
+        reporter = db.query(User).filter(User.id == r.reported_by).first()
+        shoutout_map[sid]["reports"].append({
+            "report_id": r.id,
+            "reason": r.reason,
+            "reported_by_name": reporter.name if reporter else "Unknown",
+            "reported_at": r.created_at.isoformat() if r.created_at else None,
+        })
+
+    # Sort by report count descending
+    result = list(shoutout_map.values())
+    result.sort(key=lambda x: len(x["reports"]), reverse=True)
+    return result
+
+
+def dismiss_report(db: Session, report_id: int) -> dict:
+    """Dismiss (delete) a single report without removing the shoutout."""
+    from src.entities.report import Report
+
+    report = db.query(Report).filter(Report.id == report_id).first()
+    if not report:
+        raise LookupError(f"Report {report_id} not found")
+    db.delete(report)
+    db.commit()
+    return {"message": "Report dismissed", "report_id": report_id}
+
+
+def delete_reported_shoutout(db: Session, shoutout_id: int) -> dict:
+    """Delete a shoutout and all its reports (admin moderation via reports view)."""
+    return delete_shoutout(db, shoutout_id)
+
+
 # ─── Admin Logs ──────────────────────────────────────────────────────────────
 
 def get_admin_logs(db: Session, limit: int = 50) -> list[dict]:

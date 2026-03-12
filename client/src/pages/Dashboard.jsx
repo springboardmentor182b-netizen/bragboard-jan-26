@@ -316,6 +316,10 @@ function FeedView({ user }) {
 function ShoutoutCard({ shoutout }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(shoutout.likes || 0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportModal, setReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportStatus, setReportStatus] = useState(null); // 'submitting' | 'success' | 'error' | 'duplicate'
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const authorName = shoutout.sender?.name || 'Unknown';
@@ -355,6 +359,41 @@ function ShoutoutCard({ shoutout }) {
     }
   };
 
+  const handleReport = async () => {
+    if (!reportReason) return;
+    setReportStatus('submitting');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/reports/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shoutout_id: shoutout.id, reason: reportReason }),
+      });
+      if (res.status === 409) {
+        setReportStatus('duplicate');
+      } else if (res.ok) {
+        setReportStatus('success');
+        setTimeout(() => {
+          setReportModal(false);
+          setReportStatus(null);
+          setReportReason('');
+        }, 1800);
+      } else {
+        setReportStatus('error');
+      }
+    } catch {
+      setReportStatus('error');
+    }
+  };
+
+  const reportReasons = [
+    'Inappropriate content',
+    'Harassment or bullying',
+    'False or misleading',
+    'Spam',
+    'Other',
+  ];
+
   return (
     <div style={{
       background: '#fff',
@@ -362,13 +401,15 @@ function ShoutoutCard({ shoutout }) {
       padding: '20px',
       border: '1px solid #E5E7EB',
       boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-      transition: 'box-shadow 0.2s ease'
+      transition: 'box-shadow 0.2s ease',
+      position: 'relative',
     }}>
       {/* Header */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
-        marginBottom: '14px' 
+        marginBottom: '14px',
+        justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
@@ -398,6 +439,54 @@ function ShoutoutCard({ shoutout }) {
               {timeAgo}
             </span>
           </div>
+        </div>
+
+        {/* 3-dot menu */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setMenuOpen(o => !o)}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: '#9CA3AF', padding: '4px 8px', borderRadius: '6px',
+              fontSize: '18px', lineHeight: 1, fontWeight: 700,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#374151'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
+            title="More options"
+          >
+            ···
+          </button>
+          {menuOpen && (
+            <>
+              {/* Backdrop to close menu */}
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                onClick={() => setMenuOpen(false)}
+              />
+              <div style={{
+                position: 'absolute', right: 0, top: '100%', marginTop: '4px',
+                background: '#fff', border: '1px solid #E5E7EB', borderRadius: '10px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 100,
+                minWidth: '160px', overflow: 'hidden',
+              }}>
+                <button
+                  onClick={() => { setMenuOpen(false); setReportModal(true); }}
+                  style={{
+                    width: '100%', padding: '10px 16px', background: 'transparent',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    fontSize: '13px', fontWeight: 500, color: '#DC2626',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  🚩 Report
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -494,6 +583,113 @@ function ShoutoutCard({ shoutout }) {
           <HeartIcon /> {likes}
         </button>
       </div>
+
+      {/* Report Modal */}
+      {reportModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, backdropFilter: 'blur(2px)',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '16px', padding: '28px',
+            width: '100%', maxWidth: '420px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+          }}>
+            {reportStatus === 'success' ? (
+              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>
+                  Report submitted
+                </h3>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
+                  Thank you. Our admins will review this shoutout.
+                </p>
+              </div>
+            ) : reportStatus === 'duplicate' ? (
+              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚠️</div>
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>
+                  Already reported
+                </h3>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 20px' }}>
+                  You have already reported this shoutout.
+                </p>
+                <button
+                  onClick={() => { setReportModal(false); setReportStatus(null); }}
+                  style={{
+                    padding: '9px 20px', borderRadius: '8px', border: '1px solid #E5E7EB',
+                    background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>
+                  🚩 Report Shoutout
+                </h3>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 20px' }}>
+                  Select a reason for reporting this shoutout. Admins will review your report.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                  {reportReasons.map((r) => (
+                    <label key={r} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
+                      border: `1px solid ${reportReason === r ? '#4F46E5' : '#E5E7EB'}`,
+                      background: reportReason === r ? '#EEF2FF' : '#fff',
+                      transition: 'all 0.15s',
+                    }}>
+                      <input
+                        type="radio"
+                        name="report-reason"
+                        value={r}
+                        checked={reportReason === r}
+                        onChange={() => setReportReason(r)}
+                        style={{ accentColor: '#4F46E5' }}
+                      />
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>{r}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {reportStatus === 'error' && (
+                  <p style={{ fontSize: '12px', color: '#DC2626', marginBottom: '12px' }}>
+                    Something went wrong. Please try again.
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => { setReportModal(false); setReportReason(''); setReportStatus(null); }}
+                    style={{
+                      padding: '9px 20px', borderRadius: '8px', border: '1px solid #E5E7EB',
+                      background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReport}
+                    disabled={!reportReason || reportStatus === 'submitting'}
+                    style={{
+                      padding: '9px 20px', borderRadius: '8px', border: 'none',
+                      background: !reportReason ? '#E5E7EB' : '#DC2626',
+                      color: !reportReason ? '#9CA3AF' : '#fff',
+                      cursor: !reportReason ? 'default' : 'pointer',
+                      fontSize: '13px', fontWeight: 600,
+                    }}
+                  >
+                    {reportStatus === 'submitting' ? 'Submitting…' : 'Submit Report'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -53,6 +53,7 @@ export const shoutoutsAPI = {
   getMine: (userId) => api.get(`/shoutouts/my/${userId}`),
   create: (data) => api.post('/shoutouts/', data),
   like: (id) => api.put(`/shoutouts/${id}/like`),
+  report: (shoutoutId, reason) => api.post('/reports/', { shoutout_id: shoutoutId, reason }),
 };
 
 // ── Leaderboard endpoints ───────────────────────────────────────────────────
