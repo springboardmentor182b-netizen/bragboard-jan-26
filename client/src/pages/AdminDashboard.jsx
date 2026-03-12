@@ -2,66 +2,67 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import adminAPI from '../services/adminAPI';
+import ModerationQueue from './ModerationQueue';
 import '../styles/theme.css';
 
 // ─── Tiny SVG icon set ────────────────────────────────────────────────────────
 const Icon = {
   Bar: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/>
-      <line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/>
+      <line x1="18" x2="18" y1="20" y2="10" /><line x1="12" x2="12" y1="20" y2="4" />
+      <line x1="6" x2="6" y1="20" y2="14" /><line x1="2" x2="22" y1="20" y2="20" />
     </svg>
   ),
   Users: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   ),
   Shield: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
-      <path d="m9 12 2 2 4-4"/>
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d="m9 12 2 2 4-4" />
     </svg>
   ),
   Log: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
-      <path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+      <path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" />
     </svg>
   ),
   Award: ({ size = 22 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/>
-      <circle cx="12" cy="8" r="6"/>
+      <path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526" />
+      <circle cx="12" cy="8" r="6" />
     </svg>
   ),
   Heart: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
     </svg>
   ),
   Logout: () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-      <polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" />
     </svg>
   ),
   Trash: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+      <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
     </svg>
   ),
   Crown: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21 5.5l-2 10.5a2 2 0 0 1-2 1.5H7a2 2 0 0 1-2-1.5L3 5.5l4.094 3.664a1 1 0 0 0 1.516-.294z"/>
-      <path d="M5 21h14"/>
+      <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21 5.5l-2 10.5a2 2 0 0 1-2 1.5H7a2 2 0 0 1-2-1.5L3 5.5l4.094 3.664a1 1 0 0 0 1.516-.294z" />
+      <path d="M5 21h14" />
     </svg>
   ),
   Activity: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
     </svg>
   ),
 };
@@ -471,120 +472,6 @@ function UserManagementView() {
   );
 }
 
-// ─── Moderation view ──────────────────────────────────────────────────────────
-function ModerationView() {
-  const [shoutouts, setShoutouts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [deletingId, setDeletingId] = useState(null);
-  const [search, setSearch] = useState('');
-
-  useEffect(() => {
-    adminAPI.listShoutouts(100)
-      .then((r) => setShoutouts(r.data))
-      .catch(() => setError('Failed to load shoutouts.'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Permanently delete this shoutout?')) return;
-    setDeletingId(id);
-    try {
-      await adminAPI.deleteShoutout(id);
-      setShoutouts((prev) => prev.filter((s) => s.id !== id));
-    } catch {
-      alert('Delete failed — shoutout may already be removed.');
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const filtered = shoutouts.filter((s) =>
-    s.message.toLowerCase().includes(search.toLowerCase()) ||
-    s.sender_name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
-        <div>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 3px 0' }}>Moderation Queue</h3>
-          <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>Review and remove inappropriate shoutouts</p>
-        </div>
-        <input
-          placeholder="Search…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            border: '1px solid #E5E7EB', borderRadius: 8, padding: '7px 12px',
-            fontSize: 13, outline: 'none', width: 200,
-          }}
-        />
-      </div>
-
-      {error && <ErrorBanner message={error} />}
-      {loading ? <Spinner /> : filtered.length === 0 ? (
-        <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E5E7EB', padding: '48px 24px', textAlign: 'center' }}>
-          <p style={{ fontSize: 40, margin: '0 0 10px 0' }}>✅</p>
-          <p style={{ fontSize: 15, fontWeight: 600, color: '#374151', margin: '0 0 4px 0' }}>
-            {search ? 'No matching shoutouts' : 'All clear!'}
-          </p>
-          <p style={{ fontSize: 13, color: '#9CA3AF' }}>
-            {search ? 'Try a different search term.' : 'No shoutouts need review right now.'}
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map((s) => (
-            <div key={s.id} style={{
-              background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB',
-              padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 14,
-            }}>
-              <Avatar name={s.sender_name} size={36} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{s.sender_name}</span>
-                  {s.recipient_names?.length > 0 && (
-                    <>
-                      <span style={{ fontSize: 11, color: '#9CA3AF' }}>→</span>
-                      <span style={{ fontSize: 12, color: '#4F46E5', fontWeight: 600 }}>
-                        {s.recipient_names.join(', ')}
-                      </span>
-                    </>
-                  )}
-                  <span style={{ fontSize: 11, color: '#D1D5DB', marginLeft: 'auto' }}>
-                    {relativeTime(s.created_at)}
-                  </span>
-                </div>
-                <p style={{ fontSize: 13, color: '#374151', margin: '0 0 8px 0', lineHeight: 1.5 }}>
-                  {s.message}
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Badge label={`❤️ ${s.likes}`} color="#DC2626" bg="#FEF2F2" />
-                  {s.tags && <Badge label={s.tags} color="#6B7280" bg="#F3F4F6" />}
-                </div>
-              </div>
-              <button
-                disabled={deletingId === s.id}
-                onClick={() => handleDelete(s.id)}
-                style={{
-                  padding: '6px 12px', borderRadius: 8, border: '1px solid #FECACA',
-                  background: '#FEF2F2', color: '#DC2626', cursor: 'pointer',
-                  fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4,
-                  transition: 'all 0.15s', flexShrink: 0,
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#FEE2E2'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#FEF2F2'}
-              >
-                <Icon.Trash /> {deletingId === s.id ? 'Deleting…' : 'Delete'}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── System Logs view ─────────────────────────────────────────────────────────
 function SystemLogsView() {
@@ -683,11 +570,11 @@ function AdminDashboard() {
 
   const renderView = () => {
     switch (view) {
-      case 'analytics':  return <AnalyticsView user={user} />;
-      case 'users':      return <UserManagementView />;
-      case 'moderation': return <ModerationView />;
-      case 'logs':       return <SystemLogsView />;
-      default:           return <AnalyticsView user={user} />;
+      case 'analytics': return <AnalyticsView user={user} />;
+      case 'users': return <UserManagementView />;
+      case 'moderation': return <div style={{ margin: '-24px -28px' }}><ModerationQueue /></div>;
+      case 'logs': return <SystemLogsView />;
+      default: return <AnalyticsView user={user} />;
     }
   };
 

@@ -37,3 +37,4 @@ class Shoutout(Base):
     comments = relationship("Comment", back_populates="shoutout", cascade="all, delete-orphan")
     reactions = relationship("Reaction", back_populates="shoutout", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="shoutout", cascade="all, delete-orphan")
+    moderation_notes = relationship("ModerationNote", back_populates="shoutout", cascade="all, delete-orphan")

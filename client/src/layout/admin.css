@@ -621,3 +621,506 @@
     margin: 0.5rem 0 0;
     font-size: 0.875rem;
 }
+
+/* ===== Moderation Queue ===== */
+.mod-empty-state {
+    padding: 3rem;
+    text-align: center;
+    background: var(--bg-card, var(--bg-surface));
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.mod-empty-state h3 {
+    margin: 0;
+    color: var(--text-main);
+}
+
+.mod-empty-state p {
+    color: var(--text-muted);
+}
+
+.mod-reports-grid {
+    display: grid;
+    gap: 1.25rem;
+}
+
+/* ─ Report Card ─ */
+.mod-report-card {
+    background: var(--bg-card, var(--bg-surface));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.mod-report-card:hover {
+    border-color: rgba(124, 58, 237, 0.3);
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.08);
+}
+
+.mod-report-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.mod-report-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #ef4444;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.mod-report-meta {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+
+.mod-view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.5rem 1rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.mod-view-btn:hover {
+    background: var(--primary-hover, #6d28d9);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.mod-report-content {
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary);
+}
+
+.mod-report-sender {
+    font-size: 0.88rem;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.mod-report-recipients {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.mod-report-message {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text-main);
+    font-style: italic;
+}
+
+.mod-report-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.mod-reason-chip {
+    font-size: 0.82rem;
+    color: var(--text-main);
+    padding: 0.4rem 0.65rem;
+    background: rgba(239, 68, 68, 0.06);
+    border-radius: 6px;
+    border-left: 3px solid #ef4444;
+}
+
+.mod-reason-more {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding-left: 0.65rem;
+    font-style: italic;
+}
+
+/* ─ Detail Modal ─ */
+.mod-detail-modal {
+    background: var(--bg-surface, #fff);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 620px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.4);
+    animation: fadeInModal 0.25s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.mod-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg-surface, #fff);
+    z-index: 1;
+}
+
+.mod-modal-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mod-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.mod-close-btn:hover {
+    color: var(--text-main);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* ─ Shoutout Detail ─ */
+.mod-shoutout-detail {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.mod-detail-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.88rem;
+}
+
+.mod-detail-label {
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 50px;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    padding-top: 2px;
+}
+
+.mod-tags {
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.mod-detail-message {
+    margin-top: 0.75rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-main);
+    font-style: italic;
+    border-left: 4px solid var(--primary);
+}
+
+/* ─ Reports Section ─ */
+.mod-reports-section {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.mod-reports-section h4 {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mod-report-item {
+    padding: 0.6rem 0.75rem;
+    background: rgba(239, 68, 68, 0.04);
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+    border-left: 3px solid #ef4444;
+}
+
+.mod-report-item strong {
+    font-size: 0.82rem;
+    color: var(--text-main);
+}
+
+.mod-report-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+}
+
+.mod-report-item p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: var(--text-main);
+}
+
+/* ─ Thread Section ─ */
+.mod-thread-section {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.mod-thread-section h4 {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mod-thread-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 0.75rem;
+    padding-right: 4px;
+}
+
+.mod-thread-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 1rem;
+    font-style: italic;
+}
+
+.mod-thread-note {
+    padding: 0.6rem 0.75rem;
+    background: rgba(124, 58, 237, 0.04);
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+    border-left: 3px solid var(--primary);
+}
+
+.mod-note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.mod-note-header strong {
+    font-size: 0.82rem;
+    color: var(--primary);
+}
+
+.mod-note-time {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.mod-thread-note p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+.mod-thread-input {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+.mod-thread-input textarea {
+    flex: 1;
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    color: var(--text-main);
+    font-size: 0.85rem;
+    resize: none;
+    font-family: inherit;
+    transition: border-color 0.15s ease;
+}
+
+.mod-thread-input textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.mod-send-btn {
+    padding: 0.6rem 0.75rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mod-send-btn:hover:not(:disabled) {
+    background: var(--primary-hover, #6d28d9);
+}
+
+.mod-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ─ Action Buttons ─ */
+.mod-actions {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.mod-accept-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.7rem 1rem;
+    background: #22c55e;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mod-accept-btn:hover:not(:disabled) {
+    background: #16a34a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.mod-accept-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.mod-reject-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0.7rem 1rem;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mod-reject-btn:hover:not(:disabled) {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.mod-reject-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ─ Reject Dialog ─ */
+.mod-reject-dialog {
+    padding: 1.25rem 1.5rem;
+    border-top: 2px solid #ef4444;
+    background: rgba(239, 68, 68, 0.02);
+}
+
+.mod-reject-dialog h4 {
+    margin: 0 0 0.75rem;
+    color: #ef4444;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mod-reject-dialog textarea {
+    width: 100%;
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 0.85rem;
+    color: var(--text-main);
+    font-size: 0.88rem;
+    resize: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+}
+
+.mod-reject-dialog textarea:focus {
+    outline: none;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.mod-reject-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.85rem;
+}
+
+.mod-confirm-reject-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.55rem 1.1rem;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mod-confirm-reject-btn:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.mod-confirm-reject-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

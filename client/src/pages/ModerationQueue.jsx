@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import adminAPI from '../services/adminAPI';
-import { Trash2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Trash2, CheckCircle, AlertTriangle, Eye, Send, X, MessageSquare, ShieldCheck, ShieldX } from 'lucide-react';
 import '../layout/admin.css';
 
 const ModerationQueue = () => {
@@ -10,9 +10,30 @@ const ModerationQueue = () => {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
 
+    // Popup state
+    const [selectedShoutout, setSelectedShoutout] = useState(null);
+    const [selectedReports, setSelectedReports] = useState([]);
+
+    // Thread state
+    const [notes, setNotes] = useState([]);
+    const [notesLoading, setNotesLoading] = useState(false);
+    const [newNote, setNewNote] = useState('');
+    const [noteSending, setNoteSending] = useState(false);
+    const threadEndRef = useRef(null);
+
+    // Reject dialog
+    const [showRejectDialog, setShowRejectDialog] = useState(false);
+    const [rejectReason, setRejectReason] = useState('');
+
     useEffect(() => {
         fetchModerationData();
     }, []);
+
+    useEffect(() => {
+        if (threadEndRef.current) {
+            threadEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [notes]);
 
     const fetchModerationData = async () => {
         try {
@@ -32,158 +53,318 @@ const ModerationQueue = () => {
         }
     };
 
-    const handleDismissReport = async (reportId) => {
-        if (!window.confirm("Are you sure you want to dismiss this report? The shoutout will remain visible.")) return;
+    const openShoutoutPopup = async (shoutout, relatedReports) => {
+        setSelectedShoutout(shoutout);
+        setSelectedReports(relatedReports);
+        setShowRejectDialog(false);
+        setRejectReason('');
+        setNewNote('');
+
+        // Fetch moderation notes for this shoutout
+        try {
+            setNotesLoading(true);
+            const res = await adminAPI.getModerationNotes(shoutout.id);
+            setNotes(res.data);
+        } catch (error) {
+            console.error('Error fetching moderation notes:', error);
+            setNotes([]);
+        } finally {
+            setNotesLoading(false);
+        }
+    };
+
+    const closePopup = () => {
+        setSelectedShoutout(null);
+        setSelectedReports([]);
+        setNotes([]);
+        setNewNote('');
+        setShowRejectDialog(false);
+        setRejectReason('');
+    };
+
+    const handleSendNote = async () => {
+        if (!newNote.trim() || !selectedShoutout) return;
+        try {
+            setNoteSending(true);
+            const res = await adminAPI.addModerationNote(selectedShoutout.id, newNote.trim());
+            setNotes(prev => [...prev, res.data]);
+            setNewNote('');
+        } catch (error) {
+            console.error('Failed to add note:', error);
+            alert('Failed to add note. See console for details.');
+        } finally {
+            setNoteSending(false);
+        }
+    };
+
+    const handleAcceptShoutout = async () => {
+        if (!selectedShoutout) return;
+        if (!window.confirm('Accept this shoutout? All reports will be dismissed.')) return;
 
         try {
-            setActionLoading(reportId);
-            await adminAPI.deleteReport(reportId);
-            setReports(prev => prev.filter(r => r.id !== reportId));
+            setActionLoading(`accept-${selectedShoutout.id}`);
+            await adminAPI.acceptShoutout(selectedShoutout.id);
+            // Remove reports related to this shoutout from the UI
+            setReports(prev => prev.filter(r => r.shoutout_id !== selectedShoutout.id));
+            closePopup();
         } catch (error) {
-            console.error("Failed to dismiss report", error);
-            alert("Failed to dismiss report. See console for details.");
+            console.error('Failed to accept shoutout:', error);
+            alert('Failed to accept shoutout. See console for details.');
         } finally {
             setActionLoading(null);
         }
     };
 
-    const handleDeleteShoutout = async (shoutoutId) => {
-        if (!window.confirm("Are you sure you want to delete this shoutout? This action cannot be undone.")) return;
+    const handleRejectShoutout = async () => {
+        if (!selectedShoutout || !rejectReason.trim()) return;
 
         try {
-            setActionLoading(`shoutout-${shoutoutId}`);
-            await adminAPI.deleteShoutout(shoutoutId);
-            // Removing the shoutout cascade-deletes its reports on the backend.
-            // We should remove any reports linked to this shoutout from the UI.
-            setReports(prev => prev.filter(r => r.shoutout_id !== shoutoutId));
-            setShoutouts(prev => prev.filter(s => s.id !== shoutoutId));
+            setActionLoading(`reject-${selectedShoutout.id}`);
+            await adminAPI.rejectShoutout(selectedShoutout.id, rejectReason.trim());
+            // Remove shoutout and its reports from the UI
+            setReports(prev => prev.filter(r => r.shoutout_id !== selectedShoutout.id));
+            setShoutouts(prev => prev.filter(s => s.id !== selectedShoutout.id));
+            closePopup();
         } catch (error) {
-            console.error("Failed to delete shoutout", error);
-            alert("Failed to delete shoutout. See console for details.");
+            console.error('Failed to reject shoutout:', error);
+            alert('Failed to reject shoutout. See console for details.');
         } finally {
             setActionLoading(null);
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendNote();
         }
     };
 
     if (loading) return <div style={{ padding: '2rem' }}>Loading moderation queue...</div>;
 
-    // Enhance reports with related details
-    const enhancedReports = reports.map(report => {
-        const shoutout = shoutouts.find(s => s.id === report.shoutout_id);
-        const reporter = users.find(u => u.id === report.reported_by);
+    // Group reports by shoutout_id
+    const reportsByShoutout = {};
+    reports.forEach(report => {
+        if (!reportsByShoutout[report.shoutout_id]) {
+            reportsByShoutout[report.shoutout_id] = [];
+        }
+        reportsByShoutout[report.shoutout_id].push(report);
+    });
+
+    // Build cards: one per unique shoutout
+    const groupedCards = Object.entries(reportsByShoutout).map(([shoutoutId, shoutoutReports]) => {
+        const shoutout = shoutouts.find(s => s.id === parseInt(shoutoutId));
+        const enrichedReports = shoutoutReports.map(r => {
+            const reporter = users.find(u => u.id === r.reported_by);
+            return { ...r, reporterName: reporter ? reporter.name : 'Unknown User' };
+        });
 
         return {
-            ...report,
-            shoutoutDetails: shoutout || { message: "Shoutout not found (may be deleted)", sender_name: "Unknown" },
-            reporterName: reporter ? reporter.name : "Unknown User"
+            shoutoutId: parseInt(shoutoutId),
+            shoutout: shoutout || { message: 'Shoutout not found (may be deleted)', sender_name: 'Unknown' },
+            reports: enrichedReports,
+            reportCount: enrichedReports.length,
+            latestReport: enrichedReports.reduce((a, b) => new Date(a.created_at) > new Date(b.created_at) ? a : b),
         };
     });
 
     return (
         <div className="moderation-queue-container" style={{ padding: '1rem' }}>
-            {enhancedReports.length === 0 ? (
-                <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                    <CheckCircle size={48} color="var(--success-color)" style={{ marginBottom: '1rem' }} />
-                    <h3 style={{ margin: 0, color: 'var(--text-main)' }}>All caught up!</h3>
-                    <p style={{ color: 'var(--text-muted)' }}>No pending reports in the moderation queue.</p>
+            {groupedCards.length === 0 ? (
+                <div className="mod-empty-state">
+                    <CheckCircle size={48} color="var(--success-color, #22c55e)" style={{ marginBottom: '1rem' }} />
+                    <h3>All caught up!</h3>
+                    <p>No pending reports in the moderation queue.</p>
                 </div>
             ) : (
-                <div className="reports-grid" style={{ display: 'grid', gap: '1.5rem' }}>
-                    {enhancedReports.map(report => (
-                        <div key={report.id} style={{
-                            backgroundColor: 'var(--bg-card)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '12px',
-                            padding: '1.5rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '1rem'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div className="mod-reports-grid">
+                    {groupedCards.map(card => (
+                        <div key={card.shoutoutId} className="mod-report-card">
+                            <div className="mod-report-card-header">
                                 <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--danger-color)', fontWeight: 600, marginBottom: '4px' }}>
-                                        <AlertTriangle size={18} />
-                                        Reported by {report.reporterName}
+                                    <div className="mod-report-badge">
+                                        <AlertTriangle size={16} />
+                                        {card.reportCount} {card.reportCount === 1 ? 'Report' : 'Reports'}
                                     </div>
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                        {new Date(report.created_at).toLocaleString()}
+                                    <div className="mod-report-meta">
+                                        Latest: {new Date(card.latestReport.created_at).toLocaleString()}
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button
-                                        onClick={() => handleDismissReport(report.id)}
-                                        disabled={actionLoading === report.id || actionLoading === `shoutout-${report.shoutout_id}`}
-                                        style={{
-                                            padding: '8px 16px',
-                                            backgroundColor: 'transparent',
-                                            border: '1px solid var(--border-color)',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            color: 'var(--text-main)'
-                                        }}
-                                    >
-                                        Dismiss Report
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteShoutout(report.shoutout_id)}
-                                        disabled={actionLoading === report.id || actionLoading === `shoutout-${report.shoutout_id}`}
-                                        style={{
-                                            padding: '8px 16px',
-                                            backgroundColor: 'var(--danger-color)',
-                                            border: 'none',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            color: 'white',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px'
-                                        }}
-                                    >
-                                        <Trash2 size={16} /> Delete Shoutout
-                                    </button>
+                                <button
+                                    className="mod-view-btn"
+                                    onClick={() => openShoutoutPopup(card.shoutout, card.reports)}
+                                >
+                                    <Eye size={16} /> View Details
+                                </button>
+                            </div>
+
+                            <div className="mod-report-content">
+                                <div className="mod-report-sender">
+                                    From: <strong>{card.shoutout.sender_name}</strong>
+                                    {card.shoutout.recipient_names && card.shoutout.recipient_names.length > 0 && (
+                                        <span className="mod-report-recipients">
+                                            → {card.shoutout.recipient_names.join(', ')}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="mod-report-message">
+                                    "{card.shoutout.message?.substring(0, 120)}{card.shoutout.message?.length > 120 ? '...' : ''}"
                                 </div>
                             </div>
 
-                            <div style={{
-                                backgroundColor: 'var(--bg-main)',
-                                padding: '12px',
-                                borderRadius: '8px',
-                                borderLeft: '4px solid var(--danger-color)'
-                            }}>
-                                <strong style={{ display: 'block', marginBottom: '4px' }}>Reason:</strong>
-                                {report.reason}
-                            </div>
-
-                            <div style={{
-                                padding: '16px',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: '8px'
-                            }}>
-                                <strong style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                                    Reported Content:
-                                </strong>
-                                {report.shoutoutDetails.message === "Shoutout not found (may be deleted)" ? (
-                                    <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                        {report.shoutoutDetails.message}
+                            <div className="mod-report-reasons">
+                                {card.reports.slice(0, 2).map(r => (
+                                    <div key={r.id} className="mod-reason-chip">
+                                        <strong>{r.reporterName}:</strong> {r.reason}
                                     </div>
-                                ) : (
-                                    <>
-                                        <div style={{ fontWeight: 500, marginBottom: '4px' }}>
-                                            From: {report.shoutoutDetails.sender_name}
-                                        </div>
-                                        {report.shoutoutDetails.recipient_names && report.shoutoutDetails.recipient_names.length > 0 && (
-                                            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>
-                                                To: {report.shoutoutDetails.recipient_names.join(', ')}
-                                            </div>
-                                        )}
-                                        <div style={{ fontSize: '1.05rem', lineHeight: 1.5 }}>
-                                            "{report.shoutoutDetails.message}"
-                                        </div>
-                                    </>
+                                ))}
+                                {card.reports.length > 2 && (
+                                    <div className="mod-reason-more">
+                                        +{card.reports.length - 2} more report{card.reports.length - 2 > 1 ? 's' : ''}
+                                    </div>
                                 )}
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* ─── Shoutout Detail Popup ─────────────────────────────── */}
+            {selectedShoutout && (
+                <div className="modal-overlay" onClick={closePopup}>
+                    <div className="mod-detail-modal" onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="mod-modal-header">
+                            <h3><AlertTriangle size={20} /> Reported Shoutout</h3>
+                            <button className="mod-close-btn" onClick={closePopup}><X size={20} /></button>
+                        </div>
+
+                        {/* Shoutout Content */}
+                        <div className="mod-shoutout-detail">
+                            <div className="mod-detail-row">
+                                <span className="mod-detail-label">From</span>
+                                <span>{selectedShoutout.sender_name}</span>
+                            </div>
+                            {selectedShoutout.recipient_names && selectedShoutout.recipient_names.length > 0 && (
+                                <div className="mod-detail-row">
+                                    <span className="mod-detail-label">To</span>
+                                    <span>{selectedShoutout.recipient_names.join(', ')}</span>
+                                </div>
+                            )}
+                            {selectedShoutout.tags && (
+                                <div className="mod-detail-row">
+                                    <span className="mod-detail-label">Tags</span>
+                                    <span className="mod-tags">{selectedShoutout.tags}</span>
+                                </div>
+                            )}
+                            <div className="mod-detail-row">
+                                <span className="mod-detail-label">Date</span>
+                                <span>{selectedShoutout.created_at ? new Date(selectedShoutout.created_at).toLocaleString() : 'N/A'}</span>
+                            </div>
+                            <div className="mod-detail-message">
+                                "{selectedShoutout.message}"
+                            </div>
+                        </div>
+
+                        {/* Reports List */}
+                        <div className="mod-reports-section">
+                            <h4><AlertTriangle size={16} /> Reports ({selectedReports.length})</h4>
+                            {selectedReports.map(r => (
+                                <div key={r.id} className="mod-report-item">
+                                    <strong>{r.reporterName}</strong>
+                                    <span className="mod-report-time">{new Date(r.created_at).toLocaleString()}</span>
+                                    <p>{r.reason}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Moderation Thread */}
+                        <div className="mod-thread-section">
+                            <h4><MessageSquare size={16} /> Moderation Thread</h4>
+                            <div className="mod-thread-list">
+                                {notesLoading ? (
+                                    <div className="mod-thread-empty">Loading notes...</div>
+                                ) : notes.length === 0 ? (
+                                    <div className="mod-thread-empty">No moderation notes yet. Add one below.</div>
+                                ) : (
+                                    notes.map(note => (
+                                        <div key={note.id} className="mod-thread-note">
+                                            <div className="mod-note-header">
+                                                <strong>{note.admin_name}</strong>
+                                                <span className="mod-note-time">{new Date(note.created_at).toLocaleString()}</span>
+                                            </div>
+                                            <p>{note.message}</p>
+                                        </div>
+                                    ))
+                                )}
+                                <div ref={threadEndRef} />
+                            </div>
+
+                            <div className="mod-thread-input">
+                                <textarea
+                                    value={newNote}
+                                    onChange={e => setNewNote(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="Add a moderation note..."
+                                    rows={2}
+                                    disabled={noteSending}
+                                />
+                                <button
+                                    onClick={handleSendNote}
+                                    disabled={noteSending || !newNote.trim()}
+                                    className="mod-send-btn"
+                                >
+                                    <Send size={16} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        {!showRejectDialog ? (
+                            <div className="mod-actions">
+                                <button
+                                    className="mod-accept-btn"
+                                    onClick={handleAcceptShoutout}
+                                    disabled={!!actionLoading}
+                                >
+                                    <ShieldCheck size={18} /> Accept Shoutout
+                                </button>
+                                <button
+                                    className="mod-reject-btn"
+                                    onClick={() => setShowRejectDialog(true)}
+                                    disabled={!!actionLoading}
+                                >
+                                    <ShieldX size={18} /> Reject & Remove
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="mod-reject-dialog">
+                                <h4><ShieldX size={16} /> Rejection Reason</h4>
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={e => setRejectReason(e.target.value)}
+                                    placeholder="Enter why this shoutout is being rejected..."
+                                    rows={3}
+                                    autoFocus
+                                />
+                                <div className="mod-reject-actions">
+                                    <button
+                                        className="btn-cancel"
+                                        onClick={() => { setShowRejectDialog(false); setRejectReason(''); }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        className="mod-confirm-reject-btn"
+                                        onClick={handleRejectShoutout}
+                                        disabled={!rejectReason.trim() || !!actionLoading}
+                                    >
+                                        <Trash2 size={16} /> Confirm Rejection
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

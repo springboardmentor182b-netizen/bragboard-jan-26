@@ -4,3 +4,4 @@ from src.entities.comment import Comment
 from src.entities.reaction import Reaction
 from src.entities.report import Report
 from src.entities.admin_log import AdminLog
+from src.entities.moderation_note import ModerationNote
