@@ -12,4 +12,4 @@ class Report(Base):
     details = Column(Text, nullable=True)
 
     # Add this relationship
-    shoutout = relationship("Shoutout", back_populates="reports")
+    #shoutout = relationship("Shoutout", back_populates="reports")
