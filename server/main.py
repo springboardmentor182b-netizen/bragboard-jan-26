@@ -1,73 +1,55 @@
-"""
-BragBoard API - Main Entry Point
-FastAPI backend for employee recognition platform
-"""
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.database.connection import engine, Base
-from src.auth.controller import router as auth_router
+from src.database.config import Base, engine
 from src.users.controller import router as users_router
-from src.shoutouts.controller import router as shoutouts_router  # existing
-from src.reports.controller import router as reports_router      # ← ADD THIS
+from src.shoutouts.controller import router as shoutouts_router
+from src.shoutouts.comments import router as comments_router
+from src.shoutouts.reactions import router as reactions_router
+from dotenv import load_dotenv
+import os
 
-# Import all models to create tables
-from src.users.models import User
-from src.shoutouts.models import ShoutOut                        # existing
-from src.reports.models import Report                            # ← ADD THIS
+load_dotenv()
 
-# Create database tables
-print("Creating database tables...")
+# Create tables
 Base.metadata.create_all(bind=engine)
-print("Tables created successfully!")
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="BragBoard API",
-    description="Internal Employee Recognition Platform API",
-    version="1.0.0",
-)
+app = FastAPI(title="BragBoard API", version="1.0.0")
 
-# CORS Configuration
-origins = [
-    "http://localhost:3000",
-    "http://localhost:8000",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8000",
-]
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Include routers
-app.include_router(auth_router,      prefix="/api/auth",      tags=["Authentication"])
-app.include_router(users_router,     prefix="/api/users",     tags=["Users"])
-app.include_router(shoutouts_router, prefix="/api/shoutouts", tags=["Shoutouts"])  # existing
-app.include_router(reports_router,   prefix="/api/reports",   tags=["Reports"])    # ← ADD THIS
+app.include_router(users_router, prefix="/api/users", tags=["Users"])
+app.include_router(shoutouts_router, prefix="/api/shoutouts", tags=["Shoutouts"])
+app.include_router(comments_router, prefix="/api/comments", tags=["Comments"])
+app.include_router(reactions_router, prefix="/api/reactions", tags=["Reactions"])
 
 @app.get("/")
-async def root():
+def root():
+    base_url = os.getenv("BASE_URL", "http://localhost:8000")
     return {
-        "message": "BragBoard API is running!",
-        "status": "healthy",
-        "version": "1.0.0"
+        "message": "BragBoard API is running",
+        "version": "1.0.0",
+        "base_url": base_url,
+        "docs": f"{base_url}/docs",
+        "endpoints": {
+            "users": f"{base_url}/api/users",
+            "shoutouts": f"{base_url}/api/shoutouts",
+            "comments": f"{base_url}/api/comments",
+            "reactions": f"{base_url}/api/reactions"
+        }
     }
 
 @app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "database": "connected",
-        "api_version": "1.0.0"
-    }
+def health_check():
+    return {"status": "healthy", "service": "BragBoard API"}
 
-if name == "main":
+if __name__ == "__main__":
     import uvicorn
-    print("Starting BragBoard API server...")
-    print("Server will run at: http://localhost:8000")
-    print("API Documentation: http://localhost:8000/docs")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
