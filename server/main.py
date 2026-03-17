@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.database.config import Base, engine
 from src.users.controller import router as users_router
 from src.shoutouts.controller import router as shoutouts_router
+from src.shoutouts.comments import router as comments_router
+from src.shoutouts.reactions import router as reactions_router
 from dotenv import load_dotenv
 import os
 
@@ -23,8 +25,10 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(users_router, prefix="/api", tags=["Users"])
-app.include_router(shoutouts_router, prefix="/api", tags=["Shoutouts"])
+app.include_router(users_router, prefix="/api/users", tags=["Users"])
+app.include_router(shoutouts_router, prefix="/api/shoutouts", tags=["Shoutouts"])
+app.include_router(comments_router, prefix="/api/comments", tags=["Comments"])
+app.include_router(reactions_router, prefix="/api/reactions", tags=["Reactions"])
 
 @app.get("/")
 def root():
@@ -36,7 +40,9 @@ def root():
         "docs": f"{base_url}/docs",
         "endpoints": {
             "users": f"{base_url}/api/users",
-            "shoutouts": f"{base_url}/api/shoutouts"
+            "shoutouts": f"{base_url}/api/shoutouts",
+            "comments": f"{base_url}/api/comments",
+            "reactions": f"{base_url}/api/reactions"
         }
     }
 

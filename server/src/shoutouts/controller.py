@@ -5,7 +5,7 @@ from src.shoutouts.models import ShoutoutCreate, ShoutoutResponse, DashboardStat
 from src.shoutouts.service import ShoutoutService
 from typing import List
 
-router = APIRouter(prefix="/shoutouts", tags=["Shoutouts"])
+router = APIRouter()
 
 @router.post("/", response_model=ShoutoutResponse)
 def create_shoutout(shoutout: ShoutoutCreate, db: Session = Depends(get_db)):

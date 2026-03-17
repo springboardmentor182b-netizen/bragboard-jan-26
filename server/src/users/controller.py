@@ -5,7 +5,7 @@ from src.users.models import UserCreate, UserResponse, UserStats
 from src.users.service import UserService
 from typing import List
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter()
 
 @router.post("/", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
