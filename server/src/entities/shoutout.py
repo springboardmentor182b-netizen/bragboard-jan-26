@@ -1,14 +1,21 @@
 """
-ShoutOut Model
-Database model for shout-outs and recipients
+Entities Models
+Database models for shout-outs, comments, reactions, and reports
 """
 
-from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from src.database.connection import Base
+import enum
+from src.database.config import Base
 
-class ShoutOut(Base):
+class ReactionType(str, enum.Enum):
+    """Reaction type enumeration"""
+    LIKE = "like"
+    CLAP = "clap"
+    STAR = "star"
+
+class Shoutout(Base):
     """Shout-out table model"""
     __tablename__ = "shoutouts"
 
@@ -18,25 +25,16 @@ class ShoutOut(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
-    sender = relationship("User", foreign_keys=[sender_id])
-    recipients = relationship("ShoutOutRecipient", back_populates="shoutout", cascade="all, delete-orphan")
+    sender = relationship("User", foreign_keys=[sender_id], back_populates="sent_shoutouts")
+    recipients = relationship("ShoutoutRecipient", back_populates="shoutout", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="shoutout", cascade="all, delete-orphan")
     reactions = relationship("Reaction", back_populates="shoutout", cascade="all, delete-orphan")
-    reports = relationship("Report", back_populates="shoutout", cascade="all, delete-orphan")
+    tags = relationship("ShoutoutTag", back_populates="shoutout")
     
     def __repr__(self):
-        return f"<ShoutOut(id={self.id}, sender_id={self.sender_id})>"
-    
-    def to_dict(self):
-        """Convert model to dictionary"""
-        return {
-            "id": self.id,
-            "sender_id": self.sender_id,
-            "message": self.message,
-            "created_at": self.created_at.isoformat() if self.created_at else None
-        }
+        return f"<Shoutout(id={self.id}, sender_id={self.sender_id})>"
 
-class ShoutOutRecipient(Base):
+class ShoutoutRecipient(Base):
     """Shout-out recipients table (many-to-many relationship)"""
     __tablename__ = "shoutout_recipients"
 
@@ -45,35 +43,67 @@ class ShoutOutRecipient(Base):
     recipient_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     # Relationships
-    shoutout = relationship("ShoutOut", back_populates="recipients")
-    recipient = relationship("User")
+    shoutout = relationship("Shoutout", back_populates="recipients")
+    recipient = relationship("User", foreign_keys=[recipient_id])
     
     def __repr__(self):
-        return f"<ShoutOutRecipient(shoutout_id={self.shoutout_id}, recipient_id={self.recipient_id})>"
+        return f"<ShoutoutRecipient(shoutout_id={self.shoutout_id}, recipient_id={self.recipient_id})>"
 
-class Report(Base):
-    """Reports table model for flagged content"""
-    __tablename__ = "reports"
+class Comment(Base):
+    """Comments table model"""
+    __tablename__ = "comments"
 
     id = Column(Integer, primary_key=True, index=True)
     shoutout_id = Column(Integer, ForeignKey("shoutouts.id"), nullable=False)
-    reported_by = Column(Integer, ForeignKey("users.id"), nullable=False)
-    reason = Column(Text, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    content = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
-    shoutout = relationship("ShoutOut", back_populates="reports")
-    reporter = relationship("User")
+    shoutout = relationship("Shoutout", back_populates="comments")
+    user = relationship("User", foreign_keys=[user_id])
     
     def __repr__(self):
-        return f"<Report(id={self.id}, shoutout_id={self.shoutout_id})>"
+        return f"<Comment(id={self.id}, shoutout_id={self.shoutout_id})>"
+
+class Reaction(Base):
+    """Reactions table model"""
+    __tablename__ = "reactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    shoutout_id = Column(Integer, ForeignKey("shoutouts.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(Enum(ReactionType), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    def to_dict(self):
-        """Convert model to dictionary"""
-        return {
-            "id": self.id,
-            "shoutout_id": self.shoutout_id,
-            "reported_by": self.reported_by,
-            "reason": self.reason,
-            "created_at": self.created_at.isoformat() if self.created_at else None
-        }
+    # Relationships
+    shoutout = relationship("Shoutout", back_populates="reactions")
+    user = relationship("User", foreign_keys=[user_id])
+    
+    def __repr__(self):
+        return f"<Reaction(id={self.id}, type={self.type})>"
+
+class ShoutoutTag(Base):
+    """Shout-out tags junction table"""
+    __tablename__ = "shoutout_tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    shoutout_id = Column(Integer, ForeignKey("shoutouts.id"), nullable=False)
+    tag_id = Column(Integer, ForeignKey("tags.id"), nullable=False)
+    
+    # Relationships
+    shoutout = relationship("Shoutout", back_populates="tags")
+    tag = relationship("Tag", back_populates="shoutouts")
+
+class Tag(Base):
+    """Tags table model"""
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    
+    # Relationships
+    shoutouts = relationship("ShoutoutTag", back_populates="tag")
+    
+    def __repr__(self):
+        return f"<Tag(id={self.id}, name={self.name})>"

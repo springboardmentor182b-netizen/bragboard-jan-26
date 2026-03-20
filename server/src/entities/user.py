@@ -1,11 +1,17 @@
-from sqlalchemy import Column, Integer, String
-from src.database.core import Base
+from sqlalchemy import Column, Integer, String, TIMESTAMP
+from sqlalchemy.orm import relationship
+from datetime import datetime
+from src.database.config import Base
 
 class User(Base):
-    tablename = "users"
-
+    __tablename__ = "users"
+    
     id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String, nullable=False)
+    name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)
-    role = Column(String, default="employee")  # employee or admin
+    department = Column(String)
+    job_title = Column(String)
+    joined_at = Column(TIMESTAMP, default=datetime.utcnow)
+    
+    sent_shoutouts = relationship("Shoutout", foreign_keys="Shoutout.sender_id", back_populates="sender")
+    received_shoutouts = relationship("ShoutoutRecipient", back_populates="recipient")
