@@ -3,12 +3,12 @@ import React, { useEffect, useState } from 'react';
 const AdminPanel = () => {
     const [reports, setReports] = useState([]);
 
-    // 1. Get the Base URL from your .env
+    // We use the environment variable for the Base URL
     const API_URL = process.env.REACT_APP_API_URL;
 
     const fetchReports = async () => {
         try {
-            // 2. Use the variable for fetching reports
+            // Replaced hardcoded URL with environment variable
             const response = await fetch(`${API_URL}/admin/reports`);
             const data = await response.json();
             setReports(data);
@@ -26,7 +26,7 @@ const AdminPanel = () => {
     const handleDelete = async (reportId) => {
         if (window.confirm("Are you sure you want to delete this shoutout?")) {
             try {
-                // 3. Use the variable for the DELETE request
+                // Replaced hardcoded URL with environment variable
                 const response = await fetch(`${API_URL}/admin/reports/${reportId}`, {
                     method: 'DELETE',
                 });
