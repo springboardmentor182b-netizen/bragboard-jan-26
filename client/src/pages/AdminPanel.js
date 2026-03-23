@@ -3,9 +3,13 @@ import React, { useEffect, useState } from 'react';
 const AdminPanel = () => {
     const [reports, setReports] = useState([]);
 
+    // 1. Get the Base URL from your .env
+    const API_URL = process.env.REACT_APP_API_URL;
+
     const fetchReports = async () => {
         try {
-            const response = await fetch('http://127.0.0.1:8000/admin/reports');
+            // 2. Use the variable for fetching reports
+            const response = await fetch(`${API_URL}/admin/reports`);
             const data = await response.json();
             setReports(data);
         } catch (error) {
@@ -14,13 +18,16 @@ const AdminPanel = () => {
     };
 
     useEffect(() => { 
-        fetchReports(); 
-    }, []);
+        if (API_URL) {
+            fetchReports(); 
+        }
+    }, [API_URL]);
 
     const handleDelete = async (reportId) => {
         if (window.confirm("Are you sure you want to delete this shoutout?")) {
             try {
-                const response = await fetch(`http://127.0.0.1:8000/admin/reports/${reportId}`, {
+                // 3. Use the variable for the DELETE request
+                const response = await fetch(`${API_URL}/admin/reports/${reportId}`, {
                     method: 'DELETE',
                 });
                 if (response.ok) {
@@ -53,27 +60,18 @@ const AdminPanel = () => {
                     {reports.length > 0 ? (
                         reports.map((report) => (
                             <tr key={report.id} style={{ borderBottom: '1px solid #F5F5F5' }}>
-                                {/* SENDER */}
                                 <td style={{ padding: '15px', fontWeight: 'bold', color: '#444' }}>
                                     {report.sender_name || "Unknown Sender"}
                                 </td> 
-                                
-                                {/* OWNER (RECEIVER) */}
                                 <td style={{ padding: '15px', color: '#555' }}>
                                     {report.receiver_name || "Alex Rivera"} 
                                 </td> 
-                                
-                                {/* MESSAGE CONTENT */}
                                 <td style={{ padding: '15px', fontStyle: 'italic', color: '#333', maxWidth: '300px' }}>
                                     "{report.content || "No content available"}"
                                 </td> 
-                                
-                                {/* REASON FOR REPORT */}
                                 <td style={{ padding: '15px', color: '#d9534f', fontWeight: '500' }}>
                                     {report.reason}
                                 </td>
-                                
-                                {/* DELETE ACTION */}
                                 <td style={{ padding: '15px' }}>
                                     <button 
                                         onClick={() => handleDelete(report.id)}
