@@ -7,6 +7,7 @@ const Sidebar = () => {
     const menuItems = [
         { name: 'Dashboard', path: '/admin' },
         { name: 'Reported Posts', path: '/admin/reports' },
+        { name: 'Manage Shoutouts', path: '/admin/shoutouts' },
         { name: 'Manage Users', path: '#' },
         { name: 'Settings', path: '#' },
     ];

@@ -1,20 +1,62 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import AdminPanel from './pages/AdminPanel';
-import Sidebar from './components/Sidebar'; // The file we created earlier
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Sidebar from './components/Sidebar'; 
+import AdminPanel from './pages/AdminPanel'; // Your finished Reported Management logic
+import ShoutoutManagement from './components/ShoutoutManagement';
+
+// 1. A simple, clean placeholder for the unassigned Dashboard task
+const DashboardPlaceholder = () => {
+  // Pull the API URL from your .env file
+  const API_URL = process.env.REACT_APP_API_BASE_URL;
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h1 style={{ color: '#D35400' }}>🚀 BragBoard Admin</h1>
+      <p style={{ color: '#666' }}>Welcome to the administration console. Select an option from the sidebar to begin.</p>
+      
+      <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
+        <div style={cardStyle}>
+          <h4>System Status</h4>
+          <p style={{ color: '#27AE60', fontWeight: 'bold' }}>● Operational</p>
+        </div>
+        <div style={cardStyle}>
+          <h4>Backend API</h4>
+          {/* Display the environment variable instead of hardcoded text */}
+          <p>{API_URL || "Environment variable not found"}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const cardStyle = {
+  flex: 1,
+  padding: '20px',
+  background: '#fff',
+  borderRadius: '10px',
+  boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+  border: '1px solid #FFE0D0'
+};
 
 function App() {
   return (
     <Router>
-      <div style={{ display: 'flex' }}>
-        {/* Sidebar will now stay on the left for all routes */}
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
         <Sidebar /> 
         
-        <div style={{ flex: 1, minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
+        <div style={{ flex: 1, backgroundColor: '#F9FAFB', padding: '20px' }}>
           <Routes>
-            {/* When you finish Home, it will go here */}
-            <Route path="/" element={<div>User Home Page (Coming Soon)</div>} />
-            <Route path="/admin" element={<AdminPanel />} />
+            {/* DASHBOARD: Shows the placeholder above */}
+            <Route path="/admin" element={<DashboardPlaceholder />} />
+
+            {/* MANAGE SHOUTOUTS: Your main task */}
+            <Route path="/admin/shoutouts" element={<ShoutoutManagement />} />                    
+            
+            {/* REPORTED POSTS: Points to your merged AdminPanel logic */}
             <Route path="/admin/reports" element={<AdminPanel />} />
+
+            <Route path="/" element={<Navigate to="/admin" />} />
+            <Route path="*" element={<h2>404: Not Found</h2>} />
           </Routes>
         </div>
       </div>
