@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CreateShoutoutModal from '../components/CreateShoutoutModal';
@@ -64,6 +64,8 @@ const getInitials = (name) =>
   name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 
 // Sidebar Component
+// ─────────────────────────────────────────────────────────────────────────────
+
 function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }) {
   const navItems = [
     { id: 'feed', label: 'Activity Feed', icon: HomeIcon },
@@ -181,7 +183,6 @@ function FeedView({ user }) {
   const [shoutouts, setShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const loadShoutouts = async () => {
     setLoading(true);
@@ -335,9 +336,14 @@ function FeedView({ user }) {
   );
 }
 
+// Centralised API base — single source of truth for the whole file
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 // Shoutout Card Component
 function ShoutoutCard({ shoutout }) {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  // Get current user from AuthContext — no per-render localStorage parsing
+  const { user: currentUser } = useAuth();
+  const currentUserId = currentUser?.id ?? null;
 
   // ── Like (legacy counter) ────────────────────────────────────────────────
   const [liked, setLiked] = useState(false);
@@ -353,13 +359,17 @@ function ShoutoutCard({ shoutout }) {
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [postingComment, setPostingComment] = useState(false);
-  const [commentCount, setCommentCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(shoutout.comment_count ?? 0);
 
   // ── Report ────────────────────────────────────────────────────────────────
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportModal, setReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportStatus, setReportStatus] = useState(null);
+
+  // Ref to safely clear the report-success auto-dismiss timer on unmount
+  const reportTimerRef = useRef(null);
+  useEffect(() => () => { if (reportTimerRef.current) clearTimeout(reportTimerRef.current); }, []);
 
   const authorName = shoutout.sender?.name || 'Unknown';
   const recipients = shoutout.recipients || [];
@@ -377,12 +387,8 @@ function ShoutoutCard({ shoutout }) {
       .catch(() => setReactionsLoaded(true));
   }, [shoutout.id]);
 
-  // Load comment count on mount (without full comments)
-  useEffect(() => {
-    commentsAPI.getAll(shoutout.id)
-      .then(res => setCommentCount((res.data || []).length))
-      .catch(() => {});
-  }, [shoutout.id]);
+  // Comment count is initialised from shoutout.comment_count (set in useState above).
+  // No extra fetch needed on mount — count updates locally when user posts/deletes.
 
   const handleLike = async () => {
     const prev = liked; const prevLikes = likes;
@@ -446,7 +452,9 @@ function ShoutoutCard({ shoutout }) {
       if (res.status === 409) setReportStatus('duplicate');
       else if (res.ok) {
         setReportStatus('success');
-        setTimeout(() => { setReportModal(false); setReportStatus(null); setReportReason(''); }, 1800);
+        reportTimerRef.current = setTimeout(() => {
+          setReportModal(false); setReportStatus(null); setReportReason('');
+        }, 1800);
       } else setReportStatus('error');
     } catch { setReportStatus('error'); }
   };
@@ -475,10 +483,6 @@ function ShoutoutCard({ shoutout }) {
   );
 
   const reportReasons = ['Inappropriate content', 'Harassment or bullying', 'False or misleading', 'Spam', 'Other'];
-
-  const currentUserId = (() => {
-    try { return JSON.parse(localStorage.getItem('user'))?.id; } catch { return null; }
-  })();
 
   return (
     <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #E5E7EB', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', transition: 'box-shadow 0.2s', position: 'relative' }}>
@@ -705,7 +709,6 @@ function ShoutoutCard({ shoutout }) {
 function MyShoutoutsView({ user }) {
   const [shoutouts, setShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
     if (user?.id) {
@@ -746,7 +749,6 @@ function MyShoutoutsView({ user }) {
 function LeaderboardView() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const medals = ['🥇', '🥈', '🥉'];
 
   useEffect(() => {
@@ -811,7 +813,6 @@ function LeaderboardView() {
 function DepartmentsView() {
   const [depts, setDepts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const deptEmojis = { Engineering: '⚙️', Product: '🎯', Design: '🎨', Marketing: '📢', Sales: '💼', HR: '🤝' };
 
   useEffect(() => {
