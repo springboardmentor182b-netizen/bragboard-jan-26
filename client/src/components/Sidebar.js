@@ -1,10 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
-import { MessageSquare, PlusCircle, Trophy, FileText, LogOut } from 'lucide-react';
+import { MessageSquare, PlusCircle, Trophy, FileText, LogOut, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 
 const Sidebar = () => {
-    const { logout } = useAuth();
+    const { logout, user, apiUrl } = useAuth();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    const fetchUnreadCount = useCallback(async () => {
+        if (!user) return;
+        try {
+            const res = await axios.get(`${apiUrl}/notifications/unread-count?user_id=${user.id}`);
+            setUnreadCount(res.data.count);
+        } catch (err) {
+            // Silently fail
+        }
+    }, [user, apiUrl]);
+
+    useEffect(() => {
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 10000);
+        return () => clearInterval(interval);
+    }, [fetchUnreadCount]);
 
     const navItems = [
         { name: 'Feed', icon: MessageSquare, path: '/dashboard/feed' },
@@ -12,6 +30,7 @@ const Sidebar = () => {
         { name: 'Leaderboard', icon: Trophy, path: '/dashboard/leaderboard' },
         { name: 'My Profile', icon: FileText, path: '/dashboard/profile' },
         { name: 'My Shout Outs', icon: FileText, path: '/dashboard/mine' },
+        { name: 'Notifications', icon: Bell, path: '/dashboard/notifications', badge: unreadCount },
     ];
 
     return (
@@ -30,7 +49,12 @@ const Sidebar = () => {
                             }
                         >
                             <item.icon className="mr-3 h-5 w-5" />
-                            {item.name}
+                            <span className="flex-1">{item.name}</span>
+                            {item.badge > 0 && (
+                                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                                    {item.badge > 99 ? '99+' : item.badge}
+                                </span>
+                            )}
                         </NavLink>
                     ))}
                 </nav>
