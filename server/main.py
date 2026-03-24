@@ -11,6 +11,17 @@ import os
 load_dotenv()
 
 # Create tables
+from src.shoutouts.controller import router as shoutouts_router
+from src.reports.controller import router as reports_router
+from src.leaderboard.controller import router as leaderboard_router  # ← NEW
+
+# Import all models to create tables
+from src.users.models import User
+from src.shoutouts.models import ShoutOut
+from src.reports.models import Report
+
+# Create database tables
+print("Creating database tables...")
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="BragBoard API", version="1.0.0")
@@ -29,6 +40,11 @@ app.include_router(users_router, prefix="/api/users", tags=["Users"])
 app.include_router(shoutouts_router, prefix="/api/shoutouts", tags=["Shoutouts"])
 app.include_router(comments_router, prefix="/api/comments", tags=["Comments"])
 app.include_router(reactions_router, prefix="/api/reactions", tags=["Reactions"])
+app.include_router(auth_router,         prefix="/api/auth",         tags=["Authentication"])
+app.include_router(users_router,        prefix="/api/users",        tags=["Users"])
+app.include_router(shoutouts_router,    prefix="/api/shoutouts",    tags=["Shoutouts"])
+app.include_router(reports_router,      prefix="/api/reports",      tags=["Reports"])
+app.include_router(leaderboard_router,  prefix="/api/leaderboard",  tags=["Leaderboard"])  # ← NEW
 
 @app.get("/")
 def root():
@@ -51,5 +67,11 @@ def health_check():
     return {"status": "healthy", "service": "BragBoard API"}
 
 if __name__ == "__main__":
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+
+    print("Starting BragBoard API server...")
+    print("Server will run at: http://localhost:8000")
+    print("API Documentation: http://localhost:8000/docs")
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
