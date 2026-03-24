@@ -6,6 +6,9 @@ from src.database.core import get_db
 from src.entities.shoutout import Shoutout
 from src.entities.report import Report
 
+# --- NEW: Import the leaderboard router ---
+from app.api.v1.admin.leaderboard import router as leaderboard_router
+
 router = APIRouter()
 
 @router.get('/reports')
@@ -24,7 +27,6 @@ def get_reports(db: Session = Depends(get_db)):
         })
     return formatted_data
 
-# --- ADD THIS DELETE ROUTE ---
 @router.delete('/reports/{report_id}')
 def delete_report(report_id: int, db: Session = Depends(get_db)):
     # Find the report by its ID
@@ -33,12 +35,10 @@ def delete_report(report_id: int, db: Session = Depends(get_db)):
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     
-    # Optional: If your mentor wants the Shoutout deleted too:
-    # shoutout = db.query(Shoutout).filter(Shoutout.id == report.shoutout_id).first()
-    # if shoutout:
-    #     db.delete(shoutout)
-
     db.delete(report)
     db.commit()
     
     return {"message": "Success! Report deleted."}
+
+# --- NEW: Include the leaderboard router at the bottom ---
+router.include_router(leaderboard_router.router, prefix="/leaderboard", tags=["leaderboard"])

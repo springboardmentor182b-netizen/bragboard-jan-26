@@ -4,12 +4,12 @@ const AdminPanel = () => {
     const [reports, setReports] = useState([]);
 
     // We use the environment variable for the Base URL
-    const API_BASE_URL = process.env.REACT_APP_API_URL;
+    const API_URL = process.env.REACT_APP_API_URL;
 
     const fetchReports = async () => {
         try {
             // Replaced hardcoded URL with environment variable
-            const response = await fetch(`${API_BASE_URL}/admin/reports`);
+            const response = await fetch(`${API_URL}/admin/reports`);
             const data = await response.json();
             setReports(data);
         } catch (error) {
@@ -18,14 +18,16 @@ const AdminPanel = () => {
     };
 
     useEffect(() => { 
-        fetchReports(); 
-    }, []);
+        if (API_URL) {
+            fetchReports(); 
+        }
+    }, [API_URL]);
 
     const handleDelete = async (reportId) => {
         if (window.confirm("Are you sure you want to delete this shoutout?")) {
             try {
                 // Replaced hardcoded URL with environment variable
-                const response = await fetch(`${API_BASE_URL}/admin/reports/${reportId}`, {
+                const response = await fetch(`${API_URL}/admin/reports/${reportId}`, {
                     method: 'DELETE',
                 });
                 if (response.ok) {

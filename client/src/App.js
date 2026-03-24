@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AdminPanel from './pages/AdminPanel';
 import Sidebar from './components/Sidebar'; // The file we created earlier
-
+import Leaderboard from './pages/Leaderboard';
 function App() {
   return (
     <Router>
@@ -15,6 +15,7 @@ function App() {
             <Route path="/" element={<div>User Home Page (Coming Soon)</div>} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/reports" element={<AdminPanel />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
           </Routes>
         </div>
       </div>
