@@ -1,19 +1,89 @@
-# Python
-venv/
+# ─── Python (server) ──────────────────────────────────────────────────────────
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
-.env
-.pytest_cache/
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
 dist/
 build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
 
-# [cite_start]Node/React [cite: 39-43]
+# ─── Environment / secrets ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.local
+
+# ─── Node / React (client) ────────────────────────────────────────────────────
 node_modules/
 npm-debug.log*
-build/
-.env.local
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
 
-# [cite_start]IDEs [cite: 47-48]
+# Built output
+client/dist/
+client/dist-ssr/
+client/.vite/
+
+# ─── Uploaded files (runtime, not source) ─────────────────────────────────────
+server/uploads/
+
+# ─── IDEs & OS ────────────────────────────────────────────────────────────────
 .vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 .DS_Store
 Thumbs.db
+
+# ─── Accidental frontend files inside server/ ─────────────────────────────────
+# These patterns stop JS/JSX/CSS/HTML from being committed into the Python server folder.
+server/*.js
+server/*.jsx
+server/*.ts
+server/*.tsx
+server/*.css
+server/*.html
+server/package.json
+server/package-lock.json
+server/yarn.lock
+server/tailwind.config.*
+server/postcss.config.*
+server/vite.config.*
+server/eslint.config.*
+server/index.html
+server/public/
+server/src/*.jsx
+server/src/*.js
+server/src/*.css
+server/src/components/
+server/src/pages/
+server/src/context/
+server/src/hooks/
+server/src/layout/
+server/src/features/
+server/src/services/
+server/src/assets/
+server/src/styles/
+server/src/config/
+server/src/utils/
+server/src/src/

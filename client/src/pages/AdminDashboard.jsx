@@ -1349,6 +1349,7 @@ function ExportView() {
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchErrors, setFetchErrors] = useState([]);
   const [toast, setToast] = useState(null);
 
   const showToast = (message, type = 'success') => {
@@ -1357,15 +1358,21 @@ function ExportView() {
   };
 
   useEffect(() => {
-    Promise.all([
+    // Promise.allSettled ensures one failing call never silences the others
+    Promise.allSettled([
       adminAPI.listShoutouts(500),
       adminAPI.listUsers(),
       adminAPI.getLogs(500),
     ]).then(([s, u, l]) => {
-      setShoutouts(s.data || []);
-      setUsers(u.data || []);
-      setLogs(l.data || []);
-    }).catch(() => {}).finally(() => setLoading(false));
+      const errors = [];
+      if (s.status === 'fulfilled') setShoutouts(s.value.data || []);
+      else errors.push('Shoutouts failed to load');
+      if (u.status === 'fulfilled') setUsers(u.value.data || []);
+      else errors.push('Users failed to load');
+      if (l.status === 'fulfilled') setLogs(l.value.data || []);
+      else errors.push('Admin logs failed to load');
+      setFetchErrors(errors);
+    }).finally(() => setLoading(false));
   }, []);
 
   const toCSV = (rows, headers) => {
@@ -1434,6 +1441,12 @@ function ExportView() {
 
       {loading ? <Spinner /> : (
         <>
+          {/* Show which calls failed — no more silent zeros */}
+          {fetchErrors.length > 0 && (
+            <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 10, padding: '12px 16px', marginBottom: 18, color: '#991B1B', fontSize: 13 }}>
+              ⚠️ Some data failed to load: {fetchErrors.join(', ')}. Check your connection or try refreshing.
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 18, marginBottom: 28 }}>
             {cards.map((c, i) => (
               <div key={i} style={{ background: '#fff', borderRadius: 16, border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
