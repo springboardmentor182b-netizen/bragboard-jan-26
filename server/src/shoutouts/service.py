@@ -7,9 +7,18 @@ from fastapi import HTTPException, status
 from src.entities.shoutout import Shoutout, ShoutoutRecipient
 from src.entities.user import User
 from src.shoutouts.models import ShoutoutCreate
+from src.moderation.service import moderate_message
 
 
 def create_shoutout(db: Session, sender_id: int, data: ShoutoutCreate) -> Shoutout:
+    # AI Moderation — block harmful content before saving
+    result = moderate_message(data.message)
+    if not result.is_safe:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Message flagged: {result.reason}",
+        )
+
     tag_string = ",".join(data.tags) if data.tags else None
     shoutout = Shoutout(
         sender_id=sender_id,

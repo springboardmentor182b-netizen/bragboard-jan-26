@@ -8,10 +8,13 @@ const CreateShoutoutModal = ({ isOpen, onClose, onPost, currentUser }) => {
     const [selectedRecipient, setSelectedRecipient] = useState('');
     const [selectedTags, setSelectedTags] = useState([]);
     const [users, setUsers] = useState([]);
+    const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     // Fetch users when modal opens
     useEffect(() => {
         if (isOpen) {
+            setError('');
             const token = localStorage.getItem('token');
             fetch(`${API_URL}/users/`, { headers: { 'Authorization': `Bearer ${token}` } })
                 .then(res => res.json())
@@ -29,21 +32,45 @@ const CreateShoutoutModal = ({ isOpen, onClose, onPost, currentUser }) => {
 
     if (!isOpen) return null;
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!selectedRecipient) return alert("Please select a colleague!");
         if (!message.trim()) return alert("Please write a message!");
 
-        onPost({
-            message,
-            recipient_ids: [parseInt(selectedRecipient)],
-            tags: selectedTags
-        });
+        setSubmitting(true);
+        setError('');
 
-        // Reset form
-        onClose();
-        setMessage('');
-        setSelectedTags([]);
-        setSelectedRecipient('');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/shoutouts/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    message,
+                    recipient_ids: [parseInt(selectedRecipient)],
+                    tags: selectedTags
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (onPost) onPost(data);
+                onClose();
+                setMessage('');
+                setSelectedTags([]);
+                setSelectedRecipient('');
+                setError('');
+            } else {
+                const err = await res.json();
+                setError(err.detail || 'Failed to post shoutout');
+            }
+        } catch {
+            setError('Could not connect to server');
+        }
+
+        setSubmitting(false);
     };
 
     const availableTags = ['Teamwork', 'Innovation', 'Leadership', 'Bug Hunter', 'Problem Solving'];
@@ -61,6 +88,13 @@ const CreateShoutoutModal = ({ isOpen, onClose, onPost, currentUser }) => {
             <div className="bg-white rounded-2xl w-full max-w-lg p-6 relative shadow-2xl">
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={24} /></button>
                 <h2 className="text-2xl font-bold mb-6 text-gray-800">Give a Shout-out</h2>
+
+                {/* Moderation Error Banner */}
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                        ⚠️ {error}
+                    </div>
+                )}
 
                 {/* RECIPIENT DROPDOWN */}
                 <div className="mb-4">
@@ -102,8 +136,9 @@ const CreateShoutoutModal = ({ isOpen, onClose, onPost, currentUser }) => {
                     </div>
                 </div>
 
-                <button onClick={handleSubmit} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-colors">
-                    Post Shoutout
+                <button onClick={handleSubmit} disabled={submitting}
+                    className={`w-full py-3 rounded-xl font-bold transition-colors ${submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer'} text-white`}>
+                    {submitting ? 'Posting...' : 'Post Shoutout'}
                 </button>
             </div>
         </div>
