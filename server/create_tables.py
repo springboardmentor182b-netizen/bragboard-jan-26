@@ -2,9 +2,8 @@
 Script to create all database tables
 Run this once to initialize your database schema
 """
-from src.entities.admin_log import AdminLog
-from src.database.core import Base
-from src.database.connection import engine
+
+from src.database.connection import Base, engine
 from src.entities.user import User
 
 def create_tables():

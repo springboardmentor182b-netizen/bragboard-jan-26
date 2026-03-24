@@ -1,11 +1,16 @@
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
+# Update with your password
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:password@localhost/bragboard"
 
-class Base(DeclarativeBase):
-    """Base class for all ORM models."""
-    pass
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-
-def create_tables(engine):
-    """Create all tables that inherit from Base."""
-    Base.metadata.create_all(bind=engine)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

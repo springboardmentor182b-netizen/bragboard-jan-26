@@ -10,17 +10,13 @@ import ModerationQueue from './pages/ModerationQueue';
 import AdminLayout from './layout/AdminLayout';
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, user, loading } = useAuth();
-  if (loading) return null;
-  const authed = typeof isAuthenticated === 'function' ? isAuthenticated() : !!user;
-  return authed ? children : <Navigate to="/login" />;
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated() ? children : <Navigate to="/login" />;
 }
 
 function AdminRoute({ children }) {
-  const { isAuthenticated, user, loading } = useAuth();
-  if (loading) return null;
-  const authed = typeof isAuthenticated === 'function' ? isAuthenticated() : !!user;
-  if (!authed) return <Navigate to="/login" />;
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated()) return <Navigate to="/login" />;
   if (user?.role !== 'admin') return <Navigate to="/dashboard" />;
   return children;
 }
@@ -58,11 +54,11 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <AppRoutes />
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

@@ -1,52 +1,134 @@
-import os
+"""
+Database and Application Configuration
+Loads settings from environment variables for security
+"""
 
-from pydantic_settings import BaseSettings
-from typing import List, Optional
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (relative to server directory)
+_server_dir = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_server_dir / ".env")
 
 # Compute absolute path to server/.env so it loads correctly regardless of CWD
 _ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".env")
 
 
-class Settings(BaseSettings):
+class Settings:
     """
-    Application settings loaded from environment variables using pydantic-settings.
-    Includes database credentials, JWT security, and server configuration.
+    Application settings loaded from environment variables
+    
+    SECURITY NOTE: Never hardcode sensitive values!
+    Always use environment variables for:
+    - Database credentials
+    - Secret keys
+    - API keys
+    - Passwords
     """
-
+    
     # Database Configuration
-    POSTGRES_USER: str = "bragboard_user"
-    POSTGRES_PASSWORD: str = "bragboard_pass"
-    POSTGRES_DB: str = "bragboard_db"
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5432
-
+    # NO FALLBACK - Force using environment variable
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    
     # JWT Configuration
-    SECRET_KEY: str = "your-secret-key-change-this-in-production"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200  # Default 30 days in minutes
-
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    ALGORITHM = os.getenv("ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    
     # Server Configuration
-    HOST: str = "0.0.0.0"
-    PORT: int = 8000
-    ENVIRONMENT: str = "development"
+    HOST = os.getenv("HOST", "127.0.0.1")
+    PORT = int(os.getenv("PORT", "8000"))
     
     # CORS Configuration
-    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+    CORS_ORIGINS = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",")
+    
+    # Environment
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+    
+    def __init__(self):
+        """Validate critical settings on initialization"""
+        self._validate_settings()
+    
+    def _validate_settings(self):
+        """Check if critical settings are properly configured"""
+        errors = []
+        warnings = []
+        
+        # Check if DATABASE_URL is set
+        if not self.DATABASE_URL:
+            errors.append(
+                "❌ CRITICAL: DATABASE_URL is not set!\n"
+                "   Please add it to your .env file:\n"
+                "   DATABASE_URL=postgresql://postgres:your_password@localhost:5432/bragboard_db"
+            )
+        elif "password@localhost" in self.DATABASE_URL:
+            warnings.append(
+                "⚠️  WARNING: Possibly using default database credentials!\n"
+                "   Please use a strong password in your .env file."
+            )
+        
+        # Check if SECRET_KEY is set
+        if not self.SECRET_KEY:
+            errors.append(
+                "❌ CRITICAL: SECRET_KEY is not set!\n"
+                "   Generate a secure key and add it to your .env file:\n"
+                "   Run: python -c \"import secrets; print(secrets.token_urlsafe(32))\"\n"
+                "   Then add: SECRET_KEY=<generated-key>"
+            )
+        elif self.SECRET_KEY in [
+            "your-secret-key-change-this-in-production",
+            "INSECURE-KEY-CHANGE-THIS-IN-PRODUCTION"
+        ]:
+            warnings.append(
+                "⚠️  WARNING: Using default SECRET_KEY!\n"
+                "   Generate a secure key with:\n"
+                "   python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+            )
+        elif len(self.SECRET_KEY) < 32:
+            warnings.append(
+                "⚠️  WARNING: SECRET_KEY is too short! Should be at least 32 characters."
+            )
+        
+        # Print errors (will prevent startup)
+        if errors:
+            print("\n" + "="*70)
+            print("CONFIGURATION ERRORS - CANNOT START:")
+            print("="*70)
+            for error in errors:
+                print(error)
+            print("="*70 + "\n")
+            raise ValueError(
+                "Missing required environment variables. Please check your .env file!"
+            )
+        
+        # Print warnings (for development)
+        if warnings and self.ENVIRONMENT != "production":
+            print("\n" + "="*70)
+            print("SECURITY WARNINGS:")
+            print("="*70)
+            for warning in warnings:
+                print(warning)
+            print("="*70 + "\n")
+        elif warnings and self.ENVIRONMENT == "production":
+            # In production, warnings become errors
+            print("\n" + "="*70)
+            print("PRODUCTION SECURITY ERRORS:")
+            print("="*70)
+            for warning in warnings:
+                print(warning.replace("⚠️  WARNING:", "❌ ERROR:"))
+            print("="*70 + "\n")
+            raise ValueError(
+                "Cannot start in production with insecure configuration!"
+            )
 
-    @property
-    def DATABASE_URL(self) -> str:
-        return (
-            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-            f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-        )
 
-    @property
-    def cors_origins_list(self) -> List[str]:
-        return self.CORS_ORIGINS.split(",")
-
-    class Config:
-        env_file = _ENV_FILE
-        extra = "ignore"
-
-
+# Create settings instance
 settings = Settings()
+
+
+# Export for convenience
+__all__ = ["settings"]
