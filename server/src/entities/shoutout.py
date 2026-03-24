@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
 from src.database.connection import Base
-from datetime import datetime, timezone  # ADD THIS
+from datetime import datetime, timezone
 
 
 class Shoutout(Base):
@@ -12,7 +12,8 @@ class Shoutout(Base):
     message = Column(Text, nullable=False)
     tags = Column(String)
     likes = Column(Integer, default=0)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # FIX THIS
+    image_url = Column(String, nullable=True)   # optional attached image
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     sender = relationship("User", foreign_keys=[sender_id], backref="sent_shoutouts")

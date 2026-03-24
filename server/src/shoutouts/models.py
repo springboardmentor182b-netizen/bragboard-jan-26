@@ -39,6 +39,7 @@ class ShoutoutResponse(BaseModel):
     message: str
     tags: Optional[str] = None
     likes: Optional[int] = 0
+    image_url: Optional[str] = None
     created_at: datetime
     recipients: Optional[List[RecipientSummary]] = []
 

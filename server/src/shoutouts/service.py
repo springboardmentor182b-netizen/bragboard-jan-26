@@ -8,12 +8,13 @@ from src.entities.shoutout_like import ShoutoutLike
 from src.shoutouts.models import ShoutoutCreate
 
 
-def create_shoutout(db: Session, shoutout_data: ShoutoutCreate):
+def create_shoutout(db: Session, shoutout_data: ShoutoutCreate, image_url: str = None):
     tag_string = ",".join(shoutout_data.tags)
     new_shoutout = Shoutout(
         sender_id=shoutout_data.sender_id,
         message=shoutout_data.message,
         tags=tag_string,
+        image_url=image_url,
     )
     db.add(new_shoutout)
     db.commit()

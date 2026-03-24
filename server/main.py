@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 # ✅ Import Base + engine from connection.py (feature branch pattern)
 from src.database.connection import Base, engine
@@ -44,7 +46,8 @@ from src.leaderboard.controller import router as leaderboard_router
 from src.shoutouts.controller import router as shoutouts_router
 from src.users.controller import router as users_router
 from src.reports.controller import router as reports_router
-
+from src.reactions.controller import router as reactions_router
+from src.comments.controller import router as comments_router
 from src.admin.controller import router as admin_router
 
 app.include_router(auth_router)
@@ -52,7 +55,14 @@ app.include_router(leaderboard_router)
 app.include_router(shoutouts_router, prefix="/shoutouts", tags=["Shoutouts"])
 app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(reports_router)
+app.include_router(reactions_router)
+app.include_router(comments_router)
 app.include_router(admin_router)   # ← registers /admin/*
+
+# ── Serve uploaded images ──────────────────────────────────────────────────────
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 # ─── Health endpoints ─────────────────────────────────────────────────────────
