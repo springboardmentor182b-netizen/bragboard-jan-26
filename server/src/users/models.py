@@ -1,16 +1,14 @@
 from sqlalchemy import Column, Integer, String, Enum, TIMESTAMP
 from sqlalchemy.sql import func
-from src.core.database import Base
+from src.database.core import Base
 import enum
-
 
 class RoleEnum(str, enum.Enum):
     employee = "employee"
     admin = "admin"
 
-
 class User(Base):
-    tablename = "users"
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
