@@ -8,6 +8,7 @@ from src.auth.controller import router as auth_router
 from src.users.controller import router as users_router
 from src.shoutouts.controller import router as shoutouts_router
 from src.reports.controller import router as reports_router
+from src.notifications.controller import router as notifications_router
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -46,3 +47,4 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(shoutouts_router)
 app.include_router(reports_router)
+app.include_router(notifications_router)

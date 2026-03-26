@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from src.database.database import Base
@@ -26,6 +26,7 @@ class User(Base):
     sent_shoutouts = relationship("ShoutOut", back_populates="sender", foreign_keys="[ShoutOut.sender_id]")
     received_shoutouts = relationship("ShoutOut", back_populates="recipient", foreign_keys="[ShoutOut.recipient_id]")
     security_questions = relationship("SecurityQuestion", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", foreign_keys="[Notification.user_id]", cascade="all, delete-orphan")
 
 class ShoutOut(Base):
     __tablename__ = "shoutouts"
@@ -43,6 +44,7 @@ class ShoutOut(Base):
     # comments = Column(JSON, default=[])
 
     tags = Column(JSON, default=[]) # List of tags/skills
+    media_url = Column(String, nullable=True)  # Optional image/video attachment
 
     sender = relationship("User", back_populates="sent_shoutouts", foreign_keys=[sender_id])
     recipient = relationship("User", back_populates="received_shoutouts", foreign_keys=[recipient_id])
@@ -85,3 +87,18 @@ class SecurityQuestion(Base):
 
     user = relationship("User", back_populates="security_questions")
 
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))       # recipient of notification
+    actor_id = Column(Integer, ForeignKey("users.id"))      # who triggered it
+    shoutout_id = Column(Integer, ForeignKey("shoutouts.id"))
+    type = Column(String)                                   # "like" or "comment"
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="notifications", foreign_keys=[user_id])
+    actor = relationship("User", foreign_keys=[actor_id])
+    shoutout = relationship("ShoutOut")
