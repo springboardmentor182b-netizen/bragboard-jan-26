@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CreateShoutoutModal from '../components/CreateShoutoutModal';
+import { reactionsAPI, commentsAPI } from '../services/api';
 import '../styles/theme.css';
 
 // Icons (keeping your existing inline SVG icons)
@@ -63,6 +64,8 @@ const getInitials = (name) =>
   name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 
 // Sidebar Component
+// ─────────────────────────────────────────────────────────────────────────────
+
 function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }) {
   const navItems = [
     { id: 'feed', label: 'Activity Feed', icon: HomeIcon },
@@ -180,7 +183,6 @@ function FeedView({ user }) {
   const [shoutouts, setShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const loadShoutouts = async () => {
     setLoading(true);
@@ -218,22 +220,44 @@ function FeedView({ user }) {
     <div>
       {/* Welcome Banner */}
       <div style={{
-        background: 'linear-gradient(135deg, #4F46E5 0%, #10B981 100%)',
-        borderRadius: '16px', padding: '28px 32px', marginBottom: '28px', color: '#fff'
+        background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #06B6D4 100%)',
+        borderRadius: '18px', padding: '28px 32px', marginBottom: '20px', color: '#fff',
+        position: 'relative', overflow: 'hidden',
       }}>
-        <h2 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 6px 0' }}>
-          Welcome back, {user?.name?.split(' ')[0] || 'there'}! 👋
-        </h2>
-        <p style={{ fontSize: '15px', margin: 0, opacity: 0.9 }}>
-          Ready to celebrate your team's achievements today?
-        </p>
+        <div style={{ position:'absolute',top:-40,right:-40,width:180,height:180,borderRadius:'50%',background:'rgba(255,255,255,0.07)' }}/>
+        <div style={{ position:'absolute',bottom:-30,right:120,width:120,height:120,borderRadius:'50%',background:'rgba(255,255,255,0.05)' }}/>
+        <div style={{ position:'relative',zIndex:1 }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 6px 0' }}>
+            Welcome back, {user?.name?.split(' ')[0] || 'there'}! 👋
+          </h2>
+          <p style={{ fontSize: '14px', margin: 0, opacity: 0.85 }}>
+            Ready to celebrate your team's achievements today? Give someone a shout-out!
+          </p>
+        </div>
+      </div>
+
+      {/* Quick stats strip */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:24 }}>
+        {[
+          { icon:'🎉', label:'Total Shout-outs', value: shoutouts.length, color:'#4F46E5', bg:'#EEF2FF' },
+          { icon:'❤️', label:'Total Likes', value: shoutouts.reduce((a,s)=>a+(s.likes||0),0), color:'#EF4444', bg:'#FEF2F2' },
+          { icon:'🏷️', label:'Tagged People', value: [...new Set(shoutouts.flatMap(s=>(s.recipients||[]).map(r=>r.recipient?.id)).filter(Boolean))].length, color:'#10B981', bg:'#F0FDF4' },
+        ].map((stat,i)=>(
+          <div key={i} style={{ background:'#fff', borderRadius:14, padding:'16px 18px', border:'1px solid #E5E7EB', display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:42,height:42,borderRadius:10,background:stat.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0 }}>{stat.icon}</div>
+            <div>
+              <p style={{ fontSize:22,fontWeight:800,color:stat.color,margin:'0 0 1px' }}>{stat.value}</p>
+              <p style={{ fontSize:11,color:'#9CA3AF',margin:0,fontWeight:500 }}>{stat.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Feed Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <div>
-          <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 2px 0' }}>Recognition Feed</h3>
-          <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>Celebrate your team's achievements</p>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: '0 0 2px 0' }}>Recognition Feed</h3>
+          <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>Celebrating your team's achievements</p>
         </div>
       </div>
 
@@ -312,51 +336,140 @@ function FeedView({ user }) {
   );
 }
 
+// Centralised API base — single source of truth for the whole file
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 // Shoutout Card Component
 function ShoutoutCard({ shoutout }) {
+  // Get current user from AuthContext
+  const { user: currentUser } = useAuth();
+  const currentUserId = currentUser?.id ?? null;
+
+  // ── Like ─────────────────────────────────────────────────────────────────
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(shoutout.likes || 0);
+
+  // ── Reactions (clap / star) ──────────────────────────────────────────────
+  const [reactions, setReactions] = useState({ like: 0, clap: 0, star: 0, user_reactions: [] });
+
+  // ── Comments + nested replies ─────────────────────────────────────────────
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
+  // comment_count now comes from backend via ShoutoutResponse
+  const [commentCount, setCommentCount] = useState(shoutout.comment_count ?? 0);
+  // replyingTo: { id, authorName } of the comment being replied to, or null
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [postingReply, setPostingReply] = useState(false);
+
+  // ── Report ────────────────────────────────────────────────────────────────
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportModal, setReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
-  const [reportStatus, setReportStatus] = useState(null); // 'submitting' | 'success' | 'error' | 'duplicate'
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const [reportStatus, setReportStatus] = useState(null);
+  const reportTimerRef = useRef(null);
+  useEffect(() => () => { if (reportTimerRef.current) clearTimeout(reportTimerRef.current); }, []);
 
   const authorName = shoutout.sender?.name || 'Unknown';
-  
-  // UPDATED: Handle multiple recipients properly
   const recipients = shoutout.recipients || [];
-  
   const tagList = Array.isArray(shoutout.tags)
     ? shoutout.tags
     : (shoutout.tags || '').split(',').map(t => t.trim()).filter(Boolean);
-    
   const timeAgo = shoutout.created_at
-    ? new Date(shoutout.created_at).toLocaleDateString('en-GB', { 
-        day: 'numeric', 
-        month: 'short', 
-        year: 'numeric' 
-      })
+    ? new Date(shoutout.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
 
+  // Load reactions on mount — persists across refresh for all users
+  useEffect(() => {
+    reactionsAPI.getCounts(shoutout.id)
+      .then(res => setReactions(res.data))
+      .catch(() => {});
+  }, [shoutout.id]);
+
   const handleLike = async () => {
-    const previousLiked = liked;
-    const previousLikes = likes;
-    
-    setLiked(!liked);
-    setLikes(liked ? likes - 1 : likes + 1);
-    
+    const prev = liked; const prevLikes = likes;
+    setLiked(!liked); setLikes(liked ? likes - 1 : likes + 1);
     try {
       const token = localStorage.getItem('token');
       await fetch(`${API_URL}/shoutouts/${shoutout.id}/like/`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` }
+        method: 'PUT', headers: { Authorization: `Bearer ${token}` }
       });
-    } catch (err) {
-      console.error('Like error:', err);
-      setLiked(previousLiked);
-      setLikes(previousLikes);
+    } catch { setLiked(prev); setLikes(prevLikes); }
+  };
+
+  const handleReaction = async (type) => {
+    try {
+      const res = await reactionsAPI.toggle(shoutout.id, type);
+      setReactions(res.data.counts);
+    } catch (err) { console.error('Reaction error', err); }
+  };
+
+  // Always re-fetch when opening so any other user's comments appear immediately
+  const toggleComments = async () => {
+    if (!showComments) {
+      try {
+        const res = await commentsAPI.getAll(shoutout.id);
+        const data = res.data || [];
+        setComments(data);
+        // total = top-level + all replies
+        const total = data.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
+        setCommentCount(total);
+        setCommentsLoaded(true);
+      } catch { setCommentsLoaded(true); }
     }
+    setShowComments(v => !v);
+  };
+
+  const handlePostComment = async () => {
+    if (!commentText.trim()) return;
+    setPostingComment(true);
+    try {
+      const res = await commentsAPI.post(shoutout.id, commentText.trim());
+      setComments(prev => [...prev, { ...res.data, replies: [] }]);
+      setCommentCount(c => c + 1);
+      setCommentText('');
+    } catch { /* silent */ } finally { setPostingComment(false); }
+  };
+
+  const handlePostReply = async (parentId) => {
+    if (!replyText.trim()) return;
+    setPostingReply(true);
+    try {
+      const res = await commentsAPI.post(shoutout.id, replyText.trim(), parentId);
+      setComments(prev => prev.map(c =>
+        c.id === parentId
+          ? { ...c, replies: [...(c.replies || []), res.data] }
+          : c
+      ));
+      setCommentCount(c => c + 1);
+      setReplyText('');
+      setReplyingTo(null);
+    } catch { /* silent */ } finally { setPostingReply(false); }
+  };
+
+  const handleDeleteComment = async (commentId, parentId = null) => {
+    try {
+      await commentsAPI.delete(commentId);
+      if (parentId) {
+        // It's a reply — remove from parent's replies array
+        setComments(prev => prev.map(c =>
+          c.id === parentId
+            ? { ...c, replies: (c.replies || []).filter(r => r.id !== commentId) }
+            : c
+        ));
+      } else {
+        // Top-level comment — also subtract its replies from count
+        const comment = comments.find(c => c.id === commentId);
+        const replyCount = comment?.replies?.length || 0;
+        setComments(prev => prev.filter(c => c.id !== commentId));
+        setCommentCount(c => c - 1 - replyCount);
+        return;
+      }
+      setCommentCount(c => c - 1);
+    } catch { /* silent */ }
   };
 
   const handleReport = async () => {
@@ -369,119 +482,79 @@ function ShoutoutCard({ shoutout }) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ shoutout_id: shoutout.id, reason: reportReason }),
       });
-      if (res.status === 409) {
-        setReportStatus('duplicate');
-      } else if (res.ok) {
+      if (res.status === 409) setReportStatus('duplicate');
+      else if (res.ok) {
         setReportStatus('success');
-        setTimeout(() => {
-          setReportModal(false);
-          setReportStatus(null);
-          setReportReason('');
+        reportTimerRef.current = setTimeout(() => {
+          setReportModal(false); setReportStatus(null); setReportReason('');
         }, 1800);
-      } else {
-        setReportStatus('error');
-      }
-    } catch {
-      setReportStatus('error');
-    }
+      } else setReportStatus('error');
+    } catch { setReportStatus('error'); }
   };
 
-  const reportReasons = [
-    'Inappropriate content',
-    'Harassment or bullying',
-    'False or misleading',
-    'Spam',
-    'Other',
-  ];
+  const userReacted = (type) => reactions.user_reactions?.includes(type);
+
+  const reactionBtn = (type, emoji, label) => (
+    <button
+      onClick={() => handleReaction(type)}
+      title={label}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '5px',
+        background: userReacted(type) ? (type === 'clap' ? '#FFF7ED' : '#FFFBEB') : 'transparent',
+        border: userReacted(type) ? `1.5px solid ${type === 'clap' ? '#FB923C' : '#F59E0B'}` : '1.5px solid transparent',
+        borderRadius: '8px', padding: '4px 10px', cursor: 'pointer',
+        fontSize: '13px', fontWeight: 600,
+        color: userReacted(type) ? (type === 'clap' ? '#EA580C' : '#D97706') : '#6B7280',
+        transition: 'all 0.15s',
+      }}
+      onMouseEnter={e => { if (!userReacted(type)) e.currentTarget.style.background = '#F9FAFB'; }}
+      onMouseLeave={e => { if (!userReacted(type)) e.currentTarget.style.background = 'transparent'; }}
+    >
+      <span style={{ fontSize: '15px' }}>{emoji}</span>
+      {reactions[type] > 0 && <span>{reactions[type]}</span>}
+    </button>
+  );
+
+  const avatarStyle = (gradient) => ({
+    width: '32px', height: '32px', borderRadius: '50%',
+    background: gradient, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', color: '#fff', fontWeight: 700,
+    fontSize: '12px', flexShrink: 0,
+  });
+
+  const reportReasons = ['Inappropriate content', 'Harassment or bullying', 'False or misleading', 'Spam', 'Other'];
 
   return (
-    <div style={{
-      background: '#fff',
-      borderRadius: '14px',
-      padding: '20px',
-      border: '1px solid #E5E7EB',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-      transition: 'box-shadow 0.2s ease',
-      position: 'relative',
-    }}>
-      {/* Header */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        marginBottom: '14px',
-        justifyContent: 'space-between',
-      }}>
+    <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #E5E7EB', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', transition: 'box-shadow 0.2s', position: 'relative' }}>
+
+      {/* ── Header ─────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: '14px'
-          }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #4F46E5, #6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '14px', flexShrink: 0 }}>
             {getInitials(authorName)}
           </div>
           <div>
-            <span style={{ 
-              fontSize: '14px', 
-              fontWeight: 700, 
-              color: '#111827', 
-              display: 'block' 
-            }}>
-              {authorName}
-            </span>
-            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>
-              {timeAgo}
-            </span>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827', display: 'block' }}>{authorName}</span>
+            <span style={{ fontSize: '12px', color: '#9CA3AF' }}>{timeAgo}</span>
           </div>
         </div>
 
         {/* 3-dot menu */}
         <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setMenuOpen(o => !o)}
-            style={{
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              color: '#9CA3AF', padding: '4px 8px', borderRadius: '6px',
-              fontSize: '18px', lineHeight: 1, fontWeight: 700,
-              transition: 'all 0.15s',
-            }}
+          <button onClick={() => setMenuOpen(o => !o)}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: '4px 8px', borderRadius: '6px', fontSize: '18px', lineHeight: 1, fontWeight: 700, transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#374151'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
-            title="More options"
-          >
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}>
             ···
           </button>
           {menuOpen && (
             <>
-              {/* Backdrop to close menu */}
-              <div
-                style={{ position: 'fixed', inset: 0, zIndex: 99 }}
-                onClick={() => setMenuOpen(false)}
-              />
-              <div style={{
-                position: 'absolute', right: 0, top: '100%', marginTop: '4px',
-                background: '#fff', border: '1px solid #E5E7EB', borderRadius: '10px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 100,
-                minWidth: '160px', overflow: 'hidden',
-              }}>
-                <button
-                  onClick={() => { setMenuOpen(false); setReportModal(true); }}
-                  style={{
-                    width: '100%', padding: '10px 16px', background: 'transparent',
-                    border: 'none', cursor: 'pointer', textAlign: 'left',
-                    fontSize: '13px', fontWeight: 500, color: '#DC2626',
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    transition: 'background 0.1s',
-                  }}
+              <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(false)} />
+              <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: '4px', background: '#fff', border: '1px solid #E5E7EB', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 100, minWidth: '160px', overflow: 'hidden' }}>
+                <button onClick={() => { setMenuOpen(false); setReportModal(true); }}
+                  style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: '#DC2626', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.1s' }}
                   onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   🚩 Report
                 </button>
               </div>
@@ -490,44 +563,32 @@ function ShoutoutCard({ shoutout }) {
         </div>
       </div>
 
-      {/* Message */}
-      <p style={{ 
-        fontSize: '14px', 
-        color: '#374151', 
-        lineHeight: 1.65, 
-        margin: '0 0 10px 0' 
-      }}>
+      {/* ── Message ────────────────────────────────────────────────── */}
+      <p style={{ fontSize: '14px', color: '#374151', lineHeight: 1.65, margin: '0 0 10px 0' }}>
         {shoutout.message}
       </p>
 
-      {/* Recipients - UPDATED TO SHOW MULTIPLE AS CHIPS */}
+      {/* ── Attached image ─────────────────────────────────────────── */}
+      {shoutout.image_url && (
+        <div style={{ marginBottom: '12px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #F3F4F6' }}>
+          <img
+            src={`${API_URL}${shoutout.image_url}`}
+            alt="Shoutout attachment"
+            style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }}
+            onError={e => { e.target.style.display = 'none'; }}
+          />
+        </div>
+      )}
+
+      {/* ── Recipients ─────────────────────────────────────────────── */}
       {recipients.length > 0 && (
-        <div style={{ 
-          fontSize: '13px', 
-          marginBottom: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '6px'
-        }}>
+        <div style={{ fontSize: '13px', marginBottom: '12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
           <span style={{ color: '#6B7280' }}>Shoutout to</span>
           {recipients.map((r, idx) => {
             const name = r.recipient?.name || r.name;
             if (!name) return null;
-            
             return (
-              <span 
-                key={r.id || idx}
-                style={{ 
-                  color: '#4F46E5', 
-                  background: '#EEF2FF', 
-                  padding: '3px 10px', 
-                  borderRadius: '6px', 
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                  fontSize: '12px'
-                }}
-              >
+              <span key={r.id || idx} style={{ color: '#4F46E5', background: '#EEF2FF', padding: '3px 10px', borderRadius: '6px', fontWeight: 600, fontSize: '12px' }}>
                 {name}
               </span>
             );
@@ -535,153 +596,214 @@ function ShoutoutCard({ shoutout }) {
         </div>
       )}
 
-      {/* Tags */}
+      {/* ── Tags ───────────────────────────────────────────────────── */}
       {tagList.length > 0 && (
-        <div style={{ 
-          display: 'flex', 
-          flexWrap: 'wrap', 
-          gap: '6px', 
-          marginBottom: '14px' 
-        }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
           {tagList.map((tag, i) => (
-            <span key={i} style={{
-              background: '#F3F4F6',
-              color: '#4B5563',
-              fontSize: '11px',
-              fontWeight: 600,
-              padding: '4px 10px',
-              borderRadius: '6px'
-            }}>
+            <span key={i} style={{ background: '#F3F4F6', color: '#4B5563', fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '6px' }}>
               {tag}
             </span>
           ))}
         </div>
       )}
 
-      {/* Actions */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '20px', 
-        paddingTop: '12px', 
-        borderTop: '1px solid #F3F4F6' 
-      }}>
-        <button
-          onClick={handleLike}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: 600,
-            color: liked ? '#EF4444' : '#6B7280',
-            transition: 'color 0.15s ease'
-          }}
-        >
-          <HeartIcon /> {likes}
+      {/* ── Action bar ─────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', paddingTop: '12px', borderTop: '1px solid #F3F4F6', flexWrap: 'wrap' }}>
+
+        {/* Like */}
+        <button onClick={handleLike}
+          style={{ display: 'flex', alignItems: 'center', gap: '5px', background: liked ? '#FEF2F2' : 'transparent', border: liked ? '1.5px solid #FCA5A5' : '1.5px solid transparent', borderRadius: '8px', padding: '4px 10px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: liked ? '#EF4444' : '#6B7280', transition: 'all 0.15s' }}
+          onMouseEnter={e => { if (!liked) e.currentTarget.style.background = '#F9FAFB'; }}
+          onMouseLeave={e => { if (!liked) e.currentTarget.style.background = 'transparent'; }}>
+          <span style={{ fontSize: '15px' }}>{liked ? '❤️' : '🤍'}</span>
+          <span>{likes > 0 ? likes : ''}</span>
+        </button>
+
+        {/* Clap */}
+        {reactionBtn('clap', '👏', 'Clap')}
+
+        {/* Star */}
+        {reactionBtn('star', '⭐', 'Star')}
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Comments toggle */}
+        <button onClick={toggleComments}
+          style={{ display: 'flex', alignItems: 'center', gap: '5px', background: showComments ? '#EEF2FF' : 'transparent', border: showComments ? '1.5px solid #C7D2FE' : '1.5px solid transparent', borderRadius: '8px', padding: '4px 10px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: showComments ? '#4F46E5' : '#6B7280', transition: 'all 0.15s' }}
+          onMouseEnter={e => { if (!showComments) e.currentTarget.style.background = '#F9FAFB'; }}
+          onMouseLeave={e => { if (!showComments) e.currentTarget.style.background = showComments ? '#EEF2FF' : 'transparent'; }}>
+          <span style={{ fontSize: '15px' }}>💬</span>
+          <span>{commentCount > 0 ? commentCount : 'Comment'}</span>
         </button>
       </div>
 
-      {/* Report Modal */}
+      {/* ── Comments section ───────────────────────────────────────── */}
+      {showComments && (
+        <div style={{ marginTop: '16px', borderTop: '1px solid #F3F4F6', paddingTop: '16px' }}>
+
+          {/* Loading / empty state */}
+          {!commentsLoaded && (
+            <p style={{ fontSize: '13px', color: '#9CA3AF', textAlign: 'center', padding: '8px 0 12px' }}>Loading comments…</p>
+          )}
+          {comments.length === 0 && commentsLoaded && (
+            <p style={{ fontSize: '13px', color: '#9CA3AF', textAlign: 'center', padding: '8px 0 12px' }}>
+              No comments yet — be the first!
+            </p>
+          )}
+
+          {/* Comment thread */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: comments.length > 0 ? '14px' : 0 }}>
+            {comments.map(c => (
+              <div key={c.id}>
+                {/* ── Top-level comment ── */}
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <div style={avatarStyle('linear-gradient(135deg, #10B981, #059669)')}>
+                    {getInitials(c.user?.name || '?')}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ background: '#F9FAFB', borderRadius: '10px', padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{c.user?.name || 'User'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                            {new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          </span>
+                          {c.user?.id === currentUserId && (
+                            <button onClick={() => handleDeleteComment(c.id)}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#D1D5DB', fontSize: '13px', padding: 0, lineHeight: 1, transition: 'color 0.15s' }}
+                              onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+                              onMouseLeave={e => e.currentTarget.style.color = '#D1D5DB'}
+                              title="Delete comment">×</button>
+                          )}
+                        </div>
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{c.content}</p>
+                    </div>
+
+                    {/* Reply button */}
+                    <button
+                      onClick={() => setReplyingTo(replyingTo?.id === c.id ? null : { id: c.id, authorName: c.user?.name })}
+                      style={{ marginTop: '4px', marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: replyingTo?.id === c.id ? '#4F46E5' : '#9CA3AF', fontWeight: 600, padding: '2px 0', transition: 'color 0.15s' }}>
+                      ↩ {replyingTo?.id === c.id ? 'Cancel' : 'Reply'}
+                    </button>
+
+                    {/* Inline reply input */}
+                    {replyingTo?.id === c.id && (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '8px' }}>
+                        <div style={avatarStyle('linear-gradient(135deg, #4F46E5, #6366F1)')}>
+                          {getInitials(currentUser?.name || '?')}
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', gap: '6px', alignItems: 'flex-end' }}>
+                          <textarea
+                            autoFocus
+                            value={replyText}
+                            onChange={e => setReplyText(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostReply(c.id); } }}
+                            placeholder={`Reply to ${replyingTo.authorName}… (Enter to post)`}
+                            rows={1}
+                            style={{ flex: 1, border: '1.5px solid #C7D2FE', borderRadius: '10px', padding: '8px 12px', fontSize: '13px', outline: 'none', resize: 'none', lineHeight: 1.5, fontFamily: 'inherit', background: '#F5F7FF' }}
+                          />
+                          <button onClick={() => handlePostReply(c.id)} disabled={!replyText.trim() || postingReply}
+                            style={{ height: '36px', padding: '0 14px', borderRadius: '10px', border: 'none', background: !replyText.trim() ? '#E5E7EB' : '#4F46E5', color: !replyText.trim() ? '#9CA3AF' : '#fff', fontSize: '12px', fontWeight: 600, cursor: !replyText.trim() ? 'default' : 'pointer', flexShrink: 0 }}>
+                            {postingReply ? '…' : 'Reply'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Nested replies ── */}
+                    {c.replies?.length > 0 && (
+                      <div style={{ marginTop: '8px', marginLeft: '8px', borderLeft: '2px solid #E5E7EB', paddingLeft: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {c.replies.map(reply => (
+                          <div key={reply.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                            <div style={avatarStyle('linear-gradient(135deg, #8B5CF6, #6D28D9)')}>
+                              {getInitials(reply.user?.name || '?')}
+                            </div>
+                            <div style={{ flex: 1, background: '#F3F4FF', borderRadius: '10px', padding: '9px 12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{reply.user?.name || 'User'}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                                    {new Date(reply.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                  </span>
+                                  {reply.user?.id === currentUserId && (
+                                    <button onClick={() => handleDeleteComment(reply.id, c.id)}
+                                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#D1D5DB', fontSize: '13px', padding: 0, lineHeight: 1, transition: 'color 0.15s' }}
+                                      onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+                                      onMouseLeave={e => e.currentTarget.style.color = '#D1D5DB'}
+                                      title="Delete reply">×</button>
+                                  )}
+                                </div>
+                              </div>
+                              <p style={{ fontSize: '13px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{reply.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* New top-level comment input */}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+            <div style={avatarStyle('linear-gradient(135deg, #4F46E5, #6366F1)')}>
+              {getInitials(currentUser?.name || '?')}
+            </div>
+            <textarea
+              value={commentText}
+              onChange={e => setCommentText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment(); } }}
+              placeholder="Write a comment… (Enter to post, Shift+Enter for new line)"
+              rows={1}
+              style={{ flex: 1, border: '1.5px solid #E5E7EB', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', resize: 'none', lineHeight: 1.5, fontFamily: 'inherit', transition: 'border-color 0.2s' }}
+              onFocus={e => e.target.style.borderColor = '#4F46E5'}
+              onBlur={e => e.target.style.borderColor = '#E5E7EB'}
+            />
+            <button onClick={handlePostComment} disabled={!commentText.trim() || postingComment}
+              style={{ height: '38px', padding: '0 16px', borderRadius: '10px', border: 'none', background: !commentText.trim() ? '#E5E7EB' : '#4F46E5', color: !commentText.trim() ? '#9CA3AF' : '#fff', fontSize: '13px', fontWeight: 600, cursor: !commentText.trim() ? 'default' : 'pointer', transition: 'all 0.15s', flexShrink: 0 }}>
+              {postingComment ? '…' : 'Post'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Report Modal ───────────────────────────────────────────── */}
       {reportModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, backdropFilter: 'blur(2px)',
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: '16px', padding: '28px',
-            width: '100%', maxWidth: '420px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
-          }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(2px)' }}>
+          <div style={{ background: '#fff', borderRadius: '16px', padding: '28px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
             {reportStatus === 'success' ? (
-              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+              <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
-                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>
-                  Report submitted
-                </h3>
-                <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
-                  Thank you. Our admins will review this shoutout.
-                </p>
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Report submitted</h3>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>Admins will review this shoutout.</p>
               </div>
             ) : reportStatus === 'duplicate' ? (
-              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+              <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚠️</div>
-                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>
-                  Already reported
-                </h3>
-                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 20px' }}>
-                  You have already reported this shoutout.
-                </p>
-                <button
-                  onClick={() => { setReportModal(false); setReportStatus(null); }}
-                  style={{
-                    padding: '9px 20px', borderRadius: '8px', border: '1px solid #E5E7EB',
-                    background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-                  }}
-                >
-                  Close
-                </button>
+                <h3 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 8px' }}>Already reported</h3>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 20px' }}>You've already reported this shoutout.</p>
+                <button onClick={() => { setReportModal(false); setReportStatus(null); }} style={{ padding: '9px 20px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>Close</button>
               </div>
             ) : (
               <>
-                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>
-                  🚩 Report Shoutout
-                </h3>
-                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 20px' }}>
-                  Select a reason for reporting this shoutout. Admins will review your report.
-                </p>
-
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>🚩 Report Shoutout</h3>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 20px' }}>Select a reason. Admins will review your report.</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-                  {reportReasons.map((r) => (
-                    <label key={r} style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
-                      border: `1px solid ${reportReason === r ? '#4F46E5' : '#E5E7EB'}`,
-                      background: reportReason === r ? '#EEF2FF' : '#fff',
-                      transition: 'all 0.15s',
-                    }}>
-                      <input
-                        type="radio"
-                        name="report-reason"
-                        value={r}
-                        checked={reportReason === r}
-                        onChange={() => setReportReason(r)}
-                        style={{ accentColor: '#4F46E5' }}
-                      />
+                  {reportReasons.map(r => (
+                    <label key={r} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '8px', cursor: 'pointer', border: `1px solid ${reportReason === r ? '#4F46E5' : '#E5E7EB'}`, background: reportReason === r ? '#EEF2FF' : '#fff', transition: 'all 0.15s' }}>
+                      <input type="radio" name={`report-${shoutout.id}`} value={r} checked={reportReason === r} onChange={() => setReportReason(r)} style={{ accentColor: '#4F46E5' }} />
                       <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>{r}</span>
                     </label>
                   ))}
                 </div>
-
-                {reportStatus === 'error' && (
-                  <p style={{ fontSize: '12px', color: '#DC2626', marginBottom: '12px' }}>
-                    Something went wrong. Please try again.
-                  </p>
-                )}
-
+                {reportStatus === 'error' && <p style={{ fontSize: '12px', color: '#DC2626', marginBottom: '12px' }}>Something went wrong. Try again.</p>}
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => { setReportModal(false); setReportReason(''); setReportStatus(null); }}
-                    style={{
-                      padding: '9px 20px', borderRadius: '8px', border: '1px solid #E5E7EB',
-                      background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleReport}
-                    disabled={!reportReason || reportStatus === 'submitting'}
-                    style={{
-                      padding: '9px 20px', borderRadius: '8px', border: 'none',
-                      background: !reportReason ? '#E5E7EB' : '#DC2626',
-                      color: !reportReason ? '#9CA3AF' : '#fff',
-                      cursor: !reportReason ? 'default' : 'pointer',
-                      fontSize: '13px', fontWeight: 600,
-                    }}
-                  >
+                  <button onClick={() => { setReportModal(false); setReportReason(''); setReportStatus(null); }} style={{ padding: '9px 20px', borderRadius: '8px', border: '1px solid #E5E7EB', background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>Cancel</button>
+                  <button onClick={handleReport} disabled={!reportReason || reportStatus === 'submitting'} style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: !reportReason ? '#E5E7EB' : '#DC2626', color: !reportReason ? '#9CA3AF' : '#fff', cursor: !reportReason ? 'default' : 'pointer', fontSize: '13px', fontWeight: 600 }}>
                     {reportStatus === 'submitting' ? 'Submitting…' : 'Submit Report'}
                   </button>
                 </div>
@@ -699,7 +821,6 @@ function ShoutoutCard({ shoutout }) {
 function MyShoutoutsView({ user }) {
   const [shoutouts, setShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
     if (user?.id) {
@@ -740,7 +861,6 @@ function MyShoutoutsView({ user }) {
 function LeaderboardView() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const medals = ['🥇', '🥈', '🥉'];
 
   useEffect(() => {
@@ -805,7 +925,6 @@ function LeaderboardView() {
 function DepartmentsView() {
   const [depts, setDepts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const deptEmojis = { Engineering: '⚙️', Product: '🎯', Design: '🎨', Marketing: '📢', Sales: '💼', HR: '🤝' };
 
   useEffect(() => {

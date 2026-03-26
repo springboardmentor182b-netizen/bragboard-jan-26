@@ -1,9 +1,6 @@
 from datetime import datetime, timezone
-
 from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-
-# ✅ FIXED: Use connection.py (feature branch) not core.py (main branch)
 from src.database.connection import Base
 
 
@@ -11,26 +8,29 @@ class Comment(Base):
     __tablename__ = "comments"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    shoutout_id = Column(
-        Integer,
-        ForeignKey("shoutouts.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    user_id = Column(
-        Integer,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-    )
+    shoutout_id = Column(Integer, ForeignKey("shoutouts.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    # NEW: parent_id enables one level of nested replies
+    parent_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True)
     content = Column(Text, nullable=False)
-    created_at = Column(
-        DateTime,
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-    )
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-    # ✅ NOTE: No back_populates used here.
-    # The feature branch's shoutout.py and user.py do not define
-    # `comments` properties, so back_populates would crash the mapper.
-    # Relationships are intentionally one-directional (comment → parent).
+    # Relationships
     shoutout = relationship("Shoutout", foreign_keys=[shoutout_id])
     user = relationship("User", foreign_keys=[user_id])
+
+    # Self-referential: replies to this comment
+    replies = relationship(
+        "Comment",
+        foreign_keys=[parent_id],
+        back_populates="parent",
+        cascade="all, delete-orphan",
+        order_by="Comment.created_at",
+    )
+    # The parent comment (None for top-level)
+    parent = relationship(
+        "Comment",
+        foreign_keys=[parent_id],
+        remote_side=[id],
+        back_populates="replies",
+    )

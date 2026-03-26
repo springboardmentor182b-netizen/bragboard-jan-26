@@ -24,7 +24,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired — clear storage and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -54,6 +53,21 @@ export const shoutoutsAPI = {
   create: (data) => api.post('/shoutouts/', data),
   like: (id) => api.put(`/shoutouts/${id}/like`),
   report: (shoutoutId, reason) => api.post('/reports/', { shoutout_id: shoutoutId, reason }),
+};
+
+// ── Reactions endpoints ──────────────────────────────────────────────────────
+export const reactionsAPI = {
+  toggle: (shoutoutId, type) => api.post(`/reactions/${shoutoutId}/toggle`, { type }),
+  getCounts: (shoutoutId) => api.get(`/reactions/${shoutoutId}`),
+};
+
+// ── Comments endpoints ───────────────────────────────────────────────────────
+export const commentsAPI = {
+  getAll: (shoutoutId) => api.get(`/comments/${shoutoutId}`),
+  // parentId: pass the top-level comment's id to post a reply; omit for top-level
+  post: (shoutoutId, content, parentId = null) =>
+    api.post(`/comments/${shoutoutId}`, { content, parent_id: parentId }),
+  delete: (commentId) => api.delete(`/comments/${commentId}`),
 };
 
 // ── Leaderboard endpoints ───────────────────────────────────────────────────

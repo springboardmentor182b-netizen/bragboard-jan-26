@@ -81,6 +81,12 @@ const Icon = {
       <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
     </svg>
   ),
+  Download: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  ),
   Check: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12"/>
@@ -234,6 +240,7 @@ function AdminSidebar({ view, setView, onLogout, user, pendingCount }) {
     { id: 'users',      label: 'User Management',     Icon: Icon.Users  },
     { id: 'moderation', label: 'Moderation',          Icon: Icon.Shield },
     { id: 'reported',   label: 'Reported Shoutouts',  Icon: Icon.Flag   },
+    { id: 'export',     label: 'Export Reports',      Icon: Icon.Download },
     { id: 'logs',       label: 'System Logs',         Icon: Icon.Log    },
   ];
 
@@ -883,17 +890,19 @@ function UserManagementView() {
                       disabled={changingId === u.id}
                       onClick={() => promptToggleRole(u)}
                       style={{
-                        fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 7,
+                        fontSize: 11, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
                         border: `1px solid ${u.role === 'admin' ? '#FECACA' : '#C7D2FE'}`,
                         background: u.role === 'admin' ? '#FEF2F2' : '#EEF2FF',
                         color: u.role === 'admin' ? '#DC2626' : '#4F46E5',
                         cursor: changingId === u.id ? 'wait' : 'pointer',
                         transition: 'all 0.15s',
-                        display: 'flex', alignItems: 'center', gap: 4,
+                        display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap',
                       }}
+                      onMouseEnter={e => { if (changingId !== u.id) e.currentTarget.style.opacity = '0.8'; }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
                     >
                       <Icon.Crown />
-                      {changingId === u.id ? 'Saving…' : u.role === 'admin' ? 'Demote' : 'Promote'}
+                      {changingId === u.id ? 'Saving…' : `Change Role → ${u.role === 'admin' ? 'Employee' : 'Admin'}`}
                     </button>
                   </td>
                 </tr>
@@ -906,8 +915,8 @@ function UserManagementView() {
       <ConfirmDialog
         isOpen={confirmDialog.open}
         title={`Change role to "${confirmDialog.newRole}"?`}
-        message={`${confirmDialog.user?.name} will ${confirmDialog.newRole === 'admin' ? 'gain admin access to this dashboard' : 'lose admin access'}.`}
-        confirmLabel="Confirm"
+        message={`${confirmDialog.user?.name} will ${confirmDialog.newRole === 'admin' ? 'gain admin access to this dashboard' : 'lose admin access and become a regular employee'}.`}
+        confirmLabel="Confirm Change"
         confirmColor="#4F46E5"
         onConfirm={handleToggleRole}
         onCancel={() => setConfirmDialog({ open: false, user: null, newRole: '' })}
@@ -1334,6 +1343,154 @@ function ReportedShoutoutsView() {
   );
 }
 
+// ─── Export Reports view ──────────────────────────────────────────────────────
+function ExportView() {
+  const [shoutouts, setShoutouts] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchErrors, setFetchErrors] = useState([]);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  useEffect(() => {
+    // Promise.allSettled ensures one failing call never silences the others
+    Promise.allSettled([
+      adminAPI.listShoutouts(500),
+      adminAPI.listUsers(),
+      adminAPI.getLogs(500),
+    ]).then(([s, u, l]) => {
+      const errors = [];
+      if (s.status === 'fulfilled') setShoutouts(s.value.data || []);
+      else errors.push('Shoutouts failed to load');
+      if (u.status === 'fulfilled') setUsers(u.value.data || []);
+      else errors.push('Users failed to load');
+      if (l.status === 'fulfilled') setLogs(l.value.data || []);
+      else errors.push('Admin logs failed to load');
+      setFetchErrors(errors);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const toCSV = (rows, headers) => {
+    const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))];
+    return lines.join('\n');
+  };
+
+  const download = (csv, filename) => {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    showToast(`${filename} downloaded!`);
+  };
+
+  const exportShoutouts = () => {
+    const rows = shoutouts.map(s => ({
+      id: s.id, sender: s.sender_name, recipients: (s.recipient_names || []).join('; '),
+      message: s.message, tags: s.tags || '', likes: s.likes, created_at: s.created_at,
+    }));
+    download(toCSV(rows, ['id','sender','recipients','message','tags','likes','created_at']), 'shoutouts.csv');
+  };
+
+  const exportUsers = () => {
+    const rows = users.map(u => ({
+      id: u.id, name: u.name, email: u.email, department: u.department,
+      role: u.role, status: u.status || 'approved', joined_at: u.joined_at,
+    }));
+    download(toCSV(rows, ['id','name','email','department','role','status','joined_at']), 'users.csv');
+  };
+
+  const exportLogs = () => {
+    const rows = logs.map(l => ({
+      id: l.id, admin: l.admin_name, action: l.action,
+      target_type: l.target_type || '', target_id: l.target_id || '', timestamp: l.timestamp,
+    }));
+    download(toCSV(rows, ['id','admin','action','target_type','target_id','timestamp']), 'admin_logs.csv');
+  };
+
+  const cards = [
+    {
+      icon: '📊', title: 'Shoutouts Report', desc: 'All shout-outs with sender, recipients, message, tags, likes and timestamp.',
+      count: shoutouts.length, label: 'shout-outs', color: '#4F46E5', bg: '#EEF2FF',
+      onExport: exportShoutouts,
+    },
+    {
+      icon: '👥', title: 'Users Report', desc: 'All registered users with their department, role, status and join date.',
+      count: users.length, label: 'users', color: '#10B981', bg: '#F0FDF4',
+      onExport: exportUsers,
+    },
+    {
+      icon: '📋', title: 'Admin Logs Report', desc: 'Full audit trail of admin actions — approvals, deletions, role changes.',
+      count: logs.length, label: 'log entries', color: '#F59E0B', bg: '#FFFBEB',
+      onExport: exportLogs,
+    },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>Export Reports</h3>
+        <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>Download platform data as CSV files for offline analysis</p>
+      </div>
+
+      {loading ? <Spinner /> : (
+        <>
+          {/* Show which calls failed — no more silent zeros */}
+          {fetchErrors.length > 0 && (
+            <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 10, padding: '12px 16px', marginBottom: 18, color: '#991B1B', fontSize: 13 }}>
+              ⚠️ Some data failed to load: {fetchErrors.join(', ')}. Check your connection or try refreshing.
+            </div>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 18, marginBottom: 28 }}>
+            {cards.map((c, i) => (
+              <div key={i} style={{ background: '#fff', borderRadius: 16, border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                <div style={{ padding: '20px 22px', borderBottom: '1px solid #F3F4F6' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>{c.icon}</div>
+                    <div>
+                      <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>{c.title}</p>
+                      <p style={{ fontSize: 11, color: c.color, fontWeight: 700, margin: 0 }}>{c.count.toLocaleString()} {c.label}</p>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#6B7280', margin: 0, lineHeight: 1.5 }}>{c.desc}</p>
+                </div>
+                <div style={{ padding: '14px 22px', background: '#FAFAFA' }}>
+                  <button
+                    onClick={c.onExport}
+                    style={{ width: '100%', padding: '10px', borderRadius: 10, border: 'none', background: c.color, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    ⬇ Download CSV
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Info box */}
+          <div style={{ background: '#F8FAFC', borderRadius: 12, border: '1px solid #E5E7EB', padding: '16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 18 }}>ℹ️</span>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 4px' }}>About CSV exports</p>
+              <p style={{ fontSize: 12, color: '#6B7280', margin: 0, lineHeight: 1.6 }}>
+                All exports are in standard CSV format — compatible with Excel, Google Sheets, and any BI tool. Timestamps are in UTC. Sensitive fields (passwords, security answers) are never included.
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+      <Toast toast={toast} />
+    </div>
+  );
+}
+
 // ─── Top header bar ───────────────────────────────────────────────────────────
 function TopBar({ view, user }) {
   const titles = {
@@ -1342,6 +1499,7 @@ function TopBar({ view, user }) {
     users:      { t: 'User Management',         s: 'Manage members and roles' },
     moderation: { t: 'Moderation Queue',        s: 'Review and remove content' },
     reported:   { t: 'Reported Shoutouts',      s: 'Review shoutouts flagged by employees' },
+    export:     { t: 'Export Reports',          s: 'Download platform data as CSV' },
     logs:       { t: 'System Logs',             s: 'Track admin actions' },
   };
   const { t, s } = titles[view] || titles.analytics;
@@ -1395,6 +1553,7 @@ function AdminDashboard() {
       case 'users':      return <UserManagementView />;
       case 'moderation': return <ModerationView />;
       case 'reported':   return <ReportedShoutoutsView />;
+      case 'export':     return <ExportView />;
       case 'logs':       return <SystemLogsView />;
       default:           return <AnalyticsView user={user} />;
     }

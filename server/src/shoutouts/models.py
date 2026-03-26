@@ -39,8 +39,12 @@ class ShoutoutResponse(BaseModel):
     message: str
     tags: Optional[str] = None
     likes: Optional[int] = 0
+    image_url: Optional[str] = None
     created_at: datetime
     recipients: Optional[List[RecipientSummary]] = []
+    # FIX: comment_count tells the frontend how many comments exist
+    # without needing a separate fetch per card on load.
+    comment_count: int = 0
 
     class Config:
         from_attributes = True
