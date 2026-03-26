@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from .models import Report
-from src.entities.shoutout import Shoutout # Adjust if path different
+from src.entities.models import Shoutout# Adjust if path different
 
 
 def get_all_reports(db: Session):
@@ -15,7 +15,7 @@ def get_all_reports(db: Session):
         result.append({
             "id": report.id,
             "reason": report.reason,
-            "reported_by": report.reported_by,
+            "reported_by": report.user_id,
             "created_at": report.created_at,
             "shoutout": {
                 "id": shoutout.id,
@@ -54,6 +54,7 @@ def create_report(db, shoutout_id: int, reported_by: str, reason: str):
     report = Report(
         shoutout_id=shoutout_id,
         reported_by=reported_by,
+        user_id=reported_by,
         reason=reason
     )
 

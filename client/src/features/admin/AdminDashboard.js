@@ -1,24 +1,16 @@
 import React, { useEffect, useState } from "react";
-import AdminLayout from "./AdminLayout";
 import "./AdminDashboard.css";
-const API = "http://127.0.0.1:8000";
+
+const API = process.env.REACT_APP_API_URL;
 
 function AdminDashboard() {
 
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
 
-  const [overview, setOverview] = useState({
-    shoutouts: 0,
-    reactions: 0,
-    activeUsers: 0,
-    growth: 0
-  });
-
   useEffect(() => {
     fetchUsers();
     fetchReports();
-    fetchOverview();
   }, []);
 
   const fetchUsers = async () => {
@@ -41,43 +33,47 @@ function AdminDashboard() {
     }
   };
 
-  const fetchOverview = async () => {
-    try {
-      const res = await fetch(`${API}/admin/analytics`);
-      const data = await res.json();
-      setOverview(data);
-    } catch (error) {
-      console.log("Analytics fetch error", error);
-    }
-  };
   return (
-    <AdminLayout>
-      <div className="admin-dashboard">
+    <div className="dashboard-container">
   
-        <h2>Admin Dashboard</h2>
-        <p>Welcome to BragBoard administration</p>
+      <h2>Admin Dashboard</h2>
+      <p className="subtitle">
+        Welcome to BragBoard administration
+      </p>
   
-        {/* Cards */}
-        <div className="dashboard-cards">
+      <div className="dashboard-grid">
   
-          <div className="card">
-            <h3>Account Management</h3>
-            <p>Manage user accounts</p>
-            <h1>{users.length}</h1>
-            <span>Total Users</span>
+        {/* USERS CARD */}
+        <div className="dashboard-card purple">
+          <div className="card-top">
+            <div>
+              <h3>Account Management</h3>
+              <p>Manage user accounts</p>
+            </div>
+            <div className="icon">👥</div>
           </div>
   
-          <div className="card">
-            <h3>Reported Shout-Outs</h3>
-            <p>Review reported content</p>
-            <h1>{reports.length}</h1>
-            <span>Pending Reports</span>
+          <h1>{users.length}</h1>
+          <span>Total Users</span>
+        </div>
+  
+        {/* REPORTS CARD */}
+        <div className="dashboard-card red">
+          <div className="card-top">
+            <div>
+              <h3>Reported Shout-Outs</h3>
+              <p>Review reported content</p>
+            </div>
+            <div className="icon">🚩</div>
           </div>
   
+          <h1>{reports.length}</h1>
+          <span>Pending Reports</span>
         </div>
   
       </div>
-    </AdminLayout>
+  
+    </div>
   );
 }
 

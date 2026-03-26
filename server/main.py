@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.database.connection import Base, engine
 from src.admin.controller import router as admin_router
+from src.reports.controller import router as reports_router
+from src.entities.shoutout_controller import router as shoutout_router
+
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -18,6 +23,8 @@ Base.metadata.create_all(bind=engine)
 
 # Admin routes
 app.include_router(admin_router)
+app.include_router(reports_router)
+app.include_router(shoutout_router)
 
 
 @app.get("/")

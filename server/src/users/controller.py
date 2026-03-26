@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter
 
 from sqlalchemy.orm import Session
@@ -25,3 +26,4 @@ def create_test_user(db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "user created"}
+

@@ -3,8 +3,7 @@ from sqlalchemy.orm import Session
 
 from src.database.connection import get_db
 from src.reports.models import Report
-from src.entities.shoutout import Shoutout
-from src.users.models import User
+from src.entities.models import User, Shoutout
 
 router = APIRouter(
     prefix="/admin",
@@ -77,3 +76,14 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
         db.commit()
 
     return {"message": "User deleted"}
+# ----------------------------
+# ANALYTICS
+# ----------------------------
+
+@router.get("/analytics") 
+def get_analytics(db: Session = Depends(get_db)):
+    return {
+        "total_users": db.query(User).count(),
+        "total_reports": db.query(Report).count(),
+        "total_shoutouts": db.query(Shoutout).count()
+    }

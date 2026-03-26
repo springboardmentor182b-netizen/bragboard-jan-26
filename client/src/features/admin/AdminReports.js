@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
+import "./AdminLayout.css"; // make sure CSS is imported
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = process.env.REACT_APP_API_URL;
 
 function AdminReports() {
 
@@ -9,83 +10,90 @@ function AdminReports() {
   const fetchReports = () => {
     fetch(`${API_BASE}/admin/reports`)
       .then(res => res.json())
-      .then(data => {
-        setReports(data);
-      });
+      .then(data => setReports(data));
   };
 
   useEffect(() => {
     fetchReports();
   }, []);
 
-
   const resolveReport = (reportId) => {
-
     fetch(`${API_BASE}/admin/reports/${reportId}/resolve`, {
       method: "POST"
-    })
-    .then(() => fetchReports());
+    }).then(() => fetchReports());
   };
-
 
   const deleteShoutout = (shoutoutId) => {
-
     fetch(`${API_BASE}/admin/reports/shoutout/${shoutoutId}`, {
       method: "DELETE"
-    })
-    .then(() => fetchReports());
+    }).then(() => fetchReports());
   };
 
-
   return (
+    <div className="report-container">
 
-    <div style={{padding:"20px"}}>
-
-      <h1>Reported Shout-Outs</h1>
+      <h2>Reported Content</h2>
+      <p style={{ color: "#777" }}>
+        Review reports and take appropriate action
+      </p>
 
       {reports.length === 0 && <p>No reports found</p>}
 
-      {reports.map(report => (
+      {reports.map((report) => (
 
-        <div
-          key={report.id}
-          style={{
-            border:"1px solid #ccc",
-            padding:"15px",
-            marginBottom:"15px",
-            borderRadius:"10px"
-          }}
-        >
+        <div className="report-card" key={report.id}>
 
-          <h3>Report #{report.id}</h3>
+          {/* Header */}
+          <div className="report-header">
+            <div className="report-title">🚩 Report #{report.id}</div>
+            <div className="report-status">Pending Review</div>
+          </div>
 
-          <p>
-            <strong>Reason:</strong> {report.reason}
+          <hr style={{ margin: "15px 0", opacity: 0.2 }} />
+
+          {/* Message box */}
+          <div className="report-message">
+            <div className="report-user">
+              User {report.reported_by}
+            </div>
+
+            <div className="report-text">
+              Shoutout ID: {report.shoutout_id}
+            </div>
+          </div>
+
+          {/* Reason */}
+          <p style={{ marginTop: "15px" }}>
+            <strong>Reason:</strong>
           </p>
 
-          <p>
-            <strong>Reported By:</strong> {report.reported_by}
-          </p>
-
-          <button
-            onClick={() => resolveReport(report.id)}
-            style={{marginRight:"10px"}}
-          >
-            Resolve Report
-          </button>
-
-          <button
-            onClick={() => deleteShoutout(report.shoutout_id)}
-          >
-            Delete Shoutout
-          </button>
-
+          <span className="tag tag-red">
+            {report.reason}
+          </span>
+          {/* Actions */}
+          <div className="report-actions">
+            <button
+              className="btn btn-delete"
+              onClick={() => deleteShoutout(report.shoutout_id)}
+            >
+              🗑 Delete Shout-Out
+            </button>
+            <button
+              className="btn btn-dismiss"
+              onClick={() => resolveReport(report.id)}
+            >
+              ❌ Dismiss
+            </button>
+            <button
+              className="btn btn-review"
+              onClick={() => resolveReport(report.id)}
+            >
+              ✔ Mark as Reviewed
+            </button>
+          </div>
         </div>
-
       ))}
-
     </div>
   );
 }
-
 export default AdminReports;

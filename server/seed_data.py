@@ -1,6 +1,5 @@
 from src.database.connection import SessionLocal
-from src.users.models import User
-
+from src.entities.models import User
 db = SessionLocal()
 
 # check if users already exist

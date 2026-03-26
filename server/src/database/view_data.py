@@ -5,8 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Connect to the database
-db_url = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/bragboard")
-
+db_url = os.getenv("DATABASE_URL")
 print(f"--- Database: {db_url} ---\n")
 
 try:

@@ -65,13 +65,14 @@ function AdminReportModeration() {
             </div>
 
             {report.shoutout && (
-              <div className="report-message">
-                <strong>
-                  {report.shoutout.sender} → {report.shoutout.receiver}
-                </strong>
-                <p>{report.shoutout.message}</p>
-              </div>
-            )}
+  <div className="report-message">
+    <strong>
+      {report.shoutout.sender} → {report.shoutout.receiver}
+    </strong>
+    <p>{report.shoutout.message}</p>
+  </div>
+)}
+            
 
             <p><strong>Reported by:</strong> {report.reported_by}</p>
 

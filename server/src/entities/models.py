@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from src.database.database import Base
+from src.database.connection import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -85,3 +86,5 @@ class SecurityQuestion(Base):
 
     user = relationship("User", back_populates="security_questions")
 
+# Alias for backward compatibility — use ShoutOut (defined above) as the canonical model
+Shoutout = ShoutOut

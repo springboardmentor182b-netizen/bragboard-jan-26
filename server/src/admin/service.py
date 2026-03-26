@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from src.reports.models import Report
-from src.entities.shoutout import Shoutout
+from src.entities.models import Shoutout
 
 
 # Get all reported shoutouts

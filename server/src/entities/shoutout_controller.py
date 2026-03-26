@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from src.database.db import get_db
-from src.entities.shoutout import Shoutout
+from src.entities.models import Shoutout
 
 router = APIRouter(
     prefix="/shoutouts",
