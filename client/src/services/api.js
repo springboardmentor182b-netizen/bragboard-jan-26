@@ -24,7 +24,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired — clear storage and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -65,7 +64,9 @@ export const reactionsAPI = {
 // ── Comments endpoints ───────────────────────────────────────────────────────
 export const commentsAPI = {
   getAll: (shoutoutId) => api.get(`/comments/${shoutoutId}`),
-  post: (shoutoutId, content) => api.post(`/comments/${shoutoutId}`, { content }),
+  // parentId: pass the top-level comment's id to post a reply; omit for top-level
+  post: (shoutoutId, content, parentId = null) =>
+    api.post(`/comments/${shoutoutId}`, { content, parent_id: parentId }),
   delete: (commentId) => api.delete(`/comments/${commentId}`),
 };
 

@@ -19,8 +19,17 @@ def post_comment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Add a comment to a shoutout."""
-    return service.add_comment(db, shoutout_id, current_user.id, body.content)
+    """
+    Add a comment (or reply) to a shoutout.
+    Pass parent_id in the body to reply to an existing top-level comment.
+    """
+    return service.add_comment(
+        db,
+        shoutout_id,
+        current_user.id,
+        body.content,
+        body.parent_id,
+    )
 
 
 @router.get("/{shoutout_id}", response_model=List[CommentResponse])
@@ -29,7 +38,10 @@ def list_comments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get all comments for a shoutout."""
+    """
+    Get all top-level comments for a shoutout, each with their replies.
+    Any authenticated user can read comments.
+    """
     return service.get_comments(db, shoutout_id)
 
 

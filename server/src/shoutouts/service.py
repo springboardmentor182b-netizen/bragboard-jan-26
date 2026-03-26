@@ -5,7 +5,31 @@ from fastapi import HTTPException, status
 from src.entities.shoutout import Shoutout, ShoutoutRecipient
 from src.entities.user import User
 from src.entities.shoutout_like import ShoutoutLike
+from src.entities.comment import Comment
 from src.shoutouts.models import ShoutoutCreate
+
+
+def _attach_comment_counts(db: Session, shoutouts: list) -> list:
+    """
+    Attach comment_count to each shoutout object without N+1 queries.
+    Uses a single GROUP BY query for all shoutout IDs at once.
+    """
+    if not shoutouts:
+        return shoutouts
+
+    ids = [s.id for s in shoutouts]
+    rows = (
+        db.query(Comment.shoutout_id, func.count(Comment.id).label("cnt"))
+        .filter(Comment.shoutout_id.in_(ids))
+        .group_by(Comment.shoutout_id)
+        .all()
+    )
+    count_map = {row.shoutout_id: row.cnt for row in rows}
+
+    for s in shoutouts:
+        s.comment_count = count_map.get(s.id, 0)
+
+    return shoutouts
 
 
 def create_shoutout(db: Session, shoutout_data: ShoutoutCreate, image_url: str = None):
@@ -25,15 +49,17 @@ def create_shoutout(db: Session, shoutout_data: ShoutoutCreate, image_url: str =
         db.add(recipient)
 
     db.commit()
-    return db.query(Shoutout).options(
+    result = db.query(Shoutout).options(
         joinedload(Shoutout.sender),
         joinedload(Shoutout.recipients).joinedload(ShoutoutRecipient.recipient),
     ).filter(Shoutout.id == new_shoutout.id).first()
+    result.comment_count = 0
+    return result
 
 
 def get_all_shoutouts(db: Session):
-    """Get all shoutouts with sender and recipients eagerly loaded."""
-    return (
+    """Get all shoutouts with sender, recipients and comment count."""
+    shoutouts = (
         db.query(Shoutout)
         .options(
             joinedload(Shoutout.sender),
@@ -42,6 +68,7 @@ def get_all_shoutouts(db: Session):
         .order_by(Shoutout.created_at.desc())
         .all()
     )
+    return _attach_comment_counts(db, shoutouts)
 
 
 def get_my_shoutouts(db: Session, user_id: int):
@@ -60,7 +87,7 @@ def get_my_shoutouts(db: Session, user_id: int):
     if not results:
         return []
     ids = [s.id for s in results]
-    return (
+    shoutouts = (
         db.query(Shoutout)
         .options(
             joinedload(Shoutout.sender),
@@ -70,6 +97,7 @@ def get_my_shoutouts(db: Session, user_id: int):
         .order_by(Shoutout.created_at.desc())
         .all()
     )
+    return _attach_comment_counts(db, shoutouts)
 
 
 def get_leaderboard(db: Session):
@@ -128,12 +156,7 @@ def get_department_stats(db: Session):
 
 
 def like_shoutout(db: Session, shoutout_id: int, user_id: int):
-    """
-    Toggle a like on a shoutout for the given user.
-
-    - First call  → adds a like record and increments shoutout.likes
-    - Second call → removes the like record and decrements shoutout.likes
-    """
+    """Toggle a like on a shoutout for the given user."""
     shoutout = db.query(Shoutout).filter(Shoutout.id == shoutout_id).first()
     if not shoutout:
         raise HTTPException(
@@ -151,19 +174,16 @@ def like_shoutout(db: Session, shoutout_id: int, user_id: int):
     )
 
     if existing_like:
-        # Toggle OFF: remove the like
         db.delete(existing_like)
         shoutout.likes = max(0, (shoutout.likes or 0) - 1)
     else:
-        # Toggle ON: add the like
         new_like = ShoutoutLike(shoutout_id=shoutout_id, user_id=user_id)
         db.add(new_like)
         shoutout.likes = (shoutout.likes or 0) + 1
 
     db.commit()
 
-    # Return with relationships loaded so the response serialises cleanly
-    return (
+    result = (
         db.query(Shoutout)
         .options(
             joinedload(Shoutout.sender),
@@ -172,3 +192,5 @@ def like_shoutout(db: Session, shoutout_id: int, user_id: int):
         .filter(Shoutout.id == shoutout_id)
         .first()
     )
+    result.comment_count = db.query(Comment).filter(Comment.shoutout_id == shoutout_id).count()
+    return result

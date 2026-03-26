@@ -341,33 +341,35 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Shoutout Card Component
 function ShoutoutCard({ shoutout }) {
-  // Get current user from AuthContext — no per-render localStorage parsing
+  // Get current user from AuthContext
   const { user: currentUser } = useAuth();
   const currentUserId = currentUser?.id ?? null;
 
-  // ── Like (legacy counter) ────────────────────────────────────────────────
+  // ── Like ─────────────────────────────────────────────────────────────────
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(shoutout.likes || 0);
 
   // ── Reactions (clap / star) ──────────────────────────────────────────────
   const [reactions, setReactions] = useState({ like: 0, clap: 0, star: 0, user_reactions: [] });
-  const [reactionsLoaded, setReactionsLoaded] = useState(false);
 
-  // ── Comments ─────────────────────────────────────────────────────────────
+  // ── Comments + nested replies ─────────────────────────────────────────────
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [postingComment, setPostingComment] = useState(false);
+  // comment_count now comes from backend via ShoutoutResponse
   const [commentCount, setCommentCount] = useState(shoutout.comment_count ?? 0);
+  // replyingTo: { id, authorName } of the comment being replied to, or null
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [postingReply, setPostingReply] = useState(false);
 
   // ── Report ────────────────────────────────────────────────────────────────
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportModal, setReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportStatus, setReportStatus] = useState(null);
-
-  // Ref to safely clear the report-success auto-dismiss timer on unmount
   const reportTimerRef = useRef(null);
   useEffect(() => () => { if (reportTimerRef.current) clearTimeout(reportTimerRef.current); }, []);
 
@@ -380,15 +382,12 @@ function ShoutoutCard({ shoutout }) {
     ? new Date(shoutout.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
 
-  // Load reactions on mount
+  // Load reactions on mount — persists across refresh for all users
   useEffect(() => {
     reactionsAPI.getCounts(shoutout.id)
-      .then(res => { setReactions(res.data); setReactionsLoaded(true); })
-      .catch(() => setReactionsLoaded(true));
+      .then(res => setReactions(res.data))
+      .catch(() => {});
   }, [shoutout.id]);
-
-  // Comment count is initialised from shoutout.comment_count (set in useState above).
-  // No extra fetch needed on mount — count updates locally when user posts/deletes.
 
   const handleLike = async () => {
     const prev = liked; const prevLikes = likes;
@@ -408,12 +407,16 @@ function ShoutoutCard({ shoutout }) {
     } catch (err) { console.error('Reaction error', err); }
   };
 
+  // Always re-fetch when opening so any other user's comments appear immediately
   const toggleComments = async () => {
-    if (!showComments && !commentsLoaded) {
+    if (!showComments) {
       try {
         const res = await commentsAPI.getAll(shoutout.id);
-        setComments(res.data || []);
-        setCommentCount((res.data || []).length);
+        const data = res.data || [];
+        setComments(data);
+        // total = top-level + all replies
+        const total = data.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
+        setCommentCount(total);
         setCommentsLoaded(true);
       } catch { setCommentsLoaded(true); }
     }
@@ -425,16 +428,46 @@ function ShoutoutCard({ shoutout }) {
     setPostingComment(true);
     try {
       const res = await commentsAPI.post(shoutout.id, commentText.trim());
-      setComments(prev => [...prev, res.data]);
+      setComments(prev => [...prev, { ...res.data, replies: [] }]);
       setCommentCount(c => c + 1);
       setCommentText('');
     } catch { /* silent */ } finally { setPostingComment(false); }
   };
 
-  const handleDeleteComment = async (commentId) => {
+  const handlePostReply = async (parentId) => {
+    if (!replyText.trim()) return;
+    setPostingReply(true);
+    try {
+      const res = await commentsAPI.post(shoutout.id, replyText.trim(), parentId);
+      setComments(prev => prev.map(c =>
+        c.id === parentId
+          ? { ...c, replies: [...(c.replies || []), res.data] }
+          : c
+      ));
+      setCommentCount(c => c + 1);
+      setReplyText('');
+      setReplyingTo(null);
+    } catch { /* silent */ } finally { setPostingReply(false); }
+  };
+
+  const handleDeleteComment = async (commentId, parentId = null) => {
     try {
       await commentsAPI.delete(commentId);
-      setComments(prev => prev.filter(c => c.id !== commentId));
+      if (parentId) {
+        // It's a reply — remove from parent's replies array
+        setComments(prev => prev.map(c =>
+          c.id === parentId
+            ? { ...c, replies: (c.replies || []).filter(r => r.id !== commentId) }
+            : c
+        ));
+      } else {
+        // Top-level comment — also subtract its replies from count
+        const comment = comments.find(c => c.id === commentId);
+        const replyCount = comment?.replies?.length || 0;
+        setComments(prev => prev.filter(c => c.id !== commentId));
+        setCommentCount(c => c - 1 - replyCount);
+        return;
+      }
       setCommentCount(c => c - 1);
     } catch { /* silent */ }
   };
@@ -481,6 +514,13 @@ function ShoutoutCard({ shoutout }) {
       {reactions[type] > 0 && <span>{reactions[type]}</span>}
     </button>
   );
+
+  const avatarStyle = (gradient) => ({
+    width: '32px', height: '32px', borderRadius: '50%',
+    background: gradient, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', color: '#fff', fontWeight: 700,
+    fontSize: '12px', flexShrink: 0,
+  });
 
   const reportReasons = ['Inappropriate content', 'Harassment or bullying', 'False or misleading', 'Spam', 'Other'];
 
@@ -602,50 +642,122 @@ function ShoutoutCard({ shoutout }) {
       {showComments && (
         <div style={{ marginTop: '16px', borderTop: '1px solid #F3F4F6', paddingTop: '16px' }}>
 
-          {/* Existing comments */}
+          {/* Loading / empty state */}
+          {!commentsLoaded && (
+            <p style={{ fontSize: '13px', color: '#9CA3AF', textAlign: 'center', padding: '8px 0 12px' }}>Loading comments…</p>
+          )}
           {comments.length === 0 && commentsLoaded && (
             <p style={{ fontSize: '13px', color: '#9CA3AF', textAlign: 'center', padding: '8px 0 12px' }}>
               No comments yet — be the first!
             </p>
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: comments.length > 0 ? '14px' : 0 }}>
+
+          {/* Comment thread */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: comments.length > 0 ? '14px' : 0 }}>
             {comments.map(c => (
-              <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
-                  {getInitials(c.user?.name || '?')}
-                </div>
-                <div style={{ flex: 1, background: '#F9FAFB', borderRadius: '10px', padding: '10px 12px', position: 'relative' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{c.user?.name || 'User'}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                        {new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                      </span>
-                      {/* Delete button — only for comment author */}
-                      {c.user?.id === currentUserId && (
-                        <button onClick={() => handleDeleteComment(c.id)}
-                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#D1D5DB', fontSize: '13px', padding: '0', lineHeight: 1, transition: 'color 0.15s' }}
-                          onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
-                          onMouseLeave={e => e.currentTarget.style.color = '#D1D5DB'}
-                          title="Delete comment">
-                          ×
-                        </button>
-                      )}
-                    </div>
+              <div key={c.id}>
+                {/* ── Top-level comment ── */}
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <div style={avatarStyle('linear-gradient(135deg, #10B981, #059669)')}>
+                    {getInitials(c.user?.name || '?')}
                   </div>
-                  <p style={{ fontSize: '13px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{c.content}</p>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ background: '#F9FAFB', borderRadius: '10px', padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{c.user?.name || 'User'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                            {new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          </span>
+                          {c.user?.id === currentUserId && (
+                            <button onClick={() => handleDeleteComment(c.id)}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#D1D5DB', fontSize: '13px', padding: 0, lineHeight: 1, transition: 'color 0.15s' }}
+                              onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+                              onMouseLeave={e => e.currentTarget.style.color = '#D1D5DB'}
+                              title="Delete comment">×</button>
+                          )}
+                        </div>
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{c.content}</p>
+                    </div>
+
+                    {/* Reply button */}
+                    <button
+                      onClick={() => setReplyingTo(replyingTo?.id === c.id ? null : { id: c.id, authorName: c.user?.name })}
+                      style={{ marginTop: '4px', marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: replyingTo?.id === c.id ? '#4F46E5' : '#9CA3AF', fontWeight: 600, padding: '2px 0', transition: 'color 0.15s' }}>
+                      ↩ {replyingTo?.id === c.id ? 'Cancel' : 'Reply'}
+                    </button>
+
+                    {/* Inline reply input */}
+                    {replyingTo?.id === c.id && (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '8px' }}>
+                        <div style={avatarStyle('linear-gradient(135deg, #4F46E5, #6366F1)')}>
+                          {getInitials(currentUser?.name || '?')}
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', gap: '6px', alignItems: 'flex-end' }}>
+                          <textarea
+                            autoFocus
+                            value={replyText}
+                            onChange={e => setReplyText(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostReply(c.id); } }}
+                            placeholder={`Reply to ${replyingTo.authorName}… (Enter to post)`}
+                            rows={1}
+                            style={{ flex: 1, border: '1.5px solid #C7D2FE', borderRadius: '10px', padding: '8px 12px', fontSize: '13px', outline: 'none', resize: 'none', lineHeight: 1.5, fontFamily: 'inherit', background: '#F5F7FF' }}
+                          />
+                          <button onClick={() => handlePostReply(c.id)} disabled={!replyText.trim() || postingReply}
+                            style={{ height: '36px', padding: '0 14px', borderRadius: '10px', border: 'none', background: !replyText.trim() ? '#E5E7EB' : '#4F46E5', color: !replyText.trim() ? '#9CA3AF' : '#fff', fontSize: '12px', fontWeight: 600, cursor: !replyText.trim() ? 'default' : 'pointer', flexShrink: 0 }}>
+                            {postingReply ? '…' : 'Reply'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Nested replies ── */}
+                    {c.replies?.length > 0 && (
+                      <div style={{ marginTop: '8px', marginLeft: '8px', borderLeft: '2px solid #E5E7EB', paddingLeft: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {c.replies.map(reply => (
+                          <div key={reply.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                            <div style={avatarStyle('linear-gradient(135deg, #8B5CF6, #6D28D9)')}>
+                              {getInitials(reply.user?.name || '?')}
+                            </div>
+                            <div style={{ flex: 1, background: '#F3F4FF', borderRadius: '10px', padding: '9px 12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>{reply.user?.name || 'User'}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                                    {new Date(reply.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                  </span>
+                                  {reply.user?.id === currentUserId && (
+                                    <button onClick={() => handleDeleteComment(reply.id, c.id)}
+                                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#D1D5DB', fontSize: '13px', padding: 0, lineHeight: 1, transition: 'color 0.15s' }}
+                                      onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+                                      onMouseLeave={e => e.currentTarget.style.color = '#D1D5DB'}
+                                      title="Delete reply">×</button>
+                                  )}
+                                </div>
+                              </div>
+                              <p style={{ fontSize: '13px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{reply.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* New comment input */}
+          {/* New top-level comment input */}
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+            <div style={avatarStyle('linear-gradient(135deg, #4F46E5, #6366F1)')}>
+              {getInitials(currentUser?.name || '?')}
+            </div>
             <textarea
               value={commentText}
               onChange={e => setCommentText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment(); } }}
-              placeholder="Write a comment… (Enter to post)"
+              placeholder="Write a comment… (Enter to post, Shift+Enter for new line)"
               rows={1}
               style={{ flex: 1, border: '1.5px solid #E5E7EB', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', resize: 'none', lineHeight: 1.5, fontFamily: 'inherit', transition: 'border-color 0.2s' }}
               onFocus={e => e.target.style.borderColor = '#4F46E5'}
