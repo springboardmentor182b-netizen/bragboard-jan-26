@@ -1,19 +1,17 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar'; 
-import AdminPanel from './pages/AdminPanel'; // Your finished Reported Management logic
+import AdminPanel from './pages/AdminPanel'; 
 import ShoutoutManagement from './components/ShoutoutManagement';
+import Leaderboard from './pages/Leaderboard'; // KEPT FROM GROUP
 
-// 1. A simple, clean placeholder for the unassigned Dashboard task
+// Dashboard logic remains the same
 const DashboardPlaceholder = () => {
-  // Pull the API URL from your .env file
   const API_URL = process.env.REACT_APP_API_BASE_URL;
-
   return (
     <div style={{ padding: '20px' }}>
       <h1 style={{ color: '#D35400' }}>🚀 BragBoard Admin</h1>
       <p style={{ color: '#666' }}>Welcome to the administration console. Select an option from the sidebar to begin.</p>
-      
       <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
         <div style={cardStyle}>
           <h4>System Status</h4>
@@ -21,7 +19,6 @@ const DashboardPlaceholder = () => {
         </div>
         <div style={cardStyle}>
           <h4>Backend API</h4>
-          {/* Display the environment variable instead of hardcoded text */}
           <p>{API_URL || "Environment variable not found"}</p>
         </div>
       </div>
@@ -43,18 +40,21 @@ function App() {
     <Router>
       <div style={{ display: 'flex', minHeight: '100vh' }}>
         <Sidebar /> 
-        
         <div style={{ flex: 1, backgroundColor: '#F9FAFB', padding: '20px' }}>
           <Routes>
-            {/* DASHBOARD: Shows the placeholder above */}
+            {/* DASHBOARD */}
             <Route path="/admin" element={<DashboardPlaceholder />} />
 
-            {/* MANAGE SHOUTOUTS: Your main task */}
-            <Route path="/admin/shoutouts" element={<ShoutoutManagement />} />                    
+            {/* MANAGE SHOUTOUTS (Your Task) */}
+            <Route path="/admin/shoutouts" element={<ShoutoutManagement />} /> 
             
-            {/* REPORTED POSTS: Points to your merged AdminPanel logic */}
+            {/* REPORTED POSTS */}
             <Route path="/admin/reports" element={<AdminPanel />} />
 
+            {/* LEADERBOARD (Kept from Group C) */}
+            <Route path="/leaderboard" element={<Leaderboard />} />
+
+            {/* REDIRECTS */}
             <Route path="/" element={<Navigate to="/admin" />} />
             <Route path="*" element={<h2>404: Not Found</h2>} />
           </Routes>

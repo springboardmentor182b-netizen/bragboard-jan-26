@@ -6,12 +6,12 @@ const Sidebar = () => {
 
     const menuItems = [
         { name: 'Dashboard', path: '/admin' },
+        { name: 'Leaderboard', path: '/leaderboard' }, // 🏆 Add this line
         { name: 'Reported Posts', path: '/admin/reports' },
         { name: 'Manage Shoutouts', path: '/admin/shoutouts' },
         { name: 'Manage Users', path: '#' },
         { name: 'Settings', path: '#' },
     ];
-
     return (
         <div style={{ width: '250px', height: '100vh', backgroundColor: '#FFF5F0', padding: '20px', borderRight: '1px solid #FFE0D0' }}>
             <h2 style={{ color: '#D35400', marginBottom: '40px' }}>BragBoard Admin</h2>

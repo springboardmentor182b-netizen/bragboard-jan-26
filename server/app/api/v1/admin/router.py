@@ -6,15 +6,15 @@ from src.database.core import get_db
 from src.entities.shoutout import Shoutout
 from src.entities.report import Report
 
+# --- IMPORT the leaderboard router from Group C ---
+from app.api.v1.admin import leaderboard as leaderboard_router
+
 router = APIRouter()
 
 # --- 1. GET ALL SHOUTOUTS (The Management List) ---
 @router.get('/shoutouts')
 def get_all_shoutouts(db: Session = Depends(get_db)):
-    # Fetch every shoutout from the database
     shoutouts = db.query(Shoutout).all()
-    
-    # Format them for the frontend table
     return [
         {
             "id": s.id,
@@ -36,21 +36,19 @@ def get_reports(db: Session = Depends(get_db)):
             "id": report.id,
             "shoutout_id": shoutout.id,
             "sender_name": shoutout.sender,
-            "receiver_name": shoutout.receiver, # Ensure your Shoutout model has 'receiver'
+            "receiver_name": shoutout.receiver if hasattr(shoutout, 'receiver') else "Unknown",
             "content": shoutout.content,
             "reason": report.reason
         })
     return formatted_data
 
-# --- 3. DELETE A SHOUTOUT ---
+# --- 3. DELETE A SHOUTOUT (Your Task) ---
 @router.delete('/shoutouts/{shoutout_id}')
 def delete_shoutout(shoutout_id: int, db: Session = Depends(get_db)):
     shoutout = db.query(Shoutout).filter(Shoutout.id == shoutout_id).first()
     if not shoutout:
         raise HTTPException(status_code=404, detail="Shoutout not found")
     
-    # Note: If there are reports linked to this shoutout, 
-    # you might need to delete those first or use 'cascade delete' in your model.
     db.delete(shoutout)
     db.commit()
     return {"message": "Success! Shoutout deleted."}
@@ -61,7 +59,10 @@ def delete_report(report_id: int, db: Session = Depends(get_db)):
     report = db.query(Report).filter(Report.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-
+    
     db.delete(report)
     db.commit()
     return {"message": "Success! Report deleted."}
+
+# --- 5. LEADERBOARD ROUTER (Kept from Group C) ---
+router.include_router(leaderboard_router.router, prefix="/leaderboard", tags=["leaderboard"])

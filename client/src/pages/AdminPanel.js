@@ -4,11 +4,12 @@ const AdminPanel = () => {
     const [reports, setReports] = useState([]);
 
     // We use the environment variable for the Base URL
-    const API_BASE_URL = process.env.REACT_APP_API_URL;
+    const API_URL = process.env.REACT_APP_API_URL;
 
     const fetchReports = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/reports`);
+            // RESOLVED: Using API_URL consistently
+            const response = await fetch(`${API_URL}/admin/reports`);
             const data = await response.json();
             setReports(data);
         } catch (error) {
@@ -17,13 +18,12 @@ const AdminPanel = () => {
     };
 
     useEffect(() => { 
-        fetchReports(); 
-    }, []);
+        if (API_URL) {
+            fetchReports(); 
+        }
+    }, [API_URL]);
 
-    // Function to handle reviewing a report
     const handleReview = (reportId) => {
-        // For now, we can alert or log. 
-        // In the future, this could navigate to a detail page.
         alert(`Reviewing report ID: ${reportId}`);
         console.log("Reviewing report:", reportId);
     };
@@ -31,7 +31,8 @@ const AdminPanel = () => {
     const handleDelete = async (reportId) => {
         if (window.confirm("Are you sure you want to delete this shoutout?")) {
             try {
-                const response = await fetch(`${API_BASE_URL}/admin/reports/${reportId}`, {
+                // RESOLVED: Using API_URL consistently
+                const response = await fetch(`${API_URL}/admin/reports/${reportId}`, {
                     method: 'DELETE',
                 });
                 if (response.ok) {
@@ -80,29 +81,13 @@ const AdminPanel = () => {
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                         <button 
                                             onClick={() => handleReview(report.id)}
-                                            style={{ 
-                                                backgroundColor: '#4A90E2', 
-                                                color: 'white', 
-                                                border: 'none', 
-                                                padding: '8px 16px', 
-                                                borderRadius: '5px', 
-                                                cursor: 'pointer',
-                                                fontWeight: 'bold'
-                                            }}
+                                            style={reviewBtnStyle}
                                         >
                                             Review
                                         </button>
                                         <button 
                                             onClick={() => handleDelete(report.id)}
-                                            style={{ 
-                                                backgroundColor: '#FF4D4D', 
-                                                color: 'white', 
-                                                border: 'none', 
-                                                padding: '8px 16px', 
-                                                borderRadius: '5px', 
-                                                cursor: 'pointer',
-                                                fontWeight: 'bold'
-                                            }}
+                                            style={deleteBtnStyle}
                                         >
                                             Delete
                                         </button>
@@ -122,5 +107,9 @@ const AdminPanel = () => {
         </div>
     );
 };
+
+// Styles kept clean
+const reviewBtnStyle = { backgroundColor: '#4A90E2', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' };
+const deleteBtnStyle = { backgroundColor: '#FF4D4D', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' };
 
 export default AdminPanel;
