@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from src.entities.shoutout import Shoutout, ShoutoutRecipient, Tag, ShoutoutTag
-from src.entities.user import User
+from src.users.models import User
 from src.shoutouts.models import ShoutoutCreate
 from typing import List
 

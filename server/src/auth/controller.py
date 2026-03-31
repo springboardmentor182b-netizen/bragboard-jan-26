@@ -1,91 +1,53 @@
-
-"""
-Authentication Controller
-API endpoints for login and registration
-"""
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
-from datetime import timedelta
-from src.database.connection import get_db
-from src.database.config import ACCESS_TOKEN_EXPIRE_MINUTES
-from .service import AuthService
+from src.database.core import SessionLocal
+from src.auth.models import RegisterRequest, LoginRequest
+from src.auth.service import register_user, login_user, verify_token
 from src.users.service import UserService
-from src.users.models import UserRole
+from src.users.models import RoleEnum, User
 
-router = APIRouter()
+router = APIRouter(tags=["Authentication"])
 
-# Pydantic models
-class UserRegister(BaseModel):
-    """Schema for user registration"""
-    name: str
-    email: EmailStr
-    password: str
-    department: str
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-class Token(BaseModel):
-    """Schema for token response"""
-    access_token: str
-    token_type: str
-    user: dict
 
-class LoginRequest(BaseModel):
-    """Schema for login request"""
-    email: EmailStr
-    password: str
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# API Endpoints
-@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserRegister, db: Session = Depends(get_db)):
-    """Register a new user"""
-    existing_user = UserService.get_user_by_email(db, user_data.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    user = UserService.create_user(
-        db=db,
-        name=user_data.name,
-        email=user_data.email,
-        password=user_data.password,
-        department=user_data.department,
-        role="employee"
-    )
-    
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = AuthService.create_access_token(
-        data={"sub": user.id, "email": user.email, "role": user.role.value},
-        expires_delta=access_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user.to_dict()
-    }
 
-@router.post("/login", response_model=Token)
-async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
-    """Login user and return JWT token"""
-    user = AuthService.authenticate_user(db, login_data.email, login_data.password)
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    payload = verify_token(token)
+    if not payload or "sub" not in payload:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    user = UserService.get_user_by_email(db, payload.get("sub"))
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = AuthService.create_access_token(
-        data={"sub": user.id, "email": user.email, "role": user.role.value},
-        expires_delta=access_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user.to_dict()
-    }
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+def require_admin(current_user: User = Depends(get_current_user)):
+    if current_user.role != RoleEnum.admin:
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return current_user
+
+
+@router.post("/register")
+def register(data: RegisterRequest, db: Session = Depends(get_db)):
+    try:
+        return register_user(db, data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/login")
+def login(data: LoginRequest, db: Session = Depends(get_db)):
+    try:
+        return login_user(db, data)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))

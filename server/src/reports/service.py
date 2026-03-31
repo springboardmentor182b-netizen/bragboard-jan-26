@@ -3,11 +3,15 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from typing import Optional, List
 
+from fastapi import HTTPException
 from src.entities.report import Report
-from src.entities.shoutout import ShoutOut       # adjust import to your entity path
-from src.entities.admin_log import AdminLog       # adjust import to your entity path
+from src.entities.shoutout import Shoutout       # adjust import to your entity path
 from src.reports.models import ReportCreate, ReportResolve
-from src.exceptions import AppException
+
+
+class AppException(HTTPException):
+    def __init__(self, status_code: int, detail: str):
+        super().__init__(status_code=status_code, detail=detail)
 
 
 class ReportService:
@@ -16,7 +20,7 @@ class ReportService:
     @staticmethod
     def create_report(db: Session, payload: ReportCreate, current_user_id: int) -> Report:
         # Validate shoutout exists
-        shoutout = db.query(ShoutOut).filter(ShoutOut.id == payload.shoutout_id).first()
+        shoutout = db.query(Shoutout).filter(Shoutout.id == payload.shoutout_id).first()
         if not shoutout:
             raise AppException(status_code=404, detail="Shoutout not found")
 
@@ -72,12 +76,6 @@ class ReportService:
         report.resolved_by = admin_id
         report.resolved_at = datetime.utcnow()
 
-        db.add(AdminLog(
-            admin_id=admin_id,
-            action=f"report_{payload.action}",
-            target_id=report_id,
-            target_type="report",
-        ))
         db.commit()
         db.refresh(report)
         return report
@@ -89,7 +87,7 @@ class ReportService:
         if not report:
             raise AppException(status_code=404, detail="Report not found")
 
-        shoutout = db.query(ShoutOut).filter(ShoutOut.id == report.shoutout_id).first()
+        shoutout = db.query(Shoutout).filter(Shoutout.id == report.shoutout_id).first()
         if shoutout:
             db.delete(shoutout)
 
@@ -97,10 +95,4 @@ class ReportService:
         report.resolved_by = admin_id
         report.resolved_at = datetime.utcnow()
 
-        db.add(AdminLog(
-            admin_id=admin_id,
-            action="delete_reported_shoutout",
-            target_id=report.shoutout_id,
-            target_type="shoutout",
-        ))
         db.commit()

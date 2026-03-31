@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from src.users.models import User
-from src.entities.shoutout import ShoutOut, ShoutOutRecipient
+from src.entities.shoutout import Shoutout, ShoutoutRecipient
 from src.entities.reaction import Reaction
 
 

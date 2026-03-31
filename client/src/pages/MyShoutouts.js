@@ -17,8 +17,8 @@ const MyShoutouts = ({ currentUserId }) => {
   const fetchShoutouts = async () => {
     try {
       const [receivedRes, sentRes] = await Promise.all([
-        fetch(`${API_BASE}/shoutouts/user/${currentUserId}/received`),
-        fetch(`${API_BASE}/shoutouts/user/${currentUserId}/sent`)
+        fetch(`${API_BASE}/api/shoutouts/user/${currentUserId}/received`),
+        fetch(`${API_BASE}/api/shoutouts/user/${currentUserId}/sent`)
       ]);
       
       const receivedData = await receivedRes.json();

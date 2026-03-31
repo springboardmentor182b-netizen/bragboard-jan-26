@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from enum import Enum
+from typing import List
 
 
 class RoleEnum(str, Enum):
@@ -12,6 +13,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     department: str
+    role: RoleEnum = RoleEnum.employee
 
 
 class UserLogin(BaseModel):
@@ -25,6 +27,17 @@ class UserResponse(BaseModel):
     email: EmailStr
     department: str
     role: RoleEnum
+
+    class Config:
+        orm_mode = True
+
+
+class UserStats(BaseModel):
+    user: UserResponse
+    shoutouts_received: int
+    shoutouts_given: int
+    leaderboard_rank: int
+    top_tags: List[dict]
 
     class Config:
         orm_mode = True
