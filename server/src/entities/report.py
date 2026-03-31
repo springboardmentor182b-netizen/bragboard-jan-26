@@ -5,7 +5,7 @@ from src.database.core import Base
 
 
 class Report(Base):
-    tablename = "reports"
+    __tablename__ = "reports"
 
     id = Column(Integer, primary_key=True, index=True)
     shoutout_id = Column(Integer, ForeignKey("shoutouts.id", ondelete="CASCADE"), nullable=False)

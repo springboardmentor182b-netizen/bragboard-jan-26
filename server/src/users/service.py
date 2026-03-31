@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
-from src.entities.user import User
+from src.users.models import User
 from src.entities.shoutout import Shoutout, ShoutoutRecipient, ShoutoutTag, Tag
-from src.users.models import UserCreate, UserStats
+from src.users.schemas import UserCreate
 from typing import List
 
 class UserService:
@@ -21,7 +21,11 @@ class UserService:
     @staticmethod
     def get_user_by_id(db: Session, user_id: int):
         return db.query(User).filter(User.id == user_id).first()
-    
+
+    @staticmethod
+    def get_user_by_email(db: Session, email: str):
+        return db.query(User).filter(User.email == email).first()
+
     @staticmethod
     def get_user_stats(db: Session, user_id: int):
         user = db.query(User).filter(User.id == user_id).first()

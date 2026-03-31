@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List
-from src.users.models import UserResponse
+from src.users.schemas import UserResponse
 
 class ShoutoutCreate(BaseModel):
     sender_id: int

@@ -12,7 +12,7 @@ const ShoutoutFeed = () => {
 
   const fetchFeed = async () => {
     try {
-      const response = await fetch(`${API_BASE}/shoutouts/feed`);
+      const response = await fetch(`${API_BASE}/api/shoutouts/feed`);
       const data = await response.json();
       setShoutouts(data);
     } catch (error) {

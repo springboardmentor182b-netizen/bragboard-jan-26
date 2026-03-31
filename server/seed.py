@@ -3,9 +3,15 @@ Seed Database with Sample Data
 Run this script to populate database with test data
 """
 
-from src.database.connection import SessionLocal, engine, Base
-from src.users.models import User, UserRole
+from src.database.config import SessionLocal, engine, Base
+from src.users.models import User
 from src.users.service import UserService
+
+# Import all models to ensure relationships are resolved
+from src.entities.shoutout import Shoutout, ShoutoutRecipient
+from src.entities.comment import Comment
+from src.entities.reaction import Reaction
+from src.entities.report import Report
 
 def create_sample_users(db):
     """Create sample users"""

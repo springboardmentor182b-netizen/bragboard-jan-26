@@ -57,7 +57,7 @@ const Dashboard = () => {
 
   const fetchDashboard = async () => {
     try {
-      const response = await fetch(`${API_BASE}/shoutouts/dashboard/${CURRENT_USER_ID}`);
+      const response = await fetch(`${API_BASE}/api/shoutouts/dashboard/${CURRENT_USER_ID}`);
       const data = await response.json();
       setStats(data);
     } catch (error) {
