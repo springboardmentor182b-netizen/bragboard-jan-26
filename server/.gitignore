@@ -1,25 +1,86 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+coverage.xml
 
-node_modules
-dist
-dist-ssr
-*.local
+# ─── Environment / secrets ────────────────────────────────────────────────────
 .env
-.env.*.local
-# Editor directories and files
-.vscode/*
+.env.*
+!.env.example
+*.local
+
+# ─── Uploaded files (saved at runtime, not source code) ───────────────────────
+uploads/
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+
+# ─── IDEs & OS ────────────────────────────────────────────────────────────────
+.vscode/
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# ─── Frontend files that must NEVER live inside server/ ───────────────────────
+# These are here to catch accidental `git add .` from the wrong directory.
+*.js
+*.jsx
+*.ts
+*.tsx
+*.css
+*.html
+*.svg
+*.png
+!src/**/*.py
+package.json
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+tailwind.config.*
+postcss.config.*
+vite.config.*
+eslint.config.*
+index.html
+public/
+node_modules/
+
+# Frontend source folders (should only exist in client/, not server/)
+src/components/
+src/pages/
+src/context/
+src/hooks/
+src/layout/
+src/features/
+src/services/*.js
+src/assets/
+src/styles/
+src/config/
+src/utils/
+src/App.jsx
+src/App.css
+src/main.jsx
+src/index.css
+src/src/
