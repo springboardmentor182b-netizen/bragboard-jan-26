@@ -8,6 +8,7 @@ const Sidebar = () => {
         { name: 'Dashboard', path: '/admin' },
         { name: 'Leaderboard', path: '/leaderboard' }, // 🏆 Add this line
         { name: 'Reported Posts', path: '/admin/reports' },
+        { name: 'Manage Shoutouts', path: '/admin/shoutouts' },
         { name: 'Manage Users', path: '#' },
         { name: 'Settings', path: '#' },
     ];

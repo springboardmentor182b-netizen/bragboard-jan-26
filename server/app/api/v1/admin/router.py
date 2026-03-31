@@ -6,39 +6,63 @@ from src.database.core import get_db
 from src.entities.shoutout import Shoutout
 from src.entities.report import Report
 
-# --- NEW: Import the leaderboard router ---
-from app.api.v1.admin.leaderboard import router as leaderboard_router
+# --- IMPORT the leaderboard router from Group C ---
+from app.api.v1.admin import leaderboard as leaderboard_router
 
 router = APIRouter()
 
+# --- 1. GET ALL SHOUTOUTS (The Management List) ---
+@router.get('/shoutouts')
+def get_all_shoutouts(db: Session = Depends(get_db)):
+    shoutouts = db.query(Shoutout).all()
+    return [
+        {
+            "id": s.id,
+            "sender_name": s.sender,
+            "receiver_id": s.receiver_id,
+            "content": s.content,
+            "created_at": s.created_at if hasattr(s, 'created_at') else None
+        } for s in shoutouts
+    ]
+
+# --- 2. GET REPORTED POSTS (Moderation View) ---
 @router.get('/reports')
 def get_reports(db: Session = Depends(get_db)):
-    # Join Report and Shoutout to get the message and the sender/receiver
     results = db.query(Report, Shoutout).join(Shoutout, Report.shoutout_id == Shoutout.id).all()
     
     formatted_data = []
     for report, shoutout in results:
         formatted_data.append({
             "id": report.id,
+            "shoutout_id": shoutout.id,
             "sender_name": shoutout.sender,
-            "receiver_name": shoutout.receiver,
+            "receiver_name": shoutout.receiver if hasattr(shoutout, 'receiver') else "Unknown",
             "content": shoutout.content,
             "reason": report.reason
         })
     return formatted_data
 
+# --- 3. DELETE A SHOUTOUT (Your Task) ---
+@router.delete('/shoutouts/{shoutout_id}')
+def delete_shoutout(shoutout_id: int, db: Session = Depends(get_db)):
+    shoutout = db.query(Shoutout).filter(Shoutout.id == shoutout_id).first()
+    if not shoutout:
+        raise HTTPException(status_code=404, detail="Shoutout not found")
+    
+    db.delete(shoutout)
+    db.commit()
+    return {"message": "Success! Shoutout deleted."}
+
+# --- 4. DELETE A REPORT ---
 @router.delete('/reports/{report_id}')
 def delete_report(report_id: int, db: Session = Depends(get_db)):
-    # Find the report by its ID
     report = db.query(Report).filter(Report.id == report_id).first()
-    
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     
     db.delete(report)
     db.commit()
-    
     return {"message": "Success! Report deleted."}
 
-# --- NEW: Include the leaderboard router at the bottom ---
+# --- 5. LEADERBOARD ROUTER (Kept from Group C) ---
 router.include_router(leaderboard_router.router, prefix="/leaderboard", tags=["leaderboard"])

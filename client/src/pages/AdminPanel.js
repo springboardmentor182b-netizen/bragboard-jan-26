@@ -8,7 +8,7 @@ const AdminPanel = () => {
 
     const fetchReports = async () => {
         try {
-            // Replaced hardcoded URL with environment variable
+            // RESOLVED: Using API_URL consistently
             const response = await fetch(`${API_URL}/admin/reports`);
             const data = await response.json();
             setReports(data);
@@ -23,16 +23,21 @@ const AdminPanel = () => {
         }
     }, [API_URL]);
 
+    const handleReview = (reportId) => {
+        alert(`Reviewing report ID: ${reportId}`);
+        console.log("Reviewing report:", reportId);
+    };
+
     const handleDelete = async (reportId) => {
         if (window.confirm("Are you sure you want to delete this shoutout?")) {
             try {
-                // Replaced hardcoded URL with environment variable
+                // RESOLVED: Using API_URL consistently
                 const response = await fetch(`${API_URL}/admin/reports/${reportId}`, {
                     method: 'DELETE',
                 });
                 if (response.ok) {
                     alert("Shoutout deleted.");
-                    fetchReports(); // Refresh table
+                    fetchReports(); 
                 }
             } catch (error) {
                 console.error("Error deleting shoutout:", error);
@@ -53,7 +58,7 @@ const AdminPanel = () => {
                         <th style={{ padding: '15px' }}>Receiver</th>
                         <th style={{ padding: '15px' }}>Message</th>
                         <th style={{ padding: '15px' }}>Reason</th>
-                        <th style={{ padding: '15px' }}>Action</th>
+                        <th style={{ padding: '15px' }}>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,23 +78,20 @@ const AdminPanel = () => {
                                     {report.reason}
                                 </td>
                                 <td style={{ padding: '15px' }}>
-                                    <button 
-                                        onClick={() => handleDelete(report.id)}
-                                        style={{ 
-                                            backgroundColor: '#FF4D4D', 
-                                            color: 'white', 
-                                            border: 'none', 
-                                            padding: '8px 16px', 
-                                            borderRadius: '5px', 
-                                            cursor: 'pointer',
-                                            fontWeight: 'bold',
-                                            transition: '0.3s'
-                                        }}
-                                        onMouseOver={(e) => e.target.style.backgroundColor = '#cc0000'}
-                                        onMouseOut={(e) => e.target.style.backgroundColor = '#FF4D4D'}
-                                    >
-                                        Delete
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button 
+                                            onClick={() => handleReview(report.id)}
+                                            style={reviewBtnStyle}
+                                        >
+                                            Review
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDelete(report.id)}
+                                            style={deleteBtnStyle}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))
@@ -105,5 +107,9 @@ const AdminPanel = () => {
         </div>
     );
 };
+
+// Styles kept clean
+const reviewBtnStyle = { backgroundColor: '#4A90E2', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' };
+const deleteBtnStyle = { backgroundColor: '#FF4D4D', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' };
 
 export default AdminPanel;
