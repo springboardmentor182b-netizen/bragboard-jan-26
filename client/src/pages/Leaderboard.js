@@ -18,7 +18,7 @@ const Leaderboard = () => {
   return (
     <div className="space-y-6">
 
-      {/* Page header — same structure as Reports.js */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Leaderboard</h1>
@@ -32,11 +32,13 @@ const Leaderboard = () => {
         </div>
       </div>
 
-      {/* Section card — same style as the section header card in Reports.js */}
+      {/* Filter Section */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
         <div className="flex items-center gap-3 mb-3">
           <Trophy className="w-6 h-6 text-blue-700" />
-          <h2 className="text-xl font-bold text-gray-900">Recognition Leaderboard</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Recognition Leaderboard
+          </h2>
         </div>
         <p className="text-gray-600 mb-4">
           See who is leading in appreciation — top senders, most recognised, and top reactors.
@@ -44,14 +46,14 @@ const Leaderboard = () => {
         <PeriodFilter selected={period} onChange={setPeriod} />
       </div>
 
-      {/* Error banner */}
+      {/* Error */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
           ⚠️ {error}
         </div>
       )}
 
-      {/* Three leaderboard columns */}
+      {/* Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <LeaderboardTable
           title="Top Senders"
