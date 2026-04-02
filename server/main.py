@@ -5,6 +5,7 @@ import os
 
 # ✅ Import Base + engine from connection.py (feature branch pattern)
 from src.database.connection import Base, engine
+from src.database.config import settings
 
 # ─── Import ALL entity models BEFORE create_all() ────────────────────────────
 # SQLAlchemy must see every model class before Base.metadata.create_all()
@@ -34,7 +35,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
