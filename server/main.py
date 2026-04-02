@@ -6,11 +6,23 @@ from src.reports.controller import router as reports_router
 from src.entities.shoutout_controller import router as shoutout_router
 
 
+# ✅ IMPORT MODELS (VERY IMPORTANT)
+from src.users import models as user_models
+from src.reports import models as report_models
+from src.shoutouts import models as shoutout_models
+
 Base.metadata.create_all(bind=engine)
 
+
+# 🚀 Create app
 app = FastAPI()
 
-# Allow frontend connection
+
+# ✅ Create tables (redundant but safe)
+Base.metadata.create_all(bind=engine)
+
+
+# 🌐 CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,11 +34,14 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 # Admin routes
+# 🔗 Include routers
 app.include_router(admin_router)
 app.include_router(reports_router)
 app.include_router(shoutout_router)
 
 
+
+# ✅ Root API
 @app.get("/")
 def read_root():
     return {"message": "BragBoard API running"}
