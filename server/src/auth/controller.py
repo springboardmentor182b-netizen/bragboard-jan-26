@@ -121,3 +121,4 @@ def reset_password(request: schemas.ResetPasswordRequest, db: Session = Depends(
     db.commit()
 
     return {"message": "Password reset successfully"}
+

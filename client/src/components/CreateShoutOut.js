@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Smile } from 'lucide-react';
+import { Smile, Paperclip, X, Image, Film } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,53 +9,87 @@ const CreateShoutOut = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [mediaFile, setMediaFile] = useState(null);
+    const [mediaPreview, setMediaPreview] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState(null); // null | 'uploading' | 'done'
 
     const { user, apiUrl } = useAuth();
-
     const [users, setUsers] = useState([]);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         const fetchUsers = async () => {
             try {
                 const response = await axios.get(`${apiUrl}/users/`);
-                // Filter out current user from potential recipients
                 const otherUsers = response.data.filter(u => u.id !== user?.id);
                 setUsers(otherUsers);
             } catch (error) {
                 console.error("Error fetching users:", error);
             }
         };
-        if (user) {
-            fetchUsers();
-        }
+        if (user) fetchUsers();
     }, [user, apiUrl]);
 
     const onEmojiClick = (emojiObject) => {
         setMessage(prev => prev + emojiObject.emoji);
-        // Optional: close picker after selection or keep open
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4'];
+        if (!allowed.includes(file.type)) {
+            alert('Unsupported file type. Use JPG, PNG, GIF, WebP, or MP4.');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File too large. Maximum size is 10MB.');
+            return;
+        }
+
+        setMediaFile(file);
+        const url = URL.createObjectURL(file);
+        setMediaPreview({ url, type: file.type });
+    };
+
+    const clearMedia = () => {
+        setMediaFile(null);
+        setMediaPreview(null);
+        setUploadProgress(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!user) {
-            alert("You must be logged in.");
-            return;
-        }
-
-        if (!recipient) {
-            alert("Please select a recipient.");
-            return;
-        }
+        if (!user) { alert("You must be logged in."); return; }
+        if (!recipient) { alert("Please select a recipient."); return; }
 
         setLoading(true);
+        setUploadProgress(null);
         try {
-            await axios.post(`${apiUrl}/shoutouts/?sender_id=${user.id}`, {
+            // 1. Create shoutout
+            const res = await axios.post(`${apiUrl}/shoutouts/?sender_id=${user.id}`, {
                 content: message,
                 recipient_id: parseInt(recipient),
                 tags: []
             });
+            const newShoutoutId = res.data.id;
+
+            // 2. Upload media if selected
+            if (mediaFile) {
+                setUploadProgress('uploading');
+                const formData = new FormData();
+                formData.append('file', mediaFile);
+                await axios.post(`${apiUrl}/shoutouts/${newShoutoutId}/media`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                setUploadProgress('done');
+            }
+
             setMessage('');
             setRecipient('');
+            clearMedia();
             alert('Shout-out posted successfully!');
         } catch (error) {
             console.error('Error posting shout-out:', error);
@@ -64,6 +98,8 @@ const CreateShoutOut = () => {
             setLoading(false);
         }
     };
+
+    const isVideo = mediaPreview?.type?.startsWith('video');
 
     return (
         <div className="max-w-3xl mx-auto">
@@ -77,6 +113,7 @@ const CreateShoutOut = () => {
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Recipient */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Who do you want to recognize?
@@ -95,15 +132,12 @@ const CreateShoutOut = () => {
                                     </option>
                                 ))}
                             </select>
-                            <div className="absolute left-3 top-3.5 text-gray-400">
-                                👤
-                            </div>
-                            <div className="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
-                                ▼
-                            </div>
+                            <div className="absolute left-3 top-3.5 text-gray-400">👤</div>
+                            <div className="absolute right-3 top-3.5 text-gray-400 pointer-events-none">▼</div>
                         </div>
                     </div>
 
+                    {/* Message */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Your appreciation message
@@ -116,10 +150,9 @@ const CreateShoutOut = () => {
                         />
                     </div>
 
+                    {/* Emoji picker */}
                     <div className="relative">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Add some celebration
-                        </label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Add some celebration</label>
                         <button
                             type="button"
                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -128,18 +161,68 @@ const CreateShoutOut = () => {
                             <Smile size={20} />
                             {showEmojiPicker ? 'Close Picker' : 'Add Emoji'}
                         </button>
-
                         {showEmojiPicker && (
                             <div className="absolute top-12 left-0 z-50 shadow-xl rounded-xl border border-gray-100">
-                                <EmojiPicker
-                                    onEmojiClick={onEmojiClick}
-                                    width={350}
-                                    height={400}
-                                />
+                                <EmojiPicker onEmojiClick={onEmojiClick} width={350} height={400} />
                             </div>
                         )}
                     </div>
 
+                    {/* Media Upload */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Attach media (optional)</label>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp,video/mp4"
+                            onChange={handleFileChange}
+                            className="hidden"
+                            id="media-upload"
+                        />
+
+                        {!mediaPreview ? (
+                            <label
+                                htmlFor="media-upload"
+                                className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-gray-200 text-gray-500 hover:border-brand-orange hover:text-brand-orange transition-colors cursor-pointer"
+                            >
+                                <Paperclip size={20} />
+                                <span className="text-sm font-medium">Click to attach an image or video (max 10MB)</span>
+                            </label>
+                        ) : (
+                            <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                                {isVideo ? (
+                                    <video
+                                        src={mediaPreview.url}
+                                        controls
+                                        className="w-full max-h-64 object-contain bg-black"
+                                    />
+                                ) : (
+                                    <img
+                                        src={mediaPreview.url}
+                                        alt="Preview"
+                                        className="w-full max-h-64 object-contain bg-gray-50"
+                                    />
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={clearMedia}
+                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                >
+                                    <X size={14} />
+                                </button>
+                                <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                                    {isVideo ? <Film size={10} /> : <Image size={10} />}
+                                    {mediaFile?.name}
+                                </div>
+                            </div>
+                        )}
+
+                        {uploadProgress === 'uploading' && (
+                            <p className="text-xs text-brand-orange mt-1 animate-pulse">Uploading media...</p>
+                        )}
+                    </div>
+
+                    {/* Actions */}
                     <div className="pt-4 flex gap-3">
                         <button
                             type="submit"
@@ -150,6 +233,7 @@ const CreateShoutOut = () => {
                         </button>
                         <button
                             type="button"
+                            onClick={() => { setMessage(''); setRecipient(''); clearMedia(); }}
                             className="px-6 py-3 rounded-xl border border-gray-200 font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
                         >
                             Cancel

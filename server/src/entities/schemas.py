@@ -73,15 +73,11 @@ class ShoutOutBase(BaseModel):
     content: str
     recipient_id: int
     tags: List[str] = []
+    media_url: Optional[str] = None
 
 class ShoutOutCreate(ShoutOutBase):
     pass
 
-class ShoutOut(ShoutOutBase):
-    id: int
-    sender_id: int
-    created_at: datetime
-    reactions: Dict[str, int]
 class CommentBase(BaseModel):
     content: str
 
@@ -120,9 +116,32 @@ class ShoutOut(ShoutOutBase):
     created_at: datetime
     reactions: Dict[str, int]
     comments: List[Comment] = []
-    
     sender: User
     recipient: User
 
     class Config:
         orm_mode = True
+
+
+class UserSummary(BaseModel):
+    id: int
+    full_name: str
+    profile_picture: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+class NotificationOut(BaseModel):
+    id: int
+    user_id: int
+    actor_id: int
+    shoutout_id: int
+    type: str          # "like" or "comment"
+    is_read: bool
+    created_at: datetime
+    actor: Optional[UserSummary] = None
+
+    class Config:
+        orm_mode = True
+
