@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-const CreateShoutout = ({ currentUserId }) => {
+const CreateShoutout = () => {
+  const { user, token } = useContext(AuthContext); // ✅ get user from context
   const [users, setUsers] = useState([]);
   const [tags, setTags] = useState([]);
   const [formData, setFormData] = useState({
@@ -19,9 +21,11 @@ const CreateShoutout = ({ currentUserId }) => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/users/`);
+      const response = await fetch(`${API_BASE}/api/users/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await response.json();
-      const filteredUsers = Array.isArray(data) ? data.filter(u => u.id !== currentUserId) : [];
+      const filteredUsers = Array.isArray(data) ? data.filter(u => u.id !== user?.id) : [];
       setUsers(filteredUsers);
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -31,11 +35,14 @@ const CreateShoutout = ({ currentUserId }) => {
 
   const fetchTags = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/shoutouts/tags`);
+      const response = await fetch(`${API_BASE}/api/shoutouts/tags`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await response.json();
       setTags(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch tags:', error);
+      // ✅ fallback tags always show if API fails
       setTags([
         { id: 1, name: 'Excellence' },
         { id: 2, name: 'Leadership' },
@@ -45,13 +52,15 @@ const CreateShoutout = ({ currentUserId }) => {
         { id: 6, name: 'Culture' },
         { id: 7, name: 'Creativity' },
         { id: 8, name: 'Reliability' },
+        { id: 9, name: 'Problem Solver' },
+        { id: 10, name: 'Above & Beyond' },
       ]);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (formData.recipient_ids.length === 0) {
       alert('Please select at least one recipient');
       return;
@@ -69,9 +78,12 @@ const CreateShoutout = ({ currentUserId }) => {
     try {
       const response = await fetch(`${API_BASE}/api/shoutouts/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // ✅ send token
+        },
         body: JSON.stringify({
-          sender_id: currentUserId,
+          sender_id: user?.id,
           ...formData
         })
       });
@@ -80,7 +92,8 @@ const CreateShoutout = ({ currentUserId }) => {
         alert('Shoutout sent successfully! 🎉');
         setFormData({ recipient_ids: [], message: '', tag_names: [] });
       } else {
-        alert('Failed to send shoutout. Please try again.');
+        const err = await response.json();
+        alert(err.detail || 'Failed to send shoutout. Please try again.');
       }
     } catch (error) {
       console.error('Failed to send shoutout:', error);
@@ -123,6 +136,7 @@ const CreateShoutout = ({ currentUserId }) => {
           <h2 className="text-xl font-bold text-[#213555] mb-6">New Shoutout</h2>
           <p className="text-[#3E5879] mb-6">Show your appreciation and recognize your colleagues</p>
 
+          {/* Recipients */}
           <div className="mb-6">
             <label className="block text-[#213555] font-semibold mb-3">Choose employees to recognize</label>
             {users.length > 0 ? (
@@ -145,12 +159,13 @@ const CreateShoutout = ({ currentUserId }) => {
               </div>
             ) : (
               <div className="text-center p-4 border border-gray-200 rounded-lg">
-                <p className="text-[#3E5879]">No users found. Please create users first.</p>
+                <p className="text-[#3E5879]">No users found.</p>
               </div>
             )}
             <p className="text-xs text-[#3E5879] mt-2">{formData.recipient_ids.length} employee(s) selected</p>
           </div>
 
+          {/* Message */}
           <div className="mb-6">
             <label className="block text-[#213555] font-semibold mb-3">Message</label>
             <textarea
@@ -163,27 +178,33 @@ const CreateShoutout = ({ currentUserId }) => {
             <p className="text-xs text-[#3E5879] mt-2">{formData.message.length}/500 characters</p>
           </div>
 
+          {/* Tags */}
           <div className="mb-8">
             <label className="block text-[#213555] font-semibold mb-3">Choose recognition tags</label>
-            <div className="flex flex-wrap gap-2">
-              {tags.map(tag => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => toggleTag(tag.name)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    formData.tag_names.includes(tag.name)
-                      ? 'bg-[#213555] text-white'
-                      : 'bg-[#D8C4B6] text-[#213555] hover:bg-[#213555] hover:text-white'
-                  }`}
-                >
-                  {tag.name}
-                </button>
-              ))}
-            </div>
+            {tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {tags.map(tag => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTag(tag.name)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      formData.tag_names.includes(tag.name)
+                        ? 'bg-[#213555] text-white'
+                        : 'bg-[#D8C4B6] text-[#213555] hover:bg-[#213555] hover:text-white'
+                    }`}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[#3E5879] text-sm">Loading tags...</p>
+            )}
             <p className="text-xs text-[#3E5879] mt-2">Tags are managed by administrators</p>
           </div>
 
+          {/* Buttons */}
           <div className="flex gap-4">
             <button
               onClick={handleSubmit}

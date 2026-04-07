@@ -1,31 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-const MyShoutouts = ({ currentUserId }) => {
+const MyShoutouts = () => {
+  const { user, token } = useContext(AuthContext); // ✅ get user from context
   const [activeTab, setActiveTab] = useState('received');
   const [receivedShoutouts, setReceivedShoutouts] = useState([]);
   const [sentShoutouts, setSentShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (currentUserId) {
+    if (user) {
       fetchShoutouts();
     }
-  }, [currentUserId]);
+  }, [user]);
 
   const fetchShoutouts = async () => {
     try {
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
       const [receivedRes, sentRes] = await Promise.all([
-        fetch(`${API_BASE}/api/shoutouts/user/${currentUserId}/received`),
-        fetch(`${API_BASE}/api/shoutouts/user/${currentUserId}/sent`)
+        fetch(`${API_BASE}/api/shoutouts/user/${user.id}/received`, { headers }),
+        fetch(`${API_BASE}/api/shoutouts/user/${user.id}/sent`, { headers })
       ]);
-      
+
       const receivedData = await receivedRes.json();
       const sentData = await sentRes.json();
-      
-      setReceivedShoutouts(receivedData);
-      setSentShoutouts(sentData);
+
+      setReceivedShoutouts(Array.isArray(receivedData) ? receivedData : []);
+      setSentShoutouts(Array.isArray(sentData) ? sentData : []);
     } catch (error) {
       console.error('Failed to fetch shoutouts:', error);
     }
@@ -36,7 +43,9 @@ const MyShoutouts = ({ currentUserId }) => {
     <div className="bg-white rounded-lg p-6 border border-gray-200 mb-4 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 rounded-full bg-[#213555] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-          {shoutout.sender.name.split(' ').map(n => n[0]).join('')}
+          {type === 'received'
+            ? shoutout.sender?.name?.split(' ').map(n => n[0]).join('') || 'U'
+            : shoutout.recipients?.map(r => r.name[0]).join('') || 'U'}
         </div>
         <div className="flex-1 min-w-0">
           <div className="mb-2">
@@ -46,14 +55,14 @@ const MyShoutouts = ({ currentUserId }) => {
                   {type === 'received' ? 'From:' : 'To:'}
                 </p>
                 <h3 className="font-semibold text-[#213555]">
-                  {type === 'received' 
-                    ? shoutout.sender.name 
-                    : shoutout.recipients.map(r => r.name).join(', ')}
+                  {type === 'received'
+                    ? shoutout.sender?.name || 'Unknown'
+                    : shoutout.recipients?.map(r => r.name).join(', ') || 'Unknown'}
                 </h3>
                 <p className="text-sm text-[#3E5879]">
-                  {type === 'received' 
-                    ? shoutout.sender.email 
-                    : shoutout.recipients.map(r => r.email).join(', ')}
+                  {type === 'received'
+                    ? shoutout.sender?.email || ''
+                    : shoutout.recipients?.map(r => r.email).join(', ') || ''}
                 </p>
               </div>
               <span className="text-xs text-[#3E5879]">
@@ -67,11 +76,11 @@ const MyShoutouts = ({ currentUserId }) => {
               </span>
             </div>
           </div>
-          
+
           <p className="text-[#213555] mb-3">{shoutout.message}</p>
-          
+
           <div className="flex gap-2 flex-wrap">
-            {shoutout.tags.map((tag, idx) => (
+            {shoutout.tags?.map((tag, idx) => (
               <span key={idx} className="px-3 py-1 bg-[#D8C4B6] text-[#213555] text-xs rounded-full font-medium">
                 {tag}
               </span>
@@ -82,7 +91,7 @@ const MyShoutouts = ({ currentUserId }) => {
     </div>
   );
 
-  if (!currentUserId) {
+  if (!user) {
     return (
       <div className="p-8 text-center">
         <p className="text-[#3E5879]">Please log in to view your shoutouts.</p>
@@ -102,9 +111,7 @@ const MyShoutouts = ({ currentUserId }) => {
           <button
             onClick={() => setActiveTab('received')}
             className={`pb-4 px-2 font-semibold transition-colors relative ${
-              activeTab === 'received'
-                ? 'text-[#213555]'
-                : 'text-[#3E5879] hover:text-[#213555]'
+              activeTab === 'received' ? 'text-[#213555]' : 'text-[#3E5879] hover:text-[#213555]'
             }`}
           >
             Shoutouts Received ({receivedShoutouts.length})
@@ -115,9 +122,7 @@ const MyShoutouts = ({ currentUserId }) => {
           <button
             onClick={() => setActiveTab('sent')}
             className={`pb-4 px-2 font-semibold transition-colors relative ${
-              activeTab === 'sent'
-                ? 'text-[#213555]'
-                : 'text-[#3E5879] hover:text-[#213555]'
+              activeTab === 'sent' ? 'text-[#213555]' : 'text-[#3E5879] hover:text-[#213555]'
             }`}
           >
             Shoutouts Given ({sentShoutouts.length})
