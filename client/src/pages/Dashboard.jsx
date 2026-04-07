@@ -3,6 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CreateShoutoutModal from '../components/CreateShoutoutModal';
 import { reactionsAPI, commentsAPI } from '../services/api';
+import NotificationBell from './components/NotificationBell';
+// Add to your navigation
+<NotificationBell />
 import '../styles/theme.css';
 
 // Icons (keeping your existing inline SVG icons)
@@ -1028,5 +1031,6 @@ function Dashboard() {
     </div>
   );
 }
+
 
 export default Dashboard;

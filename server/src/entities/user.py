@@ -58,6 +58,11 @@ class User(Base):
 
     # Reports submitted by this user
     reports = relationship("Report", foreign_keys="Report.reported_by", back_populates="reporter")
+    # Add to imports
+from sqlalchemy.orm import relationship
+
+# Add to User class (in relationships section)
+notifications = relationship("Notification", back_populates="user", foreign_keys="Notification.user_id")
 
     # ✅ FIXED: admin_logs relationship REMOVED here.
     # admin_log.py no longer uses back_populates="admin_logs".

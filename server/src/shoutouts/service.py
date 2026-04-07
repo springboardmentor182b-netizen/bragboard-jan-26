@@ -7,6 +7,7 @@ from src.entities.user import User
 from src.entities.shoutout_like import ShoutoutLike
 from src.entities.comment import Comment
 from src.shoutouts.models import ShoutoutCreate
+from src.notifications import service as notification_service
 
 
 def _attach_comment_counts(db: Session, shoutouts: list) -> list:
@@ -33,6 +34,9 @@ def _attach_comment_counts(db: Session, shoutouts: list) -> list:
 
 
 def create_shoutout(db: Session, shoutout_data: ShoutoutCreate, image_url: str = None):
+    """
+    Create a new shoutout and send notifications to all recipients.
+    """
     tag_string = ",".join(shoutout_data.tags)
     new_shoutout = Shoutout(
         sender_id=shoutout_data.sender_id,
@@ -44,16 +48,37 @@ def create_shoutout(db: Session, shoutout_data: ShoutoutCreate, image_url: str =
     db.commit()
     db.refresh(new_shoutout)
 
+    # Add recipients
     for r_id in shoutout_data.recipient_ids:
         recipient = ShoutoutRecipient(shoutout_id=new_shoutout.id, recipient_id=r_id)
         db.add(recipient)
 
     db.commit()
+    
+    # Fetch complete shoutout with relationships
     result = db.query(Shoutout).options(
         joinedload(Shoutout.sender),
         joinedload(Shoutout.recipients).joinedload(ShoutoutRecipient.recipient),
     ).filter(Shoutout.id == new_shoutout.id).first()
     result.comment_count = 0
+    
+    # ✨ NEW: Create notifications for all recipients
+    try:
+        sender = db.query(User).filter(User.id == shoutout_data.sender_id).first()
+        sender_name = sender.name if sender else "Someone"
+        
+        notification_service.create_shoutout_notification(
+            db=db,
+            shoutout_id=new_shoutout.id,
+            recipient_ids=shoutout_data.recipient_ids,
+            sender_id=shoutout_data.sender_id,
+            sender_name=sender_name,
+            message_preview=shoutout_data.message
+        )
+    except Exception as e:
+        # Don't fail shoutout creation if notification fails
+        print(f"Warning: Failed to create shoutout notifications: {e}")
+    
     return result
 
 
@@ -98,32 +123,6 @@ def get_my_shoutouts(db: Session, user_id: int):
         .all()
     )
     return _attach_comment_counts(db, shoutouts)
-
-
-def get_leaderboard(db: Session):
-    """Count how many shoutouts each user RECEIVED — most appreciated."""
-    results = (
-        db.query(
-            User.id,
-            User.name,
-            User.department,
-            func.count(ShoutoutRecipient.id).label("score"),
-        )
-        .join(ShoutoutRecipient, User.id == ShoutoutRecipient.recipient_id)
-        .group_by(User.id)
-        .order_by(desc("score"))
-        .limit(10)
-        .all()
-    )
-    return [
-        {
-            "id": r.id,
-            "name": r.name,
-            "department": r.department or "General",
-            "score": r.score,
-        }
-        for r in results
-    ]
 
 
 def get_department_stats(db: Session):
