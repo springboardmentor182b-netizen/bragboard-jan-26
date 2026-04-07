@@ -3,9 +3,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Sidebar from './components/Sidebar'; 
 import AdminPanel from './pages/AdminPanel'; 
 import ShoutoutManagement from './components/ShoutoutManagement';
-import Leaderboard from './pages/Leaderboard'; // KEPT FROM GROUP
+import Leaderboard from './pages/Leaderboard';
+// 1. ADD THIS IMPORT
+import UserManagement from './pages/UserManagement'; 
 
-// Dashboard logic remains the same
 const DashboardPlaceholder = () => {
   const API_URL = process.env.REACT_APP_API_BASE_URL;
   return (
@@ -42,19 +43,15 @@ function App() {
         <Sidebar /> 
         <div style={{ flex: 1, backgroundColor: '#F9FAFB', padding: '20px' }}>
           <Routes>
-            {/* DASHBOARD */}
             <Route path="/admin" element={<DashboardPlaceholder />} />
 
-            {/* MANAGE SHOUTOUTS (Your Task) */}
-            <Route path="/admin/shoutouts" element={<ShoutoutManagement />} /> 
-            
-            {/* REPORTED POSTS */}
-            <Route path="/admin/reports" element={<AdminPanel />} />
+            {/* 2. ADD THIS ROUTE HERE */}
+            <Route path="/admin/users" element={<UserManagement />} /> 
 
-            {/* LEADERBOARD (Kept from Group C) */}
+            <Route path="/admin/shoutouts" element={<ShoutoutManagement />} /> 
+            <Route path="/admin/reports" element={<AdminPanel />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
 
-            {/* REDIRECTS */}
             <Route path="/" element={<Navigate to="/admin" />} />
             <Route path="*" element={<h2>404: Not Found</h2>} />
           </Routes>
