@@ -3,9 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CreateShoutoutModal from '../components/CreateShoutoutModal';
 import { reactionsAPI, commentsAPI } from '../services/api';
-import NotificationBell from './components/NotificationBell';
-// Add to your navigation
-<NotificationBell />
+import NotificationBell from "../components/NotificationBell";
 import '../styles/theme.css';
 
 // Icons (keeping your existing inline SVG icons)
@@ -973,6 +971,7 @@ function DepartmentsView() {
 }
 
 // Main Dashboard Component
+// Main Dashboard Component
 function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -1012,6 +1011,12 @@ function Dashboard() {
 
       <main style={{ paddingLeft: '256px', flex: 1, minHeight: '100vh' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 32px' }}>
+          
+          {/* THIS IS THE NEW PART: The notification bar */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+            <NotificationBell />
+          </div>
+
           {renderView()}
         </div>
       </main>
@@ -1031,6 +1036,4 @@ function Dashboard() {
     </div>
   );
 }
-
-
 export default Dashboard;

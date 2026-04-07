@@ -4,23 +4,20 @@ import enum
 from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import relationship
 
-# ✅ FIXED: Use connection.py (not core.py — core.py only exists in main branch)
+# ✅ FIXED: Use connection.py
 from src.database.connection import Base
 
-
 class UserRole(str, enum.Enum):
-    """User role types. Using str mixin so .value serializes cleanly."""
+    """User role types."""
     employee = "employee"
     admin = "admin"
 
-
 class UserStatus(str, enum.Enum):
-    """User approval status for admin workflow."""
+    """User approval status."""
     pending = "pending"
     approved = "approved"
     rejected = "rejected"
     suspended = "suspended"
-
 
 class User(Base):
     __tablename__ = "users"
@@ -31,10 +28,8 @@ class User(Base):
     password = Column(String, nullable=False)
     department = Column(String, nullable=True)
 
-    # ✅ FIXED: Using SQLEnum with the Python enum class
     role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.employee)
 
-    # Approval workflow fields
     status = Column(SQLEnum(UserStatus), nullable=False, default=UserStatus.pending)
     approved_at = Column(DateTime, nullable=True)
     approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -42,12 +37,9 @@ class User(Base):
 
     joined_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     security_question = Column(String, nullable=True)
-    security_answer = Column(String, nullable=True)  # stored as bcrypt hash
+    security_answer = Column(String, nullable=True)
 
     # ─── Relationships ────────────────────────────────────────────────────────
-
-    # ✅ NOTE: sent_shoutouts is created automatically by backref="sent_shoutouts"
-    # in shoutout.py → DO NOT redefine it here (causes SQLAlchemy conflict)
 
     # Self-referential: the admin who approved this user
     approver = relationship(
@@ -58,13 +50,6 @@ class User(Base):
 
     # Reports submitted by this user
     reports = relationship("Report", foreign_keys="Report.reported_by", back_populates="reporter")
-    # Add to imports
-from sqlalchemy.orm import relationship
 
-# Add to User class (in relationships section)
-notifications = relationship("Notification", back_populates="user", foreign_keys="Notification.user_id")
-
-    # ✅ FIXED: admin_logs relationship REMOVED here.
-    # admin_log.py no longer uses back_populates="admin_logs".
-    # AdminLog.admin_id is a plain ForeignKey; query it manually when needed:
-    #   db.query(AdminLog).filter(AdminLog.admin_id == user.id).all()
+    # ✅ FIXED: Indented correctly and "Add to..." text removed
+    notifications = relationship("Notification", back_populates="user", foreign_keys="Notification.user_id")
