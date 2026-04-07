@@ -13,9 +13,7 @@ from src.notifications.controller import router as notifications_router
 from src.entities.shoutout_controller import router as shoutout_router_entities
 
 # ✅ IMPORT MODELS (VERY IMPORTANT for create_all)
-from src.users import models as user_models
-from src.reports import models as report_models
-from src.shoutouts import models as shoutout_models
+from src.entities import models as consolidated_models
 
 # Create tables
 Base.metadata.create_all(bind=engine)

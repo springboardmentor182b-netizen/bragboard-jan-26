@@ -46,14 +46,12 @@ def delete_shoutout(db: Session, shoutout_id: int):
         return {"message": "Shoutout deleted"}
     return {"message": "Shoutout not found"}
 
-from src.reports.models import Report
 
 
 def create_report(db, shoutout_id: int, reported_by: str, reason: str):
 
     report = Report(
         shoutout_id=shoutout_id,
-        reported_by=reported_by,
         user_id=reported_by,
         reason=reason
     )

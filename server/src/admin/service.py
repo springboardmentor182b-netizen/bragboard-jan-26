@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from src.reports.models import Report
+from src.entities.models import Report
 from src.entities.models import Shoutout
 
 
@@ -80,7 +80,7 @@ def get_leaderboard(db: Session):
 import csv
 from io import StringIO
 from fastapi.responses import StreamingResponse
-from src.reports.models import Report
+from src.entities.models import Report
 
 
 def export_reports_csv(db):
@@ -115,7 +115,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from fastapi.responses import StreamingResponse
-from src.reports.models import Report
+from src.entities.models import Report
 
 
 def export_reports_pdf(db):

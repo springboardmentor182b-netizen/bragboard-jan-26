@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
+import AdminLogin from './pages/AdminLogin';
 
 // Admin Features
 import AdminLayout from "./features/admin/AdminLayout";
@@ -19,6 +20,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     if (loading) return <div>Loading...</div>;
 
     if (!user) {
+        // Redirect to standard login if accessing protected routes without auth
         return <Navigate to="/login" replace />;
     }
 
@@ -38,6 +40,7 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/admin/login" element={<AdminLogin />} />
                     
                     {/* Root Redirects */}
                     <Route path="/" element={<Navigate to="/login" replace />} />

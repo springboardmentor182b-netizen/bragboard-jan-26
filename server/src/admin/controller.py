@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from src.database.connection import get_db
-from src.reports.models import Report
-from src.entities.models import User, Shoutout
+from src.database.database import get_db
+from src.entities.models import User, Shoutout, Report
 
 router = APIRouter(
     prefix="/admin",
