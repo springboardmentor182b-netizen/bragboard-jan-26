@@ -22,7 +22,25 @@ export default function Login() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Login failed");
-      login({ email, role }, data.access_token);
+
+      const actualRole = data.role;
+
+      // ✅ Save full user object including id and name
+      login({
+        id: data.user_id,
+        email: data.email,
+        name: data.name,
+        role: actualRole,
+        department: data.department,
+      }, data.access_token);
+
+      // ✅ Redirect based on role
+      if (actualRole === "admin") {
+        window.location.href = "/admin/dashboard";
+      } else {
+        window.location.href = "/dashboard";
+      }
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -38,7 +56,6 @@ export default function Login() {
         </div>
         <h1 className="auth-title">BragBoard</h1>
         <p className="auth-subtitle">Welcome back! Sign in to your account</p>
-
         <div className="role-tabs">
           <button
             className={`role-tab ${role === "employee" ? "active" : ""}`}
@@ -55,10 +72,8 @@ export default function Login() {
             <span>Admin Login</span>
           </button>
         </div>
-
         <form onSubmit={handleSubmit} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
-
           <div className="form-group">
             <label>Email</label>
             <input
@@ -69,7 +84,6 @@ export default function Login() {
               required
             />
           </div>
-
           <div className="form-group">
             <label>Password</label>
             <input
@@ -85,14 +99,11 @@ export default function Login() {
               </span>
             </div>
           </div>
-
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
-
         <div className="divider"><span>Or continue with</span></div>
-
         <div className="social-buttons">
           <button className="btn-social">
             <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={20} />
@@ -103,7 +114,6 @@ export default function Login() {
             GitHub
           </button>
         </div>
-
         <p className="auth-switch">
           Don't have an account?{" "}
           <span onClick={() => window.location.href = "/signup"}>Sign up</span>
