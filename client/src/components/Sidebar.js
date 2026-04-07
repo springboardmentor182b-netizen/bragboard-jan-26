@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
-import { MessageSquare, PlusCircle, Trophy, FileText, LogOut, Bell } from 'lucide-react';
+import { MessageSquare, PlusCircle, Trophy, FileText, LogOut, Bell, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
@@ -33,8 +33,13 @@ const Sidebar = () => {
         { name: 'Notifications', icon: Bell, path: '/dashboard/notifications', badge: unreadCount },
     ];
 
+    // Add Admin link if user is admin
+    if (user && user.role === 'admin') {
+        navItems.push({ name: 'Admin Panel', icon: ShieldAlert, path: '/admin' });
+    }
+
     return (
-        <div className="w-64 bg-white __h-screen border-r border-gray-200 flex flex-col fixed left-0 top-16 bottom-0">
+        <div className="w-64 bg-white min-h-screen border-r border-gray-200 flex flex-col fixed left-0 top-16 bottom-0">
             <div className="flex-1 py-6">
                 <nav className="space-y-1 px-3">
                     {navItems.map((item) => (

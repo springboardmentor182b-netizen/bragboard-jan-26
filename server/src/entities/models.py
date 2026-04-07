@@ -87,6 +87,8 @@ class SecurityQuestion(Base):
 
     user = relationship("User", back_populates="security_questions")
 
+# Alias for backward compatibility — use ShoutOut (defined above) as the canonical model
+Shoutout = ShoutOut
 
 class Notification(Base):
     __tablename__ = "notifications"
@@ -102,3 +104,4 @@ class Notification(Base):
     user = relationship("User", back_populates="notifications", foreign_keys=[user_id])
     actor = relationship("User", foreign_keys=[actor_id])
     shoutout = relationship("ShoutOut")
+

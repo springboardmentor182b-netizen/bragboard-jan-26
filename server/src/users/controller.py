@@ -97,7 +97,8 @@ def upload_user_image(user_id: int, file: UploadFile = File(...), db: Session = 
         shutil.copyfileobj(file.file, file_object)
         
     # Update DB URL
-    db_user.profile_picture = f"http://localhost:8000/static/{filename}"
+    db_user.profile_picture = f"/static/{filename}"
     db.commit()
     
     return {"info": "Image uploaded successfully", "url": db_user.profile_picture}
+
