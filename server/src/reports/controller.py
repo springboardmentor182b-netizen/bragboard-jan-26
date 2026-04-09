@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from src.database.connection import get_db
+from src.database.config import get_db
 from src.reports.models import ReportCreate, ReportResponse, ReportResolve
 from src.reports.service import ReportService
 from src.auth.controller import get_current_user, require_admin  # match your existing auth pattern
