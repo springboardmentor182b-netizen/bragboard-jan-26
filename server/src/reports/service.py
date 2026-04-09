@@ -1,28 +1,30 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
 from .models import Report
 from src.entities.models import Shoutout# Adjust if path different
 
 
 def get_all_reports(db: Session):
-    reports = db.query(Report).all()
+    reports = db.query(Report).order_by(Report.created_at.desc()).all()
     result = []
 
     for report in reports:
-        shoutout = db.query(Shoutout).filter(
-            Shoutout.id == report.shoutout_id
-        ).first()
+        shoutout = report.shoutout
+        reporting_user = report.user
 
         result.append({
             "id": report.id,
             "reason": report.reason,
-            "reported_by": report.user_id,
-            "created_at": report.created_at,
+            "details": report.details,
+            "reported_by_name": (reporting_user.full_name if reporting_user and reporting_user.full_name else f"User {report.user_id}"),
+            "created_at": report.created_at.isoformat() if report.created_at else datetime.utcnow().isoformat(),
             "shoutout": {
                 "id": shoutout.id,
-                "sender": shoutout.sender,
-                "receiver": shoutout.receiver,
-                "message": shoutout.message,
-                "created_at": shoutout.created_at
+                "sender_name": (shoutout.sender.full_name if shoutout.sender and shoutout.sender.full_name else "Unknown Sender"),
+                "sender_initial": (shoutout.sender.full_name[0] if shoutout.sender and shoutout.sender.full_name else "U"),
+                "recipient_name": (shoutout.recipient.full_name if shoutout.recipient and shoutout.recipient.full_name else "Unknown Recipient"),
+                "content": shoutout.content or "No content.",
+                "created_at": (shoutout.created_at.isoformat() if shoutout.created_at else datetime.utcnow().isoformat())
             } if shoutout else None
         })
 

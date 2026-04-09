@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Shield } from 'lucide-react';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -101,6 +101,16 @@ const Login = () => {
                         </p>
                     </div>
                 </form>
+
+                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-center">
+                    <Link
+                        to="/admin/login"
+                        className="flex items-center gap-2 text-sm text-purple-600 font-semibold hover:text-purple-700 transition-colors"
+                    >
+                        <Shield size={16} />
+                        Admin Login
+                    </Link>
+                </div>
             </div>
         </div>
     );

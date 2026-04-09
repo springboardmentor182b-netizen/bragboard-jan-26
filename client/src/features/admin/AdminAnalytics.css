@@ -1,53 +1,97 @@
+/* Primary Layout */
 .analytics-container {
     padding: 30px;
-  }
-  
-  .analytics-title {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 20px;
-  }
-  
-  /* Cards Layout */
-  .analytics-cards {
-    display: flex;
+    background-color: #fcfcfd;
+    min-height: 100vh;
+}
+
+/* Platform Overview Cards */
+.analytics-grid-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 20px;
-  }
-  
-  /* Card Base */
-  .analytics-card {
-    flex: 1;
-    padding: 25px;
-    border-radius: 15px;
-    color: white;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-    transition: transform 0.3s ease;
-  }
-  
-  .analytics-card:hover {
-    transform: translateY(-5px);
-  }
-  
-  /* Individual Colors */
-  .analytics-card.users {
-    background: linear-gradient(135deg, #6C5CE7, #4834d4);
-  }
-  
-  .analytics-card.reports {
-    background: linear-gradient(135deg, #FF7675, #d63031);
-  }
-  
-  .analytics-card.shoutouts {
-    background: linear-gradient(135deg, #00B894, #019875);
-  }
-  
-  /* Text */
-  .analytics-card h3 {
-    margin-bottom: 10px;
-    font-size: 16px;
-  }
-  
-  .analytics-card p {
-    font-size: 28px;
-    font-weight: bold;
-  }
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    border: 1px solid #f1f5f9;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Card Coloring */
+.stat-card.purple .stat-icon { background: #f5f3ff; color: #7c3aed; }
+.stat-card.green .stat-icon { background: #f0fdf4; color: #16a34a; }
+.stat-card.orange .stat-icon { background: #fff7ed; color: #ea580c; }
+.stat-card.red .stat-icon { background: #fef2f2; color: #dc2626; }
+.stat-card.blue .stat-icon { background: #eff6ff; color: #2563eb; }
+.stat-card.indigo .stat-icon { background: #eef2ff; color: #4f46e5; }
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Department Performance */
+.dept-card {
+    transition: all 0.2s ease;
+}
+
+.dept-card:hover {
+    background-color: rgba(124, 58, 237, 0.08);
+    border-color: rgba(124, 58, 237, 0.2);
+}
+
+/* Timeline Activity */
+.activity-day {
+    background-color: #ffffff;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.analytics-container section {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+.analytics-grid-overview .stat-card {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+.analytics-grid-overview .stat-card:nth-child(1) { animation-delay: 0.1s; }
+.analytics-grid-overview .stat-card:nth-child(2) { animation-delay: 0.15s; }
+.analytics-grid-overview .stat-card:nth-child(3) { animation-delay: 0.2s; }
+.analytics-grid-overview .stat-card:nth-child(4) { animation-delay: 0.25s; }
+.analytics-grid-overview .stat-card:nth-child(5) { animation-delay: 0.3s; }
+.analytics-grid-overview .stat-card:nth-child(6) { animation-delay: 0.35s; }
