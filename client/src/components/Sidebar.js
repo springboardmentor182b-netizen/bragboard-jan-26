@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
-import { MessageSquare, PlusCircle, Trophy, FileText, LogOut, Bell } from 'lucide-react';
+import { MessageSquare, PlusCircle, Trophy, FileText, LogOut, Bell, Settings, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
@@ -31,6 +31,8 @@ const Sidebar = () => {
         { name: 'My Profile', icon: FileText, path: '/dashboard/profile' },
         { name: 'My Shout Outs', icon: FileText, path: '/dashboard/mine' },
         { name: 'Notifications', icon: Bell, path: '/dashboard/notifications', badge: unreadCount },
+        { name: 'Settings', icon: Settings, path: '/dashboard/settings' },
+        { name: 'Help', icon: HelpCircle, path: '/dashboard/help' },
     ];
 
     return (
