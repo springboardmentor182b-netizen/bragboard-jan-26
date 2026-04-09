@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CreateShoutoutModal from '../components/CreateShoutoutModal';
 import { reactionsAPI, commentsAPI } from '../services/api';
+import NotificationBell from "../components/NotificationBell";
 import '../styles/theme.css';
 
 // Icons (keeping your existing inline SVG icons)
@@ -350,7 +351,7 @@ function ShoutoutCard({ shoutout }) {
   const [likes, setLikes] = useState(shoutout.likes || 0);
 
   // ── Reactions (clap / star) ──────────────────────────────────────────────
-  const [reactions, setReactions] = useState({ like: 0, clap: 0, star: 0, user_reactions: [] });
+  const [reactions, setReactions] = useState({ like: 0, clap: 0, star: 0, heart: 0, fire: 0, celebrate: 0, wow: 0, thumbsup: 0, rocket: 0, user_reactions: [] });
 
   // ── Comments + nested replies ─────────────────────────────────────────────
   const [showComments, setShowComments] = useState(false);
@@ -620,10 +621,28 @@ function ShoutoutCard({ shoutout }) {
         </button>
 
         {/* Clap */}
-        {reactionBtn('clap', '👏', 'Clap')}
+{reactionBtn('clap', '👏', 'Clap')}
 
-        {/* Star */}
-        {reactionBtn('star', '⭐', 'Star')}
+{/* Star */}
+{reactionBtn('star', '⭐', 'Star')}
+
+{/* Heart */}
+{reactionBtn('heart', '❤️', 'Heart')}
+
+{/* Fire */}
+{reactionBtn('fire', '🔥', 'Fire')}
+
+{/* Celebrate */}
+{reactionBtn('celebrate', '🎉', 'Celebrate')}
+
+{/* Wow */}
+{reactionBtn('wow', '😮', 'Wow')}
+
+{/* Thumbs Up */}
+{reactionBtn('thumbsup', '👍', 'Thumbs Up')}
+
+{/* Rocket */}
+{reactionBtn('rocket', '🚀', 'Rocket')}
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
@@ -970,6 +989,7 @@ function DepartmentsView() {
 }
 
 // Main Dashboard Component
+// Main Dashboard Component
 function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -1009,6 +1029,12 @@ function Dashboard() {
 
       <main style={{ paddingLeft: '256px', flex: 1, minHeight: '100vh' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 32px' }}>
+          
+          {/* THIS IS THE NEW PART: The notification bar */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+            <NotificationBell />
+          </div>
+
           {renderView()}
         </div>
       </main>
@@ -1028,5 +1054,4 @@ function Dashboard() {
     </div>
   );
 }
-
 export default Dashboard;

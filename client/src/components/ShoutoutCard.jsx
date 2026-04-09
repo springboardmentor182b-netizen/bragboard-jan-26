@@ -1,6 +1,25 @@
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Star } from 'lucide-react';
+import ReactionButtons from './components/ReactionButtons';
+import api from './services/api';
 
+const handleReact = async (type) => {
+  try {
+    const res = await api.post(`/reactions/${shoutout.id}/toggle`, { type });
+    // Update local state with new counts
+    setReactionCounts(res.data.counts);
+  } catch (err) {
+    console.error('Failed to react:', err);
+  }
+};
+
+// In your JSX
+<ReactionButtons
+  shoutoutId={shoutout.id}
+  counts={reactionCounts}
+  userReactions={reactionCounts.user_reactions || []}
+  onReact={handleReact}
+/>
 const API_URL = import.meta.env.VITE_API_URL;
 
 const ShoutoutCard = ({ data }) => {

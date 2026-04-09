@@ -50,6 +50,8 @@ from src.reports.controller import router as reports_router
 from src.reactions.controller import router as reactions_router
 from src.comments.controller import router as comments_router
 from src.admin.controller import router as admin_router
+from src.notifications.controller import router as notifications_router
+
 
 app.include_router(auth_router)
 app.include_router(leaderboard_router)
@@ -58,7 +60,9 @@ app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(reports_router)
 app.include_router(reactions_router)
 app.include_router(comments_router)
-app.include_router(admin_router)   # ← registers /admin/*
+app.include_router(admin_router) 
+  # ← registers /admin/*
+app.include_router(notifications_router)
 
 # ── Serve uploaded images ──────────────────────────────────────────────────────
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
@@ -80,3 +84,4 @@ def root():
 @app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "healthy"}
+
