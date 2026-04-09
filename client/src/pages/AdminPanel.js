@@ -1,10 +1,10 @@
 import React, { useState, useContext } from 'react';
-import { Users, FileText, BarChart3, Trophy, LogOut } from 'lucide-react';
+import { Users, FileText, BarChart3, Trophy, LogOut, Flag } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import Dashboard from './Dashboard';
 import UserManagement from './admin/UserManagement';
 import ShoutoutsManagement from './admin/ShoutoutsManagement';
-import Reports from './Reports';
+import ReportedShoutouts from './admin/ReportedShoutouts';
 import Leaderboard from './Leaderboard';
 
 const AdminPanel = () => {
@@ -15,24 +15,18 @@ const AdminPanel = () => {
     { id: 'dashboard',   label: 'Dashboard',             icon: BarChart3 },
     { id: 'users',       label: 'Users Management',      icon: Users     },
     { id: 'shoutouts',   label: 'Shout-outs Management', icon: FileText  },
-    { id: 'reports',     label: 'Reports',               icon: BarChart3 },
+    { id: 'reports',     label: 'Reports',               icon: Flag      },
     { id: 'leaderboard', label: 'Leaderboard',           icon: Trophy    },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'users':
-        return <UserManagement />;
-      case 'shoutouts':
-        return <ShoutoutsManagement />;
-      case 'reports':
-        return <Reports />;
-      case 'leaderboard':
-        return <Leaderboard />;
-      default:
-        return <Dashboard />;
+      case 'dashboard':   return <Dashboard />;
+      case 'users':       return <UserManagement />;
+      case 'shoutouts':   return <ShoutoutsManagement />;
+      case 'reports':     return <ReportedShoutouts />;
+      case 'leaderboard': return <Leaderboard />;
+      default:            return <Dashboard />;
     }
   };
 

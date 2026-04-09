@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from src.database.core import Base
-
+from src.database.config import Base  # ← change core to config
 
 class Report(Base):
     __tablename__ = "reports"
@@ -21,6 +20,6 @@ class Report(Base):
     resolved_at = Column(TIMESTAMP, nullable=True)
 
     # Relationships
-    shoutout = relationship("ShoutOut", backref="reports")
+    shoutout = relationship("Shoutout", backref="reports")
     reporter = relationship("User", foreign_keys=[reported_by])
     resolver = relationship("User", foreign_keys=[resolved_by])
