@@ -69,6 +69,10 @@ const CreateShoutoutModal = ({ isOpen, onClose, onSuccess, currentUser }) => {
   const [suggestionError, setSuggestionError] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // Auto-tag state
+  const [autoTagLoading, setAutoTagLoading] = useState(false);
+  const [autoTagError, setAutoTagError] = useState('');
+
   const styles = {
     overlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px', backdropFilter: 'blur(4px)' },
     modal: { backgroundColor: '#fff', borderRadius: '20px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' },
@@ -216,6 +220,7 @@ const CreateShoutoutModal = ({ isOpen, onClose, onSuccess, currentUser }) => {
       if (response.ok) {
         setMessage(''); setSelectedRecipients([]); setSelectedTags([]);
         setImageFile(null); setImagePreview(null);
+        setAutoTagError(''); setAutoTagLoading(false);
         setSuggestions([]); setShowSuggestions(false);
         if (onSuccess) onSuccess();
         onClose();
@@ -389,8 +394,54 @@ const CreateShoutoutModal = ({ isOpen, onClose, onSuccess, currentUser }) => {
 
           {/* Tags */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={styles.label}>Tags <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <label style={{ ...styles.label, marginBottom: 0 }}>Tags <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(optional)</span></label>
+              <button
+                onClick={async () => {
+                  if (!message.trim() || message.trim().length < 10) return;
+                  setAutoTagLoading(true);
+                  setAutoTagError('');
+                  try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch(`${API_URL}/ai/auto-tag`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({ message }),
+                    });
+                    if (!res.ok) {
+                      const err = await res.json();
+                      throw new Error(err.detail || 'Auto-tag failed');
+                    }
+                    const data = await res.json();
+                    setSelectedTags(prev => {
+                      const merged = [...new Set([...prev, ...data.tags])];
+                      return merged;
+                    });
+                  } catch (e) {
+                    setAutoTagError(e.message);
+                  } finally {
+                    setAutoTagLoading(false);
+                  }
+                }}
+                disabled={autoTagLoading || message.trim().length < 10}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '50px', fontSize: '12px', fontWeight: 600, cursor: message.trim().length < 10 ? 'not-allowed' : 'pointer', border: '2px solid #4F46E5', backgroundColor: autoTagLoading ? '#EEF2FF' : '#4F46E5', color: '#fff', opacity: message.trim().length < 10 ? 0.5 : 1, transition: 'all 0.15s' }}
+              >
+                <Sparkles size={13} />
+                {autoTagLoading ? 'Tagging…' : 'Auto-tag'}
+              </button>
+            </div>
+            {autoTagError && <p style={{ fontSize: '12px', color: '#EF4444', marginBottom: '8px' }}>{autoTagError}</p>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {/* AI-generated tags (not in availableTags) shown first */}
+              {selectedTags.filter(t => !availableTags.includes(t)).map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
+                  style={{ padding: '6px 14px', borderRadius: '50px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '2px solid #7C3AED', backgroundColor: '#F5F3FF', color: '#7C3AED', transition: 'all 0.15s' }}
+                >
+                  ✦ {tag}
+                </button>
+              ))}
               {availableTags.map(tag => (
                 <button
                   key={tag}
