@@ -1,27 +1,35 @@
 from pydantic import BaseModel
+from typing import List, Optional
 from datetime import datetime
-from typing import List
-from src.users.schemas import UserResponse
 
 class ShoutoutCreate(BaseModel):
-    sender_id: int
-    recipient_ids: List[int]
     message: str
-    tag_names: List[str]
+    recipient_ids: List[int]
+    department: Optional[str] = None
+    attachment_url: Optional[str] = None
+    attachment_type: Optional[str] = None
 
 class ShoutoutResponse(BaseModel):
     id: int
-    sender: UserResponse
-    recipients: List[UserResponse]
+    sender_id: int
+    sender_name: Optional[str] = None
+    department: Optional[str] = None
     message: str
-    tags: List[str]
     created_at: datetime
-    
+    recipient_ids: List[int]
+    attachment_url: Optional[str] = None
+    attachment_type: Optional[str] = None
+
     class Config:
         from_attributes = True
 
-class DashboardStats(BaseModel):
-    shoutouts_received: int
-    shoutouts_given: int
-    leaderboard_rank: int
-    recent_shoutouts: List[ShoutoutResponse]
+class ShoutoutListResponse(BaseModel):
+    total: int
+    shoutouts: List[ShoutoutResponse]
+
+class ShoutoutFilter(BaseModel):
+    department: Optional[str] = None
+    sender_id: Optional[int] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    recipient_id: Optional[int] = None

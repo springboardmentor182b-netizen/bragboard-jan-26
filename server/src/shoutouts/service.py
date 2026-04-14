@@ -1,109 +1,74 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
-from src.entities.shoutout import Shoutout, ShoutoutRecipient, Tag, ShoutoutTag
-from src.users.models import User
-from src.shoutouts.models import ShoutoutCreate
-from typing import List
+from sqlalchemy import and_, or_
+from src.entities.shoutout import ShoutOut
+from src.entities.shoutout_recipient import ShoutOutRecipient
+from src.entities.user import User
+from src.shoutouts.models import ShoutoutCreate, ShoutoutFilter
+from fastapi import HTTPException
+from datetime import datetime
 
 class ShoutoutService:
     @staticmethod
-    def create_shoutout(db: Session, shoutout: ShoutoutCreate):
-        # Create shoutout
-        db_shoutout = Shoutout(
-            sender_id=shoutout.sender_id,
-            message=shoutout.message
+    def create_shoutout(db: Session, sender_id: int, sender_name: str, data: ShoutoutCreate):
+        shoutout = ShoutOut(
+            sender_id=sender_id,
+            sender_name=sender_name,
+            department=data.department,
+            message=data.message,
+            attachment_url=data.attachment_url,
+            attachment_type=data.attachment_type
         )
-        db.add(db_shoutout)
+        db.add(shoutout)
         db.flush()
-        
-        # Add recipients
-        for recipient_id in shoutout.recipient_ids:
-            recipient = ShoutoutRecipient(
-                shoutout_id=db_shoutout.id,
-                recipient_id=recipient_id
-            )
-            db.add(recipient)
-        
-        # Add tags
-        for tag_name in shoutout.tag_names:
-            tag = db.query(Tag).filter(Tag.name == tag_name).first()
-            if not tag:
-                tag = Tag(name=tag_name)
-                db.add(tag)
-                db.flush()
-            
-            shoutout_tag = ShoutoutTag(
-                shoutout_id=db_shoutout.id,
-                tag_id=tag.id
-            )
-            db.add(shoutout_tag)
-        
+        for recipient_id in data.recipient_ids:
+            db.add(ShoutOutRecipient(shoutout_id=shoutout.id, recipient_id=recipient_id))
         db.commit()
-        db.refresh(db_shoutout)
-        return db_shoutout
-    
+        db.refresh(shoutout)
+        return shoutout
+
     @staticmethod
-    def get_all_shoutouts(db: Session, skip: int = 0, limit: int = 20):
-        return db.query(Shoutout).order_by(
-            desc(Shoutout.created_at)
-        ).offset(skip).limit(limit).all()
-    
+    def get_all_shoutouts(db: Session, skip: int = 0, limit: int = 20, filters: ShoutoutFilter = None):
+        query = db.query(ShoutOut)
+        
+        if filters:
+            if filters.department:
+                query = query.filter(ShoutOut.department == filters.department)
+            if filters.sender_id:
+                query = query.filter(ShoutOut.sender_id == filters.sender_id)
+            if filters.start_date:
+                query = query.filter(ShoutOut.created_at >= filters.start_date)
+            if filters.end_date:
+                query = query.filter(ShoutOut.created_at <= filters.end_date)
+            if filters.recipient_id:
+                # Join with recipients to filter by recipient
+                query = query.join(ShoutOutRecipient).filter(
+                    ShoutOutRecipient.recipient_id == filters.recipient_id
+                )
+        
+        # Order by most recent first
+        query = query.order_by(ShoutOut.created_at.desc())
+        
+        total = query.count()
+        shoutouts = query.offset(skip).limit(limit).all()
+        return total, shoutouts
+
     @staticmethod
-    def get_user_received_shoutouts(db: Session, user_id: int):
-        return db.query(Shoutout).join(
-            ShoutoutRecipient
-        ).filter(
-            ShoutoutRecipient.recipient_id == user_id
-        ).order_by(desc(Shoutout.created_at)).all()
-    
+    def get_shoutout_by_id(db: Session, shoutout_id: int):
+        s = db.query(ShoutOut).filter(ShoutOut.id == shoutout_id).first()
+        if not s:
+            raise HTTPException(status_code=404, detail="Shoutout not found")
+        return s
+
     @staticmethod
-    def get_user_sent_shoutouts(db: Session, user_id: int):
-        return db.query(Shoutout).filter(
-            Shoutout.sender_id == user_id
-        ).order_by(desc(Shoutout.created_at)).all()
-    
+    def delete_shoutout(db: Session, shoutout_id: int):
+        s = ShoutoutService.get_shoutout_by_id(db, shoutout_id)
+        db.delete(s)
+        db.commit()
+        return {"detail": "Shoutout deleted successfully"}
+
     @staticmethod
-    def get_dashboard_stats(db: Session, user_id: int):
-        received = db.query(ShoutoutRecipient).filter(
-            ShoutoutRecipient.recipient_id == user_id
-        ).count()
-        
-        given = db.query(Shoutout).filter(
-            Shoutout.sender_id == user_id
-        ).count()
-        
-        # Get leaderboard rank
-        leaderboard = db.query(
-            User.id,
-            func.count(ShoutoutRecipient.id).label('count')
-        ).join(
-            ShoutoutRecipient, User.id == ShoutoutRecipient.recipient_id
-        ).group_by(User.id).order_by(desc('count')).all()
-        
-        rank = next((idx + 1 for idx, (uid, _) in enumerate(leaderboard) if uid == user_id), 0)
-        
-        recent = db.query(Shoutout).order_by(
-            desc(Shoutout.created_at)
-        ).limit(10).all()
-        
-        return {
-            "shoutouts_received": received,
-            "shoutouts_given": given,
-            "leaderboard_rank": rank,
-            "recent_shoutouts": recent
-        }
-    
-    @staticmethod
-    def get_leaderboard(db: Session):
-        leaderboard = db.query(
-            User,
-            func.count(ShoutoutRecipient.id).label('shoutout_count')
-        ).join(
-            ShoutoutRecipient, User.id == ShoutoutRecipient.recipient_id
-        ).group_by(User.id).order_by(desc('shoutout_count')).all()
-        
-        return [{"user": user, "shoutouts": count} for user, count in leaderboard]
-    
-    @staticmethod
-    def get_all_tags(db: Session):
-        return db.query(Tag).all()
+    def get_departments(db: Session):
+        departments = db.query(ShoutOut.department).distinct().filter(
+            ShoutOut.department.isnot(None)
+        ).all()
+        return [d[0] for d in departments if d[0]]

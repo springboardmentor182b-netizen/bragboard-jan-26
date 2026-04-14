@@ -1,25 +1,26 @@
-from sqlalchemy import Column, Integer, String, Enum, TIMESTAMP
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from src.database.config import Base
-import enum
+from pydantic import BaseModel, EmailStr
+from typing import Optional, List
+from datetime import datetime
 
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    role: str = "user"
 
-class RoleEnum(str, enum.Enum):
-    employee = "employee"
-    admin = "admin"
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+    is_active: bool
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
 
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)
-    department = Column(String, nullable=False)
-    role = Column(Enum(RoleEnum), default=RoleEnum.employee)
-    joined_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-
-    sent_shoutouts = relationship("Shoutout", foreign_keys="Shoutout.sender_id", back_populates="sender")
-    received_shoutouts = relationship("ShoutoutRecipient", back_populates="recipient")
+class UserStats(BaseModel):
+    user_id: int
+    username: str
+    shoutouts_received: int
+    shoutouts_sent: int

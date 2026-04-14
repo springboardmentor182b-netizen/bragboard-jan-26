@@ -1,52 +1,40 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
-
 from src.database.config import get_db
-from src.reports.models import ReportCreate, ReportResponse, ReportResolve
 from src.reports.service import ReportService
-from src.auth.controller import get_current_user, require_admin  # match your existing auth pattern
-from src.users.models import User
+from src.reports.models import ReportCreate, ReportResponse, ReportListResponse
+from src.auth.dependencies import get_current_user
+from src.entities.user import User
 
-router = APIRouter()  # ← NO prefix here, it's set in main.py as "/api/reports"
+router = APIRouter()
 
-
-# ── Employee: report a shoutout ───────────────────────────────────────────────
-@router.post("/", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ReportResponse, status_code=201)
 def report_shoutout(
-    payload: ReportCreate,
+    data: ReportCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user)
 ):
-    return ReportService.create_report(db, payload, current_user.id)
+    report = ReportService.create_report(db, current_user.id, data)
+    return report
 
-
-# ── Admin: get all reports (filter by status) ─────────────────────────────────
-@router.get("/admin", response_model=List[ReportResponse])
-def get_all_reports(
-    status_filter: Optional[str] = None,
+@router.get("/", response_model=ReportListResponse)
+def list_reports(
+    skip: int = 0,
+    limit: int = 20,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user)
 ):
-    return ReportService.get_all_reports(db, status_filter)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+    total, reports = ReportService.get_all_reports(db, skip, limit)
+    return {"total": total, "reports": reports}
 
-
-# ── Admin: resolve or dismiss a report ───────────────────────────────────────
-@router.patch("/admin/{report_id}/resolve", response_model=ReportResponse)
+@router.patch("/{report_id}/resolve", response_model=ReportResponse)
 def resolve_report(
     report_id: int,
-    payload: ReportResolve,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user)
 ):
-    return ReportService.resolve_report(db, report_id, payload, current_user.id)
-
-
-# ── Admin: delete shoutout tied to a report ───────────────────────────────────
-@router.delete("/admin/{report_id}/delete-shoutout", status_code=status.HTTP_204_NO_CONTENT)
-def delete_reported_shoutout(
-    report_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
-):
-    ReportService.delete_reported_shoutout(db, report_id, current_user.id)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+    return ReportService.resolve_report(db, report_id)
