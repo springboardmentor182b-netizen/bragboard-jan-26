@@ -28,48 +28,6 @@ body {
   --shadow-sm: 0 2px 8px rgba(33, 53, 85, 0.08);
   --shadow-md: 0 4px 12px rgba(33, 53, 85, 0.12);
   --shadow-lg: 0 8px 24px rgba(33, 53, 85, 0.15);
-  --shadow-xl: 0 12px 36px rgba(33, 53, 85, 0.2);
-}
-
-/* Animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
 }
 
 /* Container */
@@ -77,7 +35,6 @@ body {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
-  animation: fadeInUp 0.5s ease-out;
 }
 
 /* Header */
@@ -91,12 +48,6 @@ body {
   justify-content: space-between;
   align-items: center;
   border: 1px solid rgba(216, 196, 182, 0.3);
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.header:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
 }
 
 .header h1 {
@@ -106,43 +57,15 @@ body {
   background-clip: text;
   font-size: 28px;
   font-weight: 800;
-  letter-spacing: -0.5px;
-}
-
-.header h1::before {
-  content: "🎉 ";
-  background: none;
-  -webkit-text-fill-color: initial;
-  color: var(--primary);
 }
 
 .header-info {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
 }
 
-.user-email {
-  color: var(--secondary);
-  font-size: 14px;
-  font-weight: 500;
-  padding: 6px 12px;
-  background: var(--background);
-  border-radius: 20px;
-}
-
-.user-role {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  color: var(--white);
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: var(--shadow-sm);
-}
-
+/* Logout Button */
 .logout-btn {
   background: var(--error);
   color: var(--white);
@@ -153,32 +76,12 @@ body {
   font-size: 14px;
   font-weight: 600;
   transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.logout-btn::before {
-  content: "🚪";
 }
 
 .logout-btn:hover {
   background: #c53030;
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-/* Admin Banner */
-.admin-banner {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  color: var(--white);
-  padding: 14px;
-  border-radius: 12px;
-  text-align: center;
-  margin-bottom: 24px;
-  font-weight: 600;
-  animation: pulse 2s infinite;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Two Column Layout */
@@ -195,15 +98,6 @@ body {
   padding: 28px;
   box-shadow: var(--shadow-md);
   border: 1px solid rgba(216, 196, 182, 0.3);
-  transition: all 0.3s;
-  animation: slideInLeft 0.5s ease-out;
-  position: sticky;
-  top: 20px;
-}
-
-.shoutout-form:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
 }
 
 .shoutout-form h2 {
@@ -211,14 +105,6 @@ body {
   margin-bottom: 24px;
   font-size: 22px;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.shoutout-form h2::before {
-  content: "✨";
-  font-size: 24px;
 }
 
 .form-group {
@@ -251,7 +137,6 @@ body {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(33, 53, 85, 0.1);
-  transform: translateY(-2px);
 }
 
 .recipients-group {
@@ -275,15 +160,12 @@ body {
 .tag-btn:hover {
   border-color: var(--primary);
   background: var(--background);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
 }
 
 .tag-btn--active {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: var(--white);
   border-color: var(--primary);
-  transform: scale(1.05);
 }
 
 .form-file {
@@ -292,12 +174,6 @@ body {
   border: 2px dashed var(--accent);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s;
-}
-
-.form-file:hover {
-  border-color: var(--primary);
-  background: var(--background);
 }
 
 .attachment-preview {
@@ -311,11 +187,6 @@ body {
   max-height: 120px;
   border-radius: 12px;
   border: 2px solid var(--accent);
-  transition: transform 0.3s;
-}
-
-.attachment-preview img:hover {
-  transform: scale(1.05);
 }
 
 .attachment-preview button {
@@ -330,11 +201,6 @@ body {
   height: 24px;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.3s;
-}
-
-.attachment-preview button:hover {
-  transform: scale(1.1);
 }
 
 .form-error {
@@ -357,23 +223,6 @@ body {
   font-weight: 700;
   width: 100%;
   transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
-}
-
-.btn-primary:hover::before {
-  left: 100%;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -408,13 +257,6 @@ body {
   color: var(--primary);
   font-size: 22px;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.feed-header h2::before {
-  content: "📢";
 }
 
 .feed-count {
@@ -433,11 +275,6 @@ body {
   border-radius: 16px;
   margin-bottom: 24px;
   border: 1px solid var(--accent);
-  transition: all 0.3s;
-}
-
-.filters-panel:hover {
-  box-shadow: var(--shadow-sm);
 }
 
 .filters-panel h3 {
@@ -445,13 +282,6 @@ body {
   margin-bottom: 16px;
   font-size: 16px;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.filters-panel h3::before {
-  content: "🔍";
 }
 
 .filters-grid {
@@ -481,14 +311,6 @@ body {
   border-radius: 10px;
   font-size: 14px;
   background: var(--white);
-  transition: all 0.3s;
-}
-
-.filter-group select:focus,
-.filter-group input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(33, 53, 85, 0.1);
 }
 
 .btn-clear {
@@ -506,7 +328,6 @@ body {
 
 .btn-clear:hover {
   background: var(--primary);
-  transform: translateY(-2px);
 }
 
 /* Shoutout Card */
@@ -517,24 +338,6 @@ body {
   margin-bottom: 20px;
   transition: all 0.3s;
   border-left: 4px solid var(--primary);
-  animation: fadeInUp 0.3s ease-out;
-  position: relative;
-  overflow: hidden;
-}
-
-.shoutout-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(33, 53, 85, 0.03), transparent);
-  transition: width 0.5s;
-}
-
-.shoutout-card:hover::before {
-  width: 100%;
 }
 
 .shoutout-card:hover {
@@ -556,13 +359,6 @@ body {
   font-weight: 700;
   color: var(--primary);
   font-size: 15px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-sender::before {
-  content: "👤";
 }
 
 .card-department {
@@ -578,13 +374,6 @@ body {
 .card-date {
   color: var(--secondary);
   font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.card-date::before {
-  content: "🕐";
 }
 
 .card-message {
@@ -597,7 +386,6 @@ body {
   border-radius: 12px;
 }
 
-/* Attachment Styles */
 .card-attachment {
   margin: 16px 0;
 }
@@ -608,15 +396,8 @@ body {
   border-radius: 12px;
   cursor: pointer;
   border: 2px solid var(--accent);
-  transition: all 0.3s;
 }
 
-.attachment-thumb:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-md);
-}
-
-/* Recipients */
 .card-recipients {
   display: flex;
   gap: 8px;
@@ -639,15 +420,8 @@ body {
   font-size: 12px;
   border: 1px solid var(--accent);
   font-weight: 500;
-  transition: all 0.3s;
 }
 
-.card-tag:hover {
-  background: var(--accent);
-  transform: scale(1.05);
-}
-
-/* Card Actions */
 .card-actions {
   display: flex;
   gap: 12px;
@@ -672,8 +446,6 @@ body {
 .btn-outline:hover {
   background: var(--secondary);
   color: var(--white);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-danger {
@@ -690,8 +462,22 @@ body {
 
 .btn-danger:hover {
   background: #c53030;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.empty-state-text {
+  color: var(--secondary);
+  font-size: 18px;
 }
 
 /* Modal */
@@ -706,8 +492,6 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
-  animation: fadeInUp 0.2s ease-out;
 }
 
 .modal, .image-modal {
@@ -717,8 +501,7 @@ body {
   max-width: 90%;
   max-height: 90%;
   overflow: auto;
-  animation: fadeInUp 0.3s ease-out;
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-lg);
 }
 
 .image-modal {
@@ -752,12 +535,6 @@ body {
   font-size: 28px;
   cursor: pointer;
   color: var(--secondary);
-  transition: all 0.3s;
-}
-
-.modal-close:hover {
-  color: var(--error);
-  transform: scale(1.1);
 }
 
 .modal-body {
@@ -770,13 +547,6 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-}
-
-/* Loading State */
-.loading-shimmer {
-  background: linear-gradient(90deg, var(--accent) 25%, var(--white) 50%, var(--accent) 75%);
-  background-size: 1000px 100%;
-  animation: shimmer 1.5s infinite;
 }
 
 .feed-status {
@@ -802,19 +572,10 @@ body {
   border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
-}
-
 /* Responsive */
 @media (max-width: 968px) {
   .two-columns {
     grid-template-columns: 1fr;
-  }
-  
-  .shoutout-form {
-    position: relative;
-    top: 0;
   }
   
   .header {
@@ -822,37 +583,4 @@ body {
     gap: 15px;
     text-align: center;
   }
-  
-  .container {
-    padding: 10px;
-  }
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.empty-state-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-}
-
-.empty-state-text {
-  color: var(--secondary);
-  font-size: 18px;
-}
-
-/* Toast Notification */
-.toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: var(--success);
-  color: white;
-  padding: 12px 24px;
-  border-radius: 10px;
-  animation: fadeInUp 0.3s ease-out;
-  z-index: 2000;
 }

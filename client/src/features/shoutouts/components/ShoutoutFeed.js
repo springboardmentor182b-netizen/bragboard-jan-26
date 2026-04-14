@@ -6,12 +6,6 @@ import useShoutouts from "../hooks/useShoutouts";
 const ShoutoutFeed = () => {
   const [filters, setFilters] = useState({});
   const { shoutouts, total, loading, error, refetch } = useShoutouts(filters);
-  
-  const mockUsers = [
-    { id: 1, name: "Alice" },
-    { id: 2, name: "Bob" },
-    { id: 3, name: "Charlie" },
-  ];
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -28,11 +22,14 @@ const ShoutoutFeed = () => {
         <span className="feed-count">{total} shoutouts</span>
       </div>
       
-      <ShoutoutFilters onFilterChange={handleFilterChange} users={mockUsers} />
+      <ShoutoutFilters onFilterChange={handleFilterChange} />
       
       <div className="shoutouts-list">
         {shoutouts.length === 0 ? (
-          <p className="feed-status">No shoutouts yet. Be the first!</p>
+          <div className="empty-state">
+            <div className="empty-state-icon">🎉</div>
+            <p className="empty-state-text">No shoutouts yet. Be the first!</p>
+          </div>
         ) : (
           shoutouts.map((s) => (
             <ShoutoutCard key={s.id} shoutout={s} onDelete={() => refetch()} />

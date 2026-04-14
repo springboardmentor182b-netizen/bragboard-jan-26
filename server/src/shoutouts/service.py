@@ -68,7 +68,9 @@ class ShoutoutService:
 
     @staticmethod
     def get_departments(db: Session):
+        """Get unique departments from shoutouts"""
         departments = db.query(ShoutOut.department).distinct().filter(
-            ShoutOut.department.isnot(None)
+            ShoutOut.department.isnot(None),
+            ShoutOut.department != ""
         ).all()
         return [d[0] for d in departments if d[0]]
