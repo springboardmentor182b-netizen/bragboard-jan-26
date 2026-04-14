@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
             if (token) {
                 try {
                     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                    const response = await axios.get(`${apiUrl}/me`);
+                    const response = await axios.get(`${apiUrl}/auth/me`);
                     setUser(response.data);
                     localStorage.setItem('user', JSON.stringify(response.data));
                 } catch (error) {
@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post(`${apiUrl}/login`, { email, password });
+            const response = await axios.post(`${apiUrl}/auth/login`, { email, password });
             const { access_token } = response.data;
 
             // In a real app, you'd fetch user profile with the token
@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
             axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
             // Fetch actual user profile
-            const profileResponse = await axios.get(`${apiUrl}/me`);
+            const profileResponse = await axios.get(`${apiUrl}/auth/me`);
             const userObj = profileResponse.data;
 
             setUser(userObj);

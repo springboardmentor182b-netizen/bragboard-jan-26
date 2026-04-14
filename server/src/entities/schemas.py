@@ -78,7 +78,6 @@ class ShoutOutBase(BaseModel):
 class ShoutOutCreate(ShoutOutBase):
     pass
 
-# (intermediate ShoutOut removed - final one below is the canonical version)
 class CommentBase(BaseModel):
     content: str
 
@@ -117,7 +116,6 @@ class ShoutOut(ShoutOutBase):
     created_at: datetime
     reactions: Dict[str, int]
     comments: List[Comment] = []
-    media_url: Optional[str] = None
     sender: User
     recipient: User
 
@@ -146,3 +144,4 @@ class NotificationOut(BaseModel):
 
     class Config:
         orm_mode = True
+

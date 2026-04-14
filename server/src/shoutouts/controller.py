@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import shutil, os
+
 from src.database.database import get_db
 from src.entities import models, schemas
 
 router = APIRouter(tags=["ShoutOuts"])
-
 
 def _create_notification(db: Session, user_id: int, actor_id: int, shoutout_id: int, type: str):
     """Helper: create a notification, skip if actor == recipient (don't notify yourself)."""
@@ -155,3 +155,4 @@ def get_leaderboard(db: Session = Depends(get_db)):
 
     leaderboard.sort(key=lambda x: x['points'], reverse=True)
     return leaderboard
+

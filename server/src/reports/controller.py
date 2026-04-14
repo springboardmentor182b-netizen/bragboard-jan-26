@@ -2,8 +2,25 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.database.database import get_db
 from src.entities import models, schemas
+from src.reports import service
 
 router = APIRouter(tags=["Reports"])
+
+# --- Admin Endpoints ---
+
+@router.get("/admin/reports")
+def get_reports(db: Session = Depends(get_db)):
+    return service.get_all_reports(db)
+
+@router.post("/admin/reports/{report_id}/resolve")
+def resolve_report(report_id: int, db: Session = Depends(get_db)):
+    return service.resolve_report(db, report_id)
+
+@router.delete("/admin/reports/shoutout/{shoutout_id}")
+def delete_shoutout(shoutout_id: int, db: Session = Depends(get_db)):
+    return service.delete_shoutout(db, shoutout_id)
+
+# --- User Endpoints ---
 
 @router.post("/reports/", response_model=schemas.Report)
 def create_report(report: schemas.ReportCreate, user_id: int, db: Session = Depends(get_db)):
@@ -26,7 +43,7 @@ def create_report(report: schemas.ReportCreate, user_id: int, db: Session = Depe
     db.refresh(db_report)
     return db_report
 
-@router.get("/reasons")
+@router.get("/reports/reasons")
 def get_report_reasons():
     return [
         "Inappropriate Content",
@@ -35,3 +52,4 @@ def get_report_reasons():
         "Offensive Language",
         "Other"
     ]
+

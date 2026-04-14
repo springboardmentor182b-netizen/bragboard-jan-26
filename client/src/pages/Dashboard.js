@@ -7,7 +7,6 @@ import { useAuth } from '../context/AuthContext';
 
 import Leaderboard from '../components/Leaderboard';
 import Profile from '../pages/Profile';
-
 import MyShoutOuts from './MyShoutOuts';
 import Notifications from './Notifications';
 import Settings from './Settings';
