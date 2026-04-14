@@ -26,6 +26,12 @@ const App = () => {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
   }
 
+  const mockUsers = [
+    { id: 2, name: "Alice" },
+    { id: 3, name: "Bob" },
+    { id: 4, name: "Charlie" }
+  ];
+
   return (
     <Router>
       <Routes>
@@ -39,11 +45,7 @@ const App = () => {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="shoutout-feed" element={<ShoutoutFeed />} />
-          <Route path="create-shoutout" element={<ShoutoutForm recipientOptions={[
-            { id: 2, name: "Alice" },
-            { id: 3, name: "Bob" },
-            { id: 4, name: "Charlie" }
-          ]} />} />
+          <Route path="create-shoutout" element={<ShoutoutForm recipientOptions={mockUsers} />} />
           <Route path="my-shoutouts" element={<MyShoutouts />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="profile" element={<MyProfile />} />
