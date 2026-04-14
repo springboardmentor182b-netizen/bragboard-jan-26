@@ -1,31 +1,27 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [userType, setUserType] = useState('employee');
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     
     try {
-      // Mock login - accept any credentials
       if (email && password) {
-        const mockUser = {
-          id: 1,
-          username: email.split('@')[0],
-          email: email,
-          role: email.includes('admin') ? 'admin' : 'user'
-        };
+        // Store user info in localStorage
         localStorage.setItem('access_token', 'mock_token_123');
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        if (login) login(mockUser);
-        navigate('/dashboard');
+        localStorage.setItem('user_id', '1');
+        localStorage.setItem('role', userType === 'admin' ? 'admin' : 'user');
+        localStorage.setItem('email', email);
+        
+        // Redirect to home page
+        navigate('/');
       } else {
         setError('Please enter email and password');
       }
@@ -35,36 +31,114 @@ const Login = () => {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px' }}>
-      <h2>Login to BragBoard</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ width: '100%', padding: '10px', margin: '10px 0' }}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ width: '100%', padding: '10px', margin: '10px 0' }}
-          required
-        />
-        <button type="submit" style={{ width: '100%', padding: '10px', background: '#213555', color: 'white' }}>
-          Login
+    <div style={{ 
+      maxWidth: '450px', 
+      margin: '50px auto', 
+      padding: '40px',
+      background: 'white',
+      borderRadius: '10px',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+    }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '10px' }}>BragBoard</h2>
+      <p style={{ textAlign: 'center', color: '#666', marginBottom: '30px' }}>
+        Welcome back! Sign in to your account
+      </p>
+      
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <button
+          onClick={() => setUserType('employee')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            background: userType === 'employee' ? '#213555' : '#f0f0f0',
+            color: userType === 'employee' ? 'white' : '#333',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          Employee Login
+        </button>
+        <button
+          onClick={() => setUserType('admin')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            background: userType === 'admin' ? '#213555' : '#f0f0f0',
+            color: userType === 'admin' ? 'white' : '#333',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          Admin Login
+        </button>
+      </div>
+      
+      <form onSubmit={handleLogin}>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', color: '#666' }}>Email</label>
+          <input
+            type="email"
+            placeholder="test@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              border: '1px solid #ddd',
+              borderRadius: '5px',
+              fontSize: '14px'
+            }}
+            required
+          />
+        </div>
+        
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', color: '#666' }}>Password</label>
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              border: '1px solid #ddd',
+              borderRadius: '5px',
+              fontSize: '14px'
+            }}
+            required
+          />
+        </div>
+        
+        {error && <p style={{ color: 'red', fontSize: '14px', marginBottom: '15px' }}>{error}</p>}
+        
+        <button
+          type="submit"
+          style={{
+            width: '100%',
+            padding: '12px',
+            background: '#213555',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            fontSize: '16px',
+            cursor: 'pointer'
+          }}
+        >
+          Sign In
         </button>
       </form>
-      <p>
-        <Link to="/forgot-password">Forgot Password?</Link> | <Link to="/signup">Sign Up</Link>
-      </p>
-      <p style={{ marginTop: '20px', fontSize: '12px', color: '#666' }}>
-        Demo: Any email/password works
-      </p>
+      
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <p style={{ color: '#666', fontSize: '14px' }}>
+          Demo credentials: Any email/password works
+        </p>
+        <p style={{ color: '#666', fontSize: '14px', marginTop: '10px' }}>
+          Don't have an account? <Link to="/signup" style={{ color: '#213555' }}>Sign up</Link>
+        </p>
+      </div>
     </div>
   );
 };
