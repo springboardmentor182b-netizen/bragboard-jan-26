@@ -15,7 +15,7 @@ import MyProfile from './pages/MyProfile';
 import AdminPanel from './pages/AdminPanel';
 
 // Auth pages
-import Login from './pages/Auth/Login';
+import Login from './pages/Login';
 import Signup from './pages/Auth/Signup';
 import ForgotPassword from './pages/Auth/Forgotpassword';
 
@@ -23,7 +23,7 @@ const App = () => {
   const { user, loading } = useContext(AuthContext);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
   }
 
   return (
@@ -39,7 +39,11 @@ const App = () => {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="shoutout-feed" element={<ShoutoutFeed />} />
-          <Route path="create-shoutout" element={<ShoutoutForm recipientOptions={[]} />} />
+          <Route path="create-shoutout" element={<ShoutoutForm recipientOptions={[
+            { id: 2, name: "Alice" },
+            { id: 3, name: "Bob" },
+            { id: 4, name: "Charlie" }
+          ]} />} />
           <Route path="my-shoutouts" element={<MyShoutouts />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="profile" element={<MyProfile />} />
