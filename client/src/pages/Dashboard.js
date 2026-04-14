@@ -9,6 +9,8 @@ import Leaderboard from '../components/Leaderboard';
 import Profile from '../pages/Profile';
 import MyShoutOuts from './MyShoutOuts';
 import Notifications from './Notifications';
+import Settings from './Settings';
+import Help from './Help';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -45,6 +47,8 @@ const Dashboard = () => {
                         <Route path="profile" element={<Profile />} />
                         <Route path="mine" element={<MyShoutOuts />} />
                         <Route path="notifications" element={<Notifications />} />
+                        <Route path="settings" element={<Settings />} />
+                        <Route path="help" element={<Help />} />
                     </Routes>
                 </main>
             </div>
