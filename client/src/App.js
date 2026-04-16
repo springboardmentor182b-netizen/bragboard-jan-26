@@ -2,7 +2,6 @@ import React, { useContext } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContext } from './context/AuthContext';
 import Sidebar from './layout/Sidebar';
-
 // Employee pages
 import Dashboard from './pages/Dashboard';
 import CreateShoutout from './pages/CreateShoutout';
@@ -10,25 +9,25 @@ import ShoutoutFeed from './pages/ShoutoutFeed';
 import MyShoutouts from './pages/MyShoutouts';
 import Leaderboard from './pages/Leaderboard';
 import MyProfile from './pages/MyProfile';
-
 // Admin pages
 import AdminPanel from './pages/AdminPanel';
-
 // Auth pages
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import Forgotpassword from './pages/Auth/Forgotpassword';
+import GitHubCallback from './pages/Auth/GitHubCallback';
 
 function App() {
   const { user, token } = useContext(AuthContext);
 
-  // Not authenticated
+  // Not authenticated — still expose GitHub callback so OAuth redirect works
   if (!token || !user) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<Forgotpassword />} />
+        <Route path="/auth/github/callback" element={<GitHubCallback />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );

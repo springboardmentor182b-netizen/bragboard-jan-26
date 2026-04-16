@@ -1,6 +1,9 @@
 import React, { useState, useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
+import { GoogleLogin } from "@react-oauth/google";
 import "./Auth.css";
+
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 export default function Login() {
   const { login } = useContext(AuthContext);
@@ -15,17 +18,14 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, role }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Login failed");
-
       const actualRole = data.role;
-
-      // ✅ Save full user object including id and name
       login({
         id: data.user_id,
         email: data.email,
@@ -33,19 +33,47 @@ export default function Login() {
         role: actualRole,
         department: data.department,
       }, data.access_token);
-
-      // ✅ Redirect based on role
       if (actualRole === "admin") {
         window.location.href = "/admin/dashboard";
       } else {
         window.location.href = "/dashboard";
       }
-
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Google OAuth ──────────────────────────────────────────────────────────
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: credentialResponse.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Google login failed");
+      login({
+        id: data.user_id,
+        email: data.email,
+        name: data.name,
+        role: data.role,
+        department: data.department,
+      }, data.access_token);
+      window.location.href = data.role === "admin" ? "/admin/dashboard" : "/dashboard";
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // ── GitHub OAuth ──────────────────────────────────────────────────────────
+  const handleGitHubLogin = () => {
+    const clientId = process.env.REACT_APP_GITHUB_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/auth/github/callback`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
   };
 
   return (
@@ -56,6 +84,7 @@ export default function Login() {
         </div>
         <h1 className="auth-title">BragBoard</h1>
         <p className="auth-subtitle">Welcome back! Sign in to your account</p>
+
         <div className="role-tabs">
           <button
             className={`role-tab ${role === "employee" ? "active" : ""}`}
@@ -72,6 +101,7 @@ export default function Login() {
             <span>Admin Login</span>
           </button>
         </div>
+
         <form onSubmit={handleSubmit} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
           <div className="form-group">
@@ -103,17 +133,27 @@ export default function Login() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+
         <div className="divider"><span>Or continue with</span></div>
+
         <div className="social-buttons">
-          <button className="btn-social">
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={20} />
-            Google
-          </button>
-          <button className="btn-social">
+          {/* Google Login Button */}
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError("Google login failed")}
+            useOneTap={false}
+            text="signin_with"
+            shape="rectangular"
+            width="100%"
+          />
+
+          {/* GitHub Login Button */}
+          <button className="btn-social" onClick={handleGitHubLogin} type="button">
             <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" width={20} />
             GitHub
           </button>
         </div>
+
         <p className="auth-switch">
           Don't have an account?{" "}
           <span onClick={() => window.location.href = "/signup"}>Sign up</span>
