@@ -38,6 +38,15 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
+def decode_access_token(token: str) -> dict:
+    """Decode a JWT access token and return the payload with user_id."""
+    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise JWTError("Missing sub claim")
+    return {"user_id": int(user_id)}
+
+
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),

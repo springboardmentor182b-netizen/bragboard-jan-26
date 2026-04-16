@@ -1,9 +1,23 @@
+import enum
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 
 from src.database.core import Base
+
+
+class UserRole(str, enum.Enum):
+    admin = "admin"
+    employee = "employee"
+    user = "user"
+
+
+class UserStatus(str, enum.Enum):
+    approved = "approved"
+    pending = "pending"
+    rejected = "rejected"
+    suspended = "suspended"
 
 
 class User(Base):
