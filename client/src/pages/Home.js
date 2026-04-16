@@ -1,29 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ShoutoutFeed from '../features/shoutouts/components/ShoutoutFeed';
 import ShoutoutForm from '../features/shoutouts/components/ShoutoutForm';
 
 const Home = () => {
   const [refreshKey, setRefreshKey] = useState(0);
-  
-  const mockUsers = [
-    { id: 2, name: "Alice" },
-    { id: 3, name: "Bob" },
-    { id: 4, name: "Charlie" },
-    { id: 5, name: "Diana" },
-    { id: 6, name: "Eve" }
-  ];
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real users from backend
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/v1/users/');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleShoutoutSuccess = () => {
     setRefreshKey(prev => prev + 1);
   };
 
   const handleLogout = () => {
-    // Clear any stored data
     localStorage.clear();
     sessionStorage.clear();
-    // Reload the page to reset state
     window.location.reload();
   };
+
+  if (loading) {
+    return <div className="container">Loading users...</div>;
+  }
 
   return (
     <div className="container">
@@ -39,7 +54,7 @@ const Home = () => {
       <div className="two-columns">
         <div>
           <ShoutoutForm 
-            recipientOptions={mockUsers} 
+            recipientOptions={users} 
             onSuccess={handleShoutoutSuccess}
           />
         </div>
