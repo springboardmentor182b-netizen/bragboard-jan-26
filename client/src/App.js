@@ -57,7 +57,7 @@ function App() {
           <Route path="/feed" element={<ShoutoutFeed />} />
           <Route path="/my-shoutouts" element={<MyShoutouts />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/profile" element={<MyProfile />} />
+          <Route path="/profile" element={<MyProfile currentUserId={user?.id} />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>

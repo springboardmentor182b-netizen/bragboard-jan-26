@@ -28,3 +28,15 @@ def get_user_stats(user_id: int, db: Session = Depends(get_db)):
     if not stats:
         raise HTTPException(status_code=404, detail="User not found")
     return stats
+
+@router.delete("/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = UserService.get_user_by_id(db, user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.delete(user)
+    db.commit()
+
+    return {"message": "User deleted successfully"}

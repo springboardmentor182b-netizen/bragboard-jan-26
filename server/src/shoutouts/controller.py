@@ -87,3 +87,15 @@ def get_leaderboard(db: Session = Depends(get_db)):
 def get_tags(db: Session = Depends(get_db)):
     tags = ShoutoutService.get_all_tags(db)
     return [{"id": t.id, "name": t.name} for t in tags]
+
+@router.delete("/{shoutout_id}")
+def delete_shoutout(shoutout_id: int, db: Session = Depends(get_db)):
+    shoutout = db.query(Shoutout).filter(Shoutout.id == shoutout_id).first()
+
+    if not shoutout:
+        raise HTTPException(status_code=404, detail="Shoutout not found")
+
+    db.delete(shoutout)
+    db.commit()
+
+    return {"message": "Shoutout deleted successfully"}
