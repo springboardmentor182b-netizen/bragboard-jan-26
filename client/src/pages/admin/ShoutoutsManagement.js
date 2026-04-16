@@ -1,108 +1,252 @@
-import React, { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Plus, X } from "lucide-react";
+
+const EMOJIS = [
+  "🎉", "👏", "🔥", "💯","✨", "🌟",
+  "💪", "😍", "🥳", "🙌", "👍", "🤝", "❤️",
+  "🏆","⚡", "😄"
+];
 
 const ShoutoutsManagement = () => {
-  const [shoutouts, setShoutouts] = useState([
-    {
-      id: 1,
-      title: 'New Design System Implementation',
-      author: 'Alex Turner',
-      authorInitials: 'AT',
-      content: 'Successfully rolled out the new design system across all products',
-      date: '2 days ago',
-      status: 'Completed',
-      comments: [
-        { id: 1, author: 'Sarah J.', authorInitials: 'SJ', text: 'Great work on this!', time: '1h ago' },
-        { id: 2, author: 'Mike C.', authorInitials: 'MC', text: 'Very impressive', time: '3h ago' }
-      ]
+  const [shoutouts, setShoutouts] = useState([]);
+  const [users, setUsers] = useState([]);
+
+  const [showModal, setShowModal] = useState(false);
+
+  const [senderId, setSenderId] = useState("");
+  const [recipientIds, setRecipientIds] = useState([]);
+  const [message, setMessage] = useState("");
+
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState([]);
+
+  const [emoji, setEmoji] = useState("🎉");
+
+  const fetchUsers = async () => {
+    const res = await axios.get("http://127.0.0.1:8000/api/users/");
+    setUsers(res.data);
+  };
+
+  const fetchShoutouts = async () => {
+    const res = await axios.get("http://127.0.0.1:8000/api/shoutouts/feed");
+    setShoutouts(res.data);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchShoutouts();
+  }, []);
+
+  // ADD TAG
+  const addTag = () => {
+    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+      setTags([...tags, tagInput.trim()]);
     }
-  ]);
+    setTagInput("");
+  };
+
+  const removeTag = (tag) => {
+    setTags(tags.filter(t => t !== tag));
+  };
+
+  const handleAddShoutout = async () => {
+    await axios.post("http://127.0.0.1:8000/api/shoutouts/", {
+      sender_id: Number(senderId),
+      recipient_ids: recipientIds,
+      message,
+      tag_names: tags
+    });
+
+    setShowModal(false);
+    setMessage("");
+    setTags([]);
+    setTagInput("");
+    setRecipientIds([]);
+    setSenderId("");
+
+    fetchShoutouts();
+  };
+
+  const handleDelete = async (id) => {
+    await axios.delete(`http://127.0.0.1:8000/api/shoutouts/${id}`);
+    fetchShoutouts();
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Creations & Comments</h1>
-          <p className="text-gray-600 mt-1">Showcase team accomplishments</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white font-semibold">
-            AD
-          </div>
-        </div>
+    <div className="p-6">
+
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Shoutout Management</h1>
+
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-4 py-2 rounded flex items-center gap-2"
+        >
+          <Plus /> New Shoutout
+        </button>
       </div>
 
-      {/* Team Creations Section */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Team Creations & Achievements</h2>
-          <p className="text-sm text-gray-600">Share and celebrate team accomplishments</p>
-        </div>
+      {/* MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
 
-        {/* Add New Creation Button */}
-        <button className="w-full flex items-center justify-center gap-2 py-4 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium mb-6">
-          <Plus className="w-5 h-5" />
-          Add New Creation
-        </button>
+          <div className="bg-white p-6 rounded-xl w-[450px] shadow-xl relative">
 
-        {/* Shoutouts List */}
-        <div className="space-y-6">
-          {shoutouts.map((shoutout) => (
-            <div key={shoutout.id} className="border border-gray-200 rounded-lg p-6">
-              {/* Header */}
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-bold text-gray-900">{shoutout.title}</h3>
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                  {shoutout.status}
-                </span>
-              </div>
+            <X
+              className="absolute top-3 right-3 cursor-pointer"
+              onClick={() => setShowModal(false)}
+            />
 
-              {/* Author Info */}
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                <span>by <strong>{shoutout.author}</strong></span>
-                <span>•</span>
-                <span>{shoutout.date}</span>
-              </div>
+            <h2 className="text-xl font-bold mb-4">Create Shoutout</h2>
 
-              {/* Content */}
-              <p className="text-gray-700 mb-6">{shoutout.content}</p>
+            {/* SENDER */}
+            <select
+              value={senderId}
+              onChange={(e) => setSenderId(e.target.value)}
+              className="w-full p-2 border rounded mb-2"
+            >
+              <option value="">Select Sender</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
 
-              {/* Comments Section */}
-              <div className="border-t border-gray-200 pt-4">
-                <h4 className="font-semibold text-gray-900 mb-4">
-                  Comments ({shoutout.comments.length})
-                </h4>
+            {/* RECIPIENT */}
+            <select
+              multiple
+              onChange={(e) =>
+                setRecipientIds([...e.target.selectedOptions].map(o => Number(o.value)))
+              }
+              className="w-full p-2 border rounded mb-2"
+            >
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
 
-                <div className="space-y-4">
-                  {shoutout.comments.map((comment) => (
-                    <div key={comment.id} className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                        {comment.authorInitials}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-gray-900">{comment.author}</span>
-                          <span className="text-xs text-gray-500">{comment.time}</span>
-                        </div>
-                        <p className="text-gray-700">{comment.text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {/* MESSAGE */}
+            <textarea
+              placeholder="Write your shoutout..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="w-full p-2 border rounded mb-3"
+            />
+
+            {/* EMOJI PICKER */}
+            <div className="mb-3">
+              <p className="text-sm font-semibold mb-1">Choose Emoji</p>
+              <div className="flex flex-wrap gap-2">
+                {EMOJIS.map((e, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setEmoji(e)}
+                    className={`text-xl p-2 rounded border ${
+                      emoji === e ? "bg-blue-100 border-blue-500" : ""
+                    }`}
+                  >
+                    {e}
+                  </button>
+                ))}
               </div>
             </div>
-          ))}
+
+            {/* TAGS */}
+            <div className="mb-3">
+              <p className="text-sm font-semibold mb-1">Tags</p>
+
+              <div className="flex gap-2">
+                <input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  placeholder="Add tag (e.g. teamwork)"
+                  className="flex-1 p-2 border rounded"
+                />
+                <button
+                  onClick={addTag}
+                  className="bg-gray-800 text-white px-3 rounded"
+                >
+                  Add
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map((t, i) => (
+                  <span
+                    key={i}
+                    className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs flex items-center gap-1"
+                  >
+                    {t}
+                    <X
+                      size={12}
+                      className="cursor-pointer"
+                      onClick={() => removeTag(t)}
+                    />
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* BUTTONS */}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleAddShoutout}
+                className="px-4 py-2 bg-blue-700 text-white rounded"
+              >
+                Submit
+              </button>
+            </div>
+
+          </div>
         </div>
+      )}
+
+      {/* LIST */}
+      <div className="space-y-4">
+        {shoutouts.map((s) => (
+          <div key={s.id} className="border p-4 rounded shadow">
+
+            <p className="text-lg font-semibold">
+              {s.message} {s.emoji || emoji}
+            </p>
+
+            <p className="text-sm text-gray-600">
+              From: {s.sender?.name}
+            </p>
+
+            <p className="text-sm text-gray-600">
+              To: {s.recipients?.map(r => r.name).join(", ")}
+            </p>
+
+            <div className="flex flex-wrap gap-2 mt-2">
+              {s.tags?.map((tag, i) => (
+                <span
+                  key={i}
+                  className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <button
+              onClick={() => handleDelete(s.id)}
+              className="mt-3 bg-red-600 text-white px-3 py-1 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
       </div>
+
     </div>
   );
 };
