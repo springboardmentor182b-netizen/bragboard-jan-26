@@ -4,14 +4,6 @@ import ShoutoutForm from '../features/shoutouts/components/ShoutoutForm';
 
 const Home = () => {
   const [refreshKey, setRefreshKey] = useState(0);
-  
-  const mockUsers = [
-    { id: 2, name: "Alice" },
-    { id: 3, name: "Bob" },
-    { id: 4, name: "Charlie" },
-    { id: 5, name: "Diana" },
-    { id: 6, name: "Eve" }
-  ];
 
   const handleShoutoutSuccess = () => {
     setRefreshKey(prev => prev + 1);
@@ -39,7 +31,6 @@ const Home = () => {
       <div className="two-columns">
         <div>
           <ShoutoutForm 
-            recipientOptions={mockUsers} 
             onSuccess={handleShoutoutSuccess}
           />
         </div>
