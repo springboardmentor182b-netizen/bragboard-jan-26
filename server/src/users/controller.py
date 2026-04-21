@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from src.database.core import get_db
-from src.users.models import User
+from src.entities.user import User
 from typing import List
 from pydantic import BaseModel
 

@@ -8,10 +8,18 @@ export default function Leaderboard() {
         fetch(`${process.env.REACT_APP_API_URL}/users/leaderboard`)
             .then(res => res.json())
             .then(data => {
-                setLeaderboard(data);
+                if (Array.isArray(data)) {
+                    setLeaderboard(data);
+                } else {
+                    console.error('Leaderboard data is not an array:', data);
+                    setLeaderboard([]);
+                }
                 setLoading(false);
             })
-            .catch(err => console.error('Error fetching leaderboard:', err));
+            .catch(err => {
+                console.error('Error fetching leaderboard:', err);
+                setLoading(false);
+            });
     }, []);
 
     const top3 = leaderboard.slice(0, 3);
