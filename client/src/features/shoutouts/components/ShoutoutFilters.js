@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { shoutoutService } from '../services/shoutoutService';
 
-const ShoutoutFilters = ({ onFilterChange, users = [] }) => {
+const ShoutoutFilters = ({ onFilterChange }) => {
   const [departments, setDepartments] = useState([]);
   const [filters, setFilters] = useState({
     department: '',
-    sender_id: '',
-    recipient_id: '',
     start_date: '',
     end_date: ''
   });
 
   useEffect(() => {
-    // Load departments
     shoutoutService.getDepartments().then(data => {
       setDepartments(data.departments || []);
     }).catch(err => console.error('Failed to load departments', err));
@@ -22,9 +19,8 @@ const ShoutoutFilters = ({ onFilterChange, users = [] }) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     
-    // Convert date strings to Date objects
     const apiFilters = {
-      ...newFilters,
+      department: newFilters.department || null,
       start_date: newFilters.start_date ? new Date(newFilters.start_date) : null,
       end_date: newFilters.end_date ? new Date(newFilters.end_date) : null
     };
@@ -35,8 +31,6 @@ const ShoutoutFilters = ({ onFilterChange, users = [] }) => {
   const clearFilters = () => {
     setFilters({
       department: '',
-      sender_id: '',
-      recipient_id: '',
       start_date: '',
       end_date: ''
     });
@@ -56,32 +50,6 @@ const ShoutoutFilters = ({ onFilterChange, users = [] }) => {
             <option value="">All Departments</option>
             {departments.map(dept => (
               <option key={dept} value={dept}>{dept}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="filter-group">
-          <label>From (Sender)</label>
-          <select 
-            value={filters.sender_id}
-            onChange={(e) => handleFilterChange('sender_id', e.target.value)}
-          >
-            <option value="">All Senders</option>
-            {users.map(user => (
-              <option key={user.id} value={user.id}>{user.name}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="filter-group">
-          <label>To (Recipient)</label>
-          <select 
-            value={filters.recipient_id}
-            onChange={(e) => handleFilterChange('recipient_id', e.target.value)}
-          >
-            <option value="">All Recipients</option>
-            {users.map(user => (
-              <option key={user.id} value={user.id}>{user.name}</option>
             ))}
           </select>
         </div>

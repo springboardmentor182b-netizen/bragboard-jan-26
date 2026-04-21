@@ -6,22 +6,31 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Use SQLite for development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./bragboard.db")
+# Force SQLite for development - PostgreSQL will be used only if explicitly configured
+database_url = os.getenv("DATABASE_URL", "sqlite:///./bragboard.db")
 
-# Create engine
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-)
+# If it's PostgreSQL but we can't connect, fall back to SQLite
+if "postgresql" in database_url:
+    try:
+        # Test PostgreSQL connection
+        from sqlalchemy import create_engine as test_engine
+        test_engine(database_url).connect()
+    except:
+        print("Warning: PostgreSQL connection failed, falling back to SQLite")
+        database_url = "sqlite:///./bragboard.db"
 
-# Create session
+# Create engine with SQLite specific settings
+if "sqlite" in database_url:
+    engine = create_engine(
+        database_url,
+        connect_args={"check_same_thread": False}  # Needed for SQLite
+    )
+else:
+    engine = create_engine(database_url)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create base class
 Base = declarative_base()
 
-# Dependency to get DB session
 def get_db():
     db = SessionLocal()
     try:

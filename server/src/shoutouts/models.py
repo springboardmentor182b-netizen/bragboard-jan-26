@@ -3,6 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 
 class ShoutoutCreate(BaseModel):
+    sender_id: Optional[int] = 1  # Default sender
     message: str
     recipient_ids: List[int]
     department: Optional[str] = None
@@ -30,6 +31,6 @@ class ShoutoutListResponse(BaseModel):
 class ShoutoutFilter(BaseModel):
     department: Optional[str] = None
     sender_id: Optional[int] = None
+    recipient_id: Optional[int] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
-    recipient_id: Optional[int] = None

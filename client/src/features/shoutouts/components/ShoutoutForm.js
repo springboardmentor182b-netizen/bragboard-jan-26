@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import useCreateShoutout from "../hooks/useCreateShoutout";
+import { shoutoutService } from "../services/shoutoutService";
 
 const ShoutoutForm = ({ recipientOptions = [], onSuccess }) => {
   const [message, setMessage] = useState("");
@@ -7,14 +7,10 @@ const ShoutoutForm = ({ recipientOptions = [], onSuccess }) => {
   const [department, setDepartment] = useState("");
   const [attachment, setAttachment] = useState(null);
   const [attachmentPreview, setAttachmentPreview] = useState(null);
-  const { createShoutout, loading, error } = useCreateShoutout((data) => {
-    setMessage("");
-    setSelectedRecipients([]);
-    setDepartment("");
-    setAttachment(null);
-    setAttachmentPreview(null);
-    if (onSuccess) onSuccess(data);
-  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const departments = ["Engineering", "Sales", "Marketing", "HR", "Product", "Design", "Operations"];
 
   const toggleRecipient = (id) =>
     setSelectedRecipients((prev) =>
@@ -29,13 +25,27 @@ const ShoutoutForm = ({ recipientOptions = [], onSuccess }) => {
     }
   };
 
-  const departments = ["Engineering", "Sales", "Marketing", "HR", "Product", "Design", "Operations"];
-
   const handleSubmit = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      await createShoutout(message, selectedRecipients, department, attachment);
+      const data = await shoutoutService.createShoutout(
+        1,
+        message, 
+        selectedRecipients, 
+        department, 
+        attachment
+      );
+      setMessage("");
+      setSelectedRecipients([]);
+      setDepartment("");
+      setAttachment(null);
+      setAttachmentPreview(null);
+      if (onSuccess) onSuccess(data);
     } catch (err) {
-      console.error("Error creating shoutout:", err);
+      setError(err.message || "Failed to create shoutout");
+    } finally {
+      setLoading(false);
     }
   };
 

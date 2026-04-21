@@ -12,8 +12,8 @@ const useShoutouts = (initialFilters = {}) => {
     setError(null);
     try {
       const data = await shoutoutService.getAllShoutouts(skip, limit, filters);
-      setShoutouts(data.shoutouts);
-      setTotal(data.total);
+      setShoutouts(data.shoutouts || []);
+      setTotal(data.total || 0);
     } catch (err) {
       setError(err.message);
     } finally {
