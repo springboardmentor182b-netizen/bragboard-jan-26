@@ -1,73 +1,70 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
-from src.users.models import User
-from src.entities.shoutout import Shoutout, ShoutoutRecipient, ShoutoutTag, Tag
-from src.users.schemas import UserCreate
-from typing import List
+from src.entities.user import User
+from src.entities.shoutout import ShoutOut
+from src.entities.shoutout_recipient import ShoutOutRecipient
+from src.users.models import UserCreate
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class UserService:
     @staticmethod
+    def get_password_hash(password):
+        return pwd_context.hash(password)
+
+    @staticmethod
+    def verify_password(plain_password, hashed_password):
+        return pwd_context.verify(plain_password, hashed_password)
+
+    @staticmethod
     def create_user(db: Session, user: UserCreate):
-        db_user = User(**user.dict())
+        hashed_password = UserService.get_password_hash(user.password)
+        db_user = User(
+            username=user.username,
+            email=user.email,
+            hashed_password=hashed_password,
+            role=user.role
+        )
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
         return db_user
-    
-    @staticmethod
-    def get_all_users(db: Session):
-        return db.query(User).all()
-    
+
     @staticmethod
     def get_user_by_id(db: Session, user_id: int):
         return db.query(User).filter(User.id == user_id).first()
+
+    @staticmethod
+    def get_user_by_username(db: Session, username: str):
+        return db.query(User).filter(User.username == username).first()
 
     @staticmethod
     def get_user_by_email(db: Session, email: str):
         return db.query(User).filter(User.email == email).first()
 
     @staticmethod
+    def get_all_users(db: Session, skip: int = 0, limit: int = 100):
+        return db.query(User).offset(skip).limit(limit).all()
+
+    @staticmethod
     def get_user_stats(db: Session, user_id: int):
-        user = db.query(User).filter(User.id == user_id).first()
+        user = UserService.get_user_by_id(db, user_id)
         if not user:
             return None
         
-        # Count received shoutouts
-        received = db.query(ShoutoutRecipient).filter(
-            ShoutoutRecipient.recipient_id == user_id
+        # Count shoutouts received
+        received_count = db.query(ShoutOutRecipient).filter(
+            ShoutOutRecipient.recipient_id == user_id
         ).count()
         
-        # Count sent shoutouts
-        given = db.query(Shoutout).filter(
-            Shoutout.sender_id == user_id
+        # Count shoutouts sent
+        sent_count = db.query(ShoutOut).filter(
+            ShoutOut.sender_id == user_id
         ).count()
-        
-        # Get leaderboard rank
-        leaderboard = db.query(
-            User.id,
-            func.count(ShoutoutRecipient.id).label('count')
-        ).join(
-            ShoutoutRecipient, User.id == ShoutoutRecipient.recipient_id
-        ).group_by(User.id).order_by(desc('count')).all()
-        
-        rank = next((idx + 1 for idx, (uid, _) in enumerate(leaderboard) if uid == user_id), 0)
-        
-        # Get top tags
-        top_tags = db.query(
-            Tag.name,
-            func.count(ShoutoutTag.id).label('count')
-        ).join(ShoutoutTag).join(Shoutout).join(
-            ShoutoutRecipient, Shoutout.id == ShoutoutRecipient.shoutout_id
-        ).filter(
-            ShoutoutRecipient.recipient_id == user_id
-        ).group_by(Tag.name).order_by(desc('count')).limit(4).all()
-        
-        top_tags_list = [{"name": name, "count": count} for name, count in top_tags]
         
         return {
-            "user": user,
-            "shoutouts_received": received,
-            "shoutouts_given": given,
-            "leaderboard_rank": rank,
-            "top_tags": top_tags_list
+            "user_id": user_id,
+            "username": user.username,
+            "shoutouts_received": received_count,
+            "shoutouts_sent": sent_count
         }

@@ -1,1 +1,1 @@
-# Empty init file - imports handled in individual modules
+from src.shoutouts.controller import router
