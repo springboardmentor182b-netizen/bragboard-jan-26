@@ -1,14 +1,19 @@
-from sqlalchemy import Column, Integer, String, DateTime
-from datetime import datetime
+from sqlalchemy import Column, Integer, String, Boolean
 from src.database.core import Base
 
 class User(Base):
-    __tablename__ = "user"
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    department = Column(String, nullable=True) # e.g., 'Engineering', 'HR'
-    role = Column(String, default="employee")  # 'admin' or 'employee'
-    status = Column(String, default="active")   # 'active' or 'inactive'
-    joined_date = Column(DateTime, default=datetime.utcnow)
+    password = Column(String, nullable=False)
+    role = Column(String, default="employee")
+    
+    # Profile information
+    full_name = Column(String, nullable=True)
+    job_title = Column(String, nullable=True)
+    
+    # Notification preferences
+    email_notifications = Column(Boolean, default=True)
+    shoutout_alerts = Column(Boolean, default=True)
+    marketing_emails = Column(Boolean, default=False)

@@ -7,15 +7,13 @@ class Shoutout(Base):
     __tablename__ = "shoutout"
 
     id = Column(Integer, primary_key=True, index=True)
-    sender = Column(String)
-    content = Column(String)
+    sender_id = Column(Integer, ForeignKey("users.id"))
+    receiver_id = Column(Integer, ForeignKey("users.id"))
+    message = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # 1. This must be an Integer to match User.id
-    receiver = Column(Integer, ForeignKey("user.id")) 
+    sender = relationship("User", foreign_keys=[sender_id])
+    receiver = relationship("User", foreign_keys=[receiver_id])
 
-    # 2. This allows you to do 'shoutout.receiver_user.name'
-    receiver_user = relationship("User", backref="received_shoutouts")
-
-    # 3. KEEP THIS COMMENTED UNTIL REPORT TABLE IS FIXED
-    # reports = relationship("Report", back_populates="shoutout")
+    reactions = relationship("ShoutoutReaction", back_populates="shoutout", cascade="all, delete-orphan")
+    comments = relationship("ShoutoutComment", back_populates="shoutout", cascade="all, delete-orphan")

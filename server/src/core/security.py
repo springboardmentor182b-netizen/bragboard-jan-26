@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 
 # Password hashing configuration
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # JWT Configuration
 SECRET_KEY = "your-secret-key-here"  # In production, use an environment variable

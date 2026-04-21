@@ -19,22 +19,20 @@ export default function Login() {
         <div className="flex mb-4">
           <button
             onClick={() => setRole("employee")}
-            className={w-1/2 py-2 rounded-l ${
-              role === "employee"
+            className={`w-1/2 py-2 rounded-l ${role === "employee"
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200"
-            }}
+              }`}
           >
             Employee Login
           </button>
 
           <button
             onClick={() => setRole("admin")}
-            className={w-1/2 py-2 rounded-r ${
-              role === "admin"
+            className={`w-1/2 py-2 rounded-r ${role === "admin"
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200"
-            }}
+              }`}
           >
             Admin Login
           </button>
