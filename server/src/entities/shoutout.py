@@ -1,10 +1,10 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from src.database.core import Base
 from datetime import datetime
+from src.database.core import Base
 
 class Shoutout(Base):
-    __tablename__ = "shoutouts"
+    __tablename__ = "shoutout"
 
     id = Column(Integer, primary_key=True, index=True)
     sender_id = Column(Integer, ForeignKey("users.id"))
@@ -17,4 +17,3 @@ class Shoutout(Base):
 
     reactions = relationship("ShoutoutReaction", back_populates="shoutout", cascade="all, delete-orphan")
     comments = relationship("ShoutoutComment", back_populates="shoutout", cascade="all, delete-orphan")
-

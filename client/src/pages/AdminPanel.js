@@ -3,9 +3,13 @@ import React, { useEffect, useState } from 'react';
 const AdminPanel = () => {
     const [reports, setReports] = useState([]);
 
+    // We use the environment variable for the Base URL
+    const API_URL = process.env.REACT_APP_API_URL;
+
     const fetchReports = async () => {
         try {
-            const response = await fetch('http://127.0.0.1:8000/admin/reports');
+            // RESOLVED: Using API_URL consistently
+            const response = await fetch(`${API_URL}/admin/reports`);
             const data = await response.json();
             setReports(data);
         } catch (error) {
@@ -14,18 +18,26 @@ const AdminPanel = () => {
     };
 
     useEffect(() => { 
-        fetchReports(); 
-    }, []);
+        if (API_URL) {
+            fetchReports(); 
+        }
+    }, [API_URL]);
+
+    const handleReview = (reportId) => {
+        alert(`Reviewing report ID: ${reportId}`);
+        console.log("Reviewing report:", reportId);
+    };
 
     const handleDelete = async (reportId) => {
         if (window.confirm("Are you sure you want to delete this shoutout?")) {
             try {
-                const response = await fetch(`http://127.0.0.1:8000/admin/reports/${reportId}`, {
+                // RESOLVED: Using API_URL consistently
+                const response = await fetch(`${API_URL}/admin/reports/${reportId}`, {
                     method: 'DELETE',
                 });
                 if (response.ok) {
                     alert("Shoutout deleted.");
-                    fetchReports(); // Refresh table
+                    fetchReports(); 
                 }
             } catch (error) {
                 console.error("Error deleting shoutout:", error);
@@ -46,52 +58,40 @@ const AdminPanel = () => {
                         <th style={{ padding: '15px' }}>Receiver</th>
                         <th style={{ padding: '15px' }}>Message</th>
                         <th style={{ padding: '15px' }}>Reason</th>
-                        <th style={{ padding: '15px' }}>Action</th>
+                        <th style={{ padding: '15px' }}>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {reports.length > 0 ? (
                         reports.map((report) => (
                             <tr key={report.id} style={{ borderBottom: '1px solid #F5F5F5' }}>
-                                {/* SENDER */}
                                 <td style={{ padding: '15px', fontWeight: 'bold', color: '#444' }}>
                                     {report.sender_name || "Unknown Sender"}
                                 </td> 
-                                
-                                {/* OWNER (RECEIVER) */}
                                 <td style={{ padding: '15px', color: '#555' }}>
                                     {report.receiver_name || "Alex Rivera"} 
                                 </td> 
-                                
-                                {/* MESSAGE CONTENT */}
                                 <td style={{ padding: '15px', fontStyle: 'italic', color: '#333', maxWidth: '300px' }}>
                                     "{report.content || "No content available"}"
                                 </td> 
-                                
-                                {/* REASON FOR REPORT */}
                                 <td style={{ padding: '15px', color: '#d9534f', fontWeight: '500' }}>
                                     {report.reason}
                                 </td>
-                                
-                                {/* DELETE ACTION */}
                                 <td style={{ padding: '15px' }}>
-                                    <button 
-                                        onClick={() => handleDelete(report.id)}
-                                        style={{ 
-                                            backgroundColor: '#FF4D4D', 
-                                            color: 'white', 
-                                            border: 'none', 
-                                            padding: '8px 16px', 
-                                            borderRadius: '5px', 
-                                            cursor: 'pointer',
-                                            fontWeight: 'bold',
-                                            transition: '0.3s'
-                                        }}
-                                        onMouseOver={(e) => e.target.style.backgroundColor = '#cc0000'}
-                                        onMouseOut={(e) => e.target.style.backgroundColor = '#FF4D4D'}
-                                    >
-                                        Delete
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button 
+                                            onClick={() => handleReview(report.id)}
+                                            style={reviewBtnStyle}
+                                        >
+                                            Review
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDelete(report.id)}
+                                            style={deleteBtnStyle}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))
@@ -107,5 +107,9 @@ const AdminPanel = () => {
         </div>
     );
 };
+
+// Styles kept clean
+const reviewBtnStyle = { backgroundColor: '#4A90E2', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' };
+const deleteBtnStyle = { backgroundColor: '#FF4D4D', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' };
 
 export default AdminPanel;
