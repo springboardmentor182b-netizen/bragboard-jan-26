@@ -509,8 +509,18 @@ function PendingApprovalsView({ onPendingCountChange }) {
       const data = res.data || [];
       setPendingUsers(data);
       onPendingCountChange(data.length);
-    } catch {
-      setError('Failed to load pending users. Make sure the backend is running.');
+    } catch (err) {
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail;
+      if (status === 401) {
+        setError('Session expired. Please log in again.');
+      } else if (status === 403) {
+        setError(detail || 'Access denied. Admin permissions are required.');
+      } else if (status) {
+        setError(detail || `Failed to load pending users (HTTP ${status}).`);
+      } else {
+        setError('Failed to load pending users. Make sure the backend is running.');
+      }
     } finally {
       setLoading(false);
     }

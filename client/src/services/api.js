@@ -70,6 +70,12 @@ export const commentsAPI = {
   delete: (commentId) => api.delete(`/comments/${commentId}`),
 };
 
+// ── AI endpoints ─────────────────────────────────────────────────────────────
+export const aiAPI = {
+  getCommentReplySuggestions: (comment) =>
+    api.post('/ai/comment-reply-suggestions', { comment }),
+};
+
 // ── Leaderboard endpoints ───────────────────────────────────────────────────
 export const leaderboardAPI = {
   mostAppreciated: (limit = 10) => api.get(`/leaderboard/most-appreciated?limit=${limit}`),
