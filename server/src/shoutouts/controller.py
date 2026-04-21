@@ -10,7 +10,9 @@ from src.entities.user import User, UserRole
 router = APIRouter()
 
 # ── Upload directory (served statically) ─────────────────────────────────────
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "uploads")
+# __file__ is server/src/shoutouts/controller.py
+# ../../ brings us to server/ — matching where main.py mounts /uploads from
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_SIZE_MB = 5

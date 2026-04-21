@@ -60,8 +60,7 @@ app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(reports_router)
 app.include_router(reactions_router)
 app.include_router(comments_router)
-app.include_router(admin_router) 
-  # ← registers /admin/*
+app.include_router(admin_router)           # ← registers /admin/*
 app.include_router(notifications_router)
 
 # ── Serve uploaded images ──────────────────────────────────────────────────────

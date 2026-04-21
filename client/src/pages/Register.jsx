@@ -164,7 +164,7 @@ function Register() {
 
             <div style={{ marginBottom:16 }}>
               <label style={{ display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6 }}>Password</label>
-              <input type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6" placeholder="At least 6 characters" style={inputStyle} onFocus={onFocus} onBlur={onBlur}/>
+              <input type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6" placeholder="At least 8 characters" style={inputStyle} onFocus={onFocus} onBlur={onBlur}/>
             </div>
 
             <div style={{ marginBottom:16 }}>

@@ -351,7 +351,7 @@ function ShoutoutCard({ shoutout }) {
   const [likes, setLikes] = useState(shoutout.likes || 0);
 
   // ── Reactions (clap / star) ──────────────────────────────────────────────
-  const [reactions, setReactions] = useState({ like: 0, clap: 0, star: 0, heart: 0, fire: 0, celebrate: 0, wow: 0, thumbsup: 0, rocket: 0, user_reactions: [] });
+  const [reactions, setReactions] = useState({ like: 0, clap: 0, star: 0, fire: 0, celebrate: 0, wow: 0, thumbsup: 0, rocket: 0, user_reactions: [] });
 
   // ── Comments + nested replies ─────────────────────────────────────────────
   const [showComments, setShowComments] = useState(false);
@@ -625,9 +625,6 @@ function ShoutoutCard({ shoutout }) {
 
 {/* Star */}
 {reactionBtn('star', '⭐', 'Star')}
-
-{/* Heart */}
-{reactionBtn('heart', '❤️', 'Heart')}
 
 {/* Fire */}
 {reactionBtn('fire', '🔥', 'Fire')}

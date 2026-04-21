@@ -2,50 +2,33 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, ChevronDown, Check, ImagePlus, Trash2, Sparkles } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
-// ── Gemini AI Suggestion helper ─────────────────────────────────────────────
+// ── Gemini AI Suggestion helper (now calls backend) ──────────────────────────
 async function fetchAISuggestions({ message, recipientNames, tags }) {
-  if (!GEMINI_API_KEY) throw new Error('NO_KEY');
-
-  const context = [
-    recipientNames.length > 0 && `Recipients: ${recipientNames.join(', ')}`,
-    tags.length > 0 && `Tags/Values: ${tags.join(', ')}`,
-  ].filter(Boolean).join('\n');
-
-  const prompt = `You are helping an employee write a shoutout message to recognise a colleague's great work.
-
-${context ? `Context:\n${context}\n` : ''}Current draft: "${message}"
-
-Generate exactly 3 improved, warm, specific shoutout message suggestions based on the draft.
-Each suggestion should be 1-2 sentences, professional but friendly, and feel genuine.
-Return ONLY a valid JSON array of 3 strings, no markdown, no extra text.
-Example: ["suggestion 1", "suggestion 2", "suggestion 3"]`;
-
-  const response = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-latest:generateContent',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 400 },
-      }),
-    }
-  );
+  const recipientList = recipientNames.join(', ') || 'a colleague';
+  const tagList = tags.length > 0 ? tags.join(', ') : 'general appreciation';
+  
+  // Call YOUR backend instead of Google directly
+  const response = await fetch(`${API_URL}/shoutouts/suggest`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('token')}` 
+    },
+    body: JSON.stringify({
+      message: message,
+      recipients: recipientList,
+      tags: tagList
+    })
+  });
 
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err?.error?.message || 'Gemini request failed');
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to fetch suggestions');
   }
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-  const clean = text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+  return data.suggestions || [];
 }
 
 // ── Main Component ──────────────────────────────────────────────────────────
@@ -98,41 +81,27 @@ const CreateShoutoutModal = ({ isOpen, onClose, onSuccess, currentUser }) => {
 
   useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
-  // ── Trigger suggestions ───────────────────────────────────────────────────
   const triggerSuggestions = useCallback(async (currentMessage) => {
-    if (!GEMINI_API_KEY) {
-      setSuggestionError('Add VITE_GEMINI_API_KEY to your client/.env file to enable AI suggestions.');
-      setSuggestions([]);
-      setShowSuggestions(true);
-      return;
-    }
     if (currentMessage.trim().length < 10) return;
-
+  
     setLoadingSuggestions(true);
-    setSuggestionError('');
-    setSuggestions([]);
-    setShowSuggestions(true);
-
+    setSuggestionError(null);
+  
     try {
-      const recipientNames = users
-        .filter(u => selectedRecipients.includes(u.id))
-        .map(u => u.name);
       const results = await fetchAISuggestions({
         message: currentMessage,
-        recipientNames,
+        recipientNames: selectedRecipients.map(r => r.name),
         tags: selectedTags,
       });
       setSuggestions(Array.isArray(results) ? results.slice(0, 3) : []);
+      setShowSuggestions(true);
     } catch (e) {
-      if (e.message === 'NO_KEY') {
-        setSuggestionError('Add VITE_GEMINI_API_KEY to your client/.env file.');
-      } else {
-        setSuggestionError('Could not load suggestions — check your Gemini API key.');
-      }
+      setSuggestionError(e.message || 'Could not load suggestions');
+      setShowSuggestions(true);
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [users, selectedRecipients, selectedTags]);
+  }, [selectedRecipients, selectedTags]);
 
   const handleMessageChange = (e) => {
     const val = e.target.value;
