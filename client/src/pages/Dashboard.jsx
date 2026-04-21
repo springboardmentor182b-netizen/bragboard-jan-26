@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CreateShoutoutModal from '../components/CreateShoutoutModal';
-import { reactionsAPI, commentsAPI } from '../services/api';
+import { reactionsAPI, commentsAPI, aiAPI } from '../services/api';
 import NotificationBell from "../components/NotificationBell";
 import '../styles/theme.css';
 
@@ -359,6 +359,10 @@ function ShoutoutCard({ shoutout }) {
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [postingComment, setPostingComment] = useState(false);
+  const [commentSuggestions, setCommentSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const suggestionRequestSeq = useRef(0);
+  const suggestionCacheRef = useRef(new Map());
   // comment_count now comes from backend via ShoutoutResponse
   const [commentCount, setCommentCount] = useState(shoutout.comment_count ?? 0);
   // replyingTo: { id, authorName } of the comment being replied to, or null
@@ -421,6 +425,10 @@ function ShoutoutCard({ shoutout }) {
         setCommentsLoaded(true);
       } catch { setCommentsLoaded(true); }
     }
+    if (showComments) {
+      setCommentSuggestions([]);
+      setLoadingSuggestions(false);
+    }
     setShowComments(v => !v);
   };
 
@@ -432,8 +440,51 @@ function ShoutoutCard({ shoutout }) {
       setComments(prev => [...prev, { ...res.data, replies: [] }]);
       setCommentCount(c => c + 1);
       setCommentText('');
+      setCommentSuggestions([]);
     } catch { /* silent */ } finally { setPostingComment(false); }
   };
+
+  useEffect(() => {
+    if (!showComments) return;
+    const text = commentText.trim();
+
+    if (text.length < 8) {
+      setCommentSuggestions([]);
+      setLoadingSuggestions(false);
+      return;
+    }
+
+    const cached = suggestionCacheRef.current.get(text);
+    if (cached) {
+      setCommentSuggestions(cached);
+      setLoadingSuggestions(false);
+      return;
+    }
+
+    const requestId = ++suggestionRequestSeq.current;
+    const timer = setTimeout(async () => {
+      setLoadingSuggestions(true);
+      try {
+        const res = await aiAPI.getCommentReplySuggestions(text);
+        const replies = res.data?.replies || [];
+        if (requestId !== suggestionRequestSeq.current) return;
+
+        const normalized = Array.isArray(replies) ? replies : [];
+        suggestionCacheRef.current.set(text, normalized);
+        setCommentSuggestions(normalized);
+      } catch {
+        // Keep existing suggestions when request fails to avoid UI flicker.
+      } finally {
+        if (requestId === suggestionRequestSeq.current) {
+          setLoadingSuggestions(false);
+        }
+      }
+    }, 600);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [commentText, showComments]);
 
   const handlePostReply = async (parentId) => {
     if (!replyText.trim()) return;
@@ -772,16 +823,40 @@ function ShoutoutCard({ shoutout }) {
             <div style={avatarStyle('linear-gradient(135deg, #4F46E5, #6366F1)')}>
               {getInitials(currentUser?.name || '?')}
             </div>
-            <textarea
-              value={commentText}
-              onChange={e => setCommentText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment(); } }}
-              placeholder="Write a comment… (Enter to post, Shift+Enter for new line)"
-              rows={1}
-              style={{ flex: 1, border: '1.5px solid #E5E7EB', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', resize: 'none', lineHeight: 1.5, fontFamily: 'inherit', transition: 'border-color 0.2s' }}
-              onFocus={e => e.target.style.borderColor = '#4F46E5'}
-              onBlur={e => e.target.style.borderColor = '#E5E7EB'}
-            />
+            <div style={{ flex: 1 }}>
+              <textarea
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment(); } }}
+                placeholder="Write a comment… (Enter to post, Shift+Enter for new line)"
+                rows={1}
+                style={{ width: '100%', border: '1.5px solid #E5E7EB', borderRadius: '10px', padding: '9px 12px', fontSize: '13px', outline: 'none', resize: 'none', lineHeight: 1.5, fontFamily: 'inherit', transition: 'border-color 0.2s' }}
+                onFocus={e => e.target.style.borderColor = '#4F46E5'}
+                onBlur={e => e.target.style.borderColor = '#E5E7EB'}
+              />
+              {(loadingSuggestions || commentSuggestions.length > 0) && (
+                <div style={{ marginTop: '8px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#6B7280', marginBottom: '6px' }}>
+                    AI suggestions
+                  </div>
+                  {loadingSuggestions ? (
+                    <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Generating suggestions…</div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {commentSuggestions.map((s, idx) => (
+                        <button
+                          key={`${idx}-${s}`}
+                          onClick={() => setCommentText(s)}
+                          style={{ background: '#EEF2FF', color: '#4338CA', border: '1px solid #C7D2FE', borderRadius: '999px', fontSize: '12px', fontWeight: 600, padding: '5px 10px', cursor: 'pointer' }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <button onClick={handlePostComment} disabled={!commentText.trim() || postingComment}
               style={{ height: '38px', padding: '0 16px', borderRadius: '10px', border: 'none', background: !commentText.trim() ? '#E5E7EB' : '#4F46E5', color: !commentText.trim() ? '#9CA3AF' : '#fff', fontSize: '13px', fontWeight: 600, cursor: !commentText.trim() ? 'default' : 'pointer', transition: 'all 0.15s', flexShrink: 0 }}>
               {postingComment ? '…' : 'Post'}
