@@ -8,9 +8,10 @@ from src.entities.shoutout import Shoutout, ShoutoutRecipient
 from src.entities.user import User
 from src.shoutouts.models import ShoutoutCreate
 from src.moderation.service import moderate_message
+from src.notifications import service as notification_service
 
 
-def create_shoutout(db: Session, sender_id: int, data: ShoutoutCreate) -> Shoutout:
+def create_shoutout(db: Session, sender_id: int, data: ShoutoutCreate, image_url: str = None) -> Shoutout:
     # AI Moderation — block harmful content before saving
     result = moderate_message(data.message)
     if not result.is_safe:
@@ -23,7 +24,8 @@ def create_shoutout(db: Session, sender_id: int, data: ShoutoutCreate) -> Shouto
     shoutout = Shoutout(
         sender_id=sender_id,
         message=data.message,
-        tags=tag_string
+        tags=tag_string,
+        image_url=image_url,
     )
     db.add(shoutout)
     db.flush()  # get the shoutout.id
@@ -34,10 +36,29 @@ def create_shoutout(db: Session, sender_id: int, data: ShoutoutCreate) -> Shouto
 
     db.commit()
     # Reload with relationships so response includes sender + recipients
-    return db.query(Shoutout).options(
+    result_shoutout = db.query(Shoutout).options(
         joinedload(Shoutout.sender),
         joinedload(Shoutout.shoutout_recipients).joinedload(ShoutoutRecipient.recipient)
     ).filter(Shoutout.id == shoutout.id).first()
+
+    # Create notifications for all recipients
+    try:
+        sender = db.query(User).filter(User.id == sender_id).first()
+        sender_name = sender.name if sender else "Someone"
+        
+        notification_service.create_shoutout_notification(
+            db=db,
+            shoutout_id=shoutout.id,
+            recipient_ids=data.recipient_ids,
+            sender_id=sender_id,
+            sender_name=sender_name,
+            message_preview=data.message
+        )
+    except Exception as e:
+        # Don't fail shoutout creation if notification fails
+        print(f"Warning: Failed to create shoutout notifications: {e}")
+
+    return result_shoutout
 
 
 def get_all_shoutouts(db: Session, skip: int = 0, limit: int = 20) -> List[Shoutout]:

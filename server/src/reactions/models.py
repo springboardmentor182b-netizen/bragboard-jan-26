@@ -1,15 +1,21 @@
+from typing import Literal
 from pydantic import BaseModel
 
 
 class ReactionCreate(BaseModel):
-    type: str
+    """Request body to toggle a reaction on a shoutout."""
+    type: Literal["like", "clap", "star", "heart", "fire", "celebrate", "wow", "thumbsup", "rocket"]
 
 
-class ReactionResponse(BaseModel):
-    id: int
+class ReactionCountsResponse(BaseModel):
     shoutout_id: int
-    user_id: int
-    type: str
-
-    class Config:
-        from_attributes = True
+    like: int = 0
+    clap: int = 0
+    star: int = 0
+    heart: int = 0
+    fire: int = 0
+    celebrate: int = 0
+    wow: int = 0
+    thumbsup: int = 0
+    rocket: int = 0
+    user_reactions: list[str] = []
