@@ -1,0 +1,18 @@
+services:
+  server:
+    build:
+      context: ./server
+    container_name: bragboard_server
+    env_file:
+      - .env.production
+    volumes:
+      - ./uploads:/app/uploads   # Persisted on EC2 EBS volume
+    ports:
+      - "127.0.0.1:8000:8000"   # Localhost only — Nginx proxies to this
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
