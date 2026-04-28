@@ -21,7 +21,6 @@ from src.reports.controller import router as reports_router
 from src.admin.controller import router as admin_router
 from src.leaderboard.controller import router as leaderboard_router
 from src.notifications.controller import router as notifications_router
-from src.ai.controller import router as ai_router
 
 
 @asynccontextmanager
@@ -38,10 +37,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow all origins in development
+# CORS — origins loaded from settings (comma-separated string → list)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,7 +56,6 @@ app.include_router(reports_router)
 app.include_router(admin_router)
 app.include_router(leaderboard_router)
 app.include_router(notifications_router)
-app.include_router(ai_router)
 
 # ── Serve uploaded images ──────────────────────────────────────────────────────
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")

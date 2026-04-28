@@ -45,4 +45,17 @@ export const leaderboardAPI = {
   departments: () => api.get('/leaderboard/departments'),
 };
 
+// ── Reactions endpoints ─────────────────────────────────────────────────────
+export const reactionsAPI = {
+  getCounts: (shoutoutId) => api.get(`/shoutouts/${shoutoutId}/reactions`),
+  toggle: (shoutoutId, type) => api.post(`/shoutouts/${shoutoutId}/reactions`, { type }),
+};
+
+// ── Comments endpoints ──────────────────────────────────────────────────────
+export const commentsAPI = {
+  getAll: (shoutoutId) => api.get(`/shoutouts/${shoutoutId}/comments`),
+  post: (shoutoutId, content, parentId = null) => api.post(`/shoutouts/${shoutoutId}/comments`, { content, parent_id: parentId }),
+  delete: (commentId) => api.delete(`/comments/${commentId}`),
+};
+
 export default api;
