@@ -33,7 +33,7 @@ sudo apt-get install -y git
 
 echo "==> Cloning BragBoard repository..."
 # Replace with your actual GitHub repo URL
-REPO_URL="https://github.com/YOUR_ORG/bragboard-jan-26.git"
+REPO_URL="https://github.com/springboardmentor182b-netizen/bragboard-jan-26.git"
 git clone "$REPO_URL" ~/bragboard
 cd ~/bragboard
 
