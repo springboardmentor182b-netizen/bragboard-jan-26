@@ -14,12 +14,6 @@ const adminAPI = {
   changeUserRole: (userId, role) =>
     api.patch(`/admin/users/${userId}/role`, { role }),
 
-  // ── User Approval (NEW) ───────────────────────────────────────────────────
-  getPendingUsers: () => api.get('/admin/users/pending'),
-  approveUser: (userId) => api.patch(`/admin/users/${userId}/approve`),
-  rejectUser: (userId) => api.patch(`/admin/users/${userId}/reject`),
-  suspendUser: (userId) => api.patch(`/admin/users/${userId}/suspend`),
-
   // ── Moderation ────────────────────────────────────────────────────────────
   listShoutouts: (limit = 50) =>
     api.get(`/admin/shoutouts?limit=${limit}`),
@@ -28,11 +22,6 @@ const adminAPI = {
 
   // ── Logs ──────────────────────────────────────────────────────────────────
   getLogs: (limit = 50) => api.get(`/admin/logs?limit=${limit}`),
-
-  // ── Reported Shoutouts ────────────────────────────────────────────────────
-  getReportedShoutouts: () => api.get('/admin/reported-shoutouts'),
-  dismissReport: (reportId) => api.delete(`/admin/reports/${reportId}`),
-  deleteReportedShoutout: (shoutoutId) => api.delete(`/admin/reported-shoutouts/${shoutoutId}`),
 };
 
 export default adminAPI;

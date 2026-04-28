@@ -2,20 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.database.connection import get_db
-from src.auth.dependencies import get_current_user
+from src.auth.service import get_current_user
 from src.entities.user import User
 from src.entities.shoutout import Shoutout
-from src.reactions.models import ReactionToggle, ReactionCountsResponse
+from src.reactions.models import ReactionCreate, ReactionCountsResponse
 from src.reactions import service
 from src.notifications import service as notification_service
 
-router = APIRouter(prefix="/reactions", tags=["Reactions"])
+router = APIRouter(tags=["Reactions"])
 
 
-@router.post("/{shoutout_id}/toggle")
+@router.post("/shoutouts/{shoutout_id}/reactions", status_code=201)
 def toggle_reaction(
     shoutout_id: int,
-    body: ReactionToggle,
+    body: ReactionCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -24,14 +24,14 @@ def toggle_reaction(
     Supports 9 reaction types: like, clap, star, heart, fire, celebrate, wow, thumbsup, rocket
     Calling twice removes it.
     
-    ✨ NEW: Creates notification for shoutout owner when reaction is added.
+    Creates notification for shoutout owner when reaction is added.
     """
     try:
         result = service.toggle_reaction(db, shoutout_id, current_user.id, body.type)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    # ✨ NEW: Create notification if reaction was added (not removed)
+    # Create notification if reaction was added (not removed)
     if result["added"]:
         try:
             # Get the shoutout to find its owner
@@ -54,8 +54,8 @@ def toggle_reaction(
     return {**result, "counts": counts}
 
 
-@router.get("/{shoutout_id}", response_model=ReactionCountsResponse)
-def get_reactions(
+@router.get("/shoutouts/{shoutout_id}/reactions")
+def list_reactions(
     shoutout_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

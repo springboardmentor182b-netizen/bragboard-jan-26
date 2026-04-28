@@ -6,68 +6,24 @@ import { reactionsAPI, commentsAPI } from '../services/api';
 import NotificationBell from "../components/NotificationBell";
 import '../styles/theme.css';
 
-// Icons (keeping your existing inline SVG icons)
-const HomeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-  </svg>
-);
-const UserIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-  </svg>
-);
-const TrophyIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
-    <path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
-    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
-    <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
-  </svg>
-);
-const UsersIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-    <circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-  </svg>
-);
-const PlusIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 12h14"/><path d="M12 5v14"/>
-  </svg>
-);
-const SearchIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-  </svg>
-);
-const HeartIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-  </svg>
-);
-const LogOutIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-    <polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
-  </svg>
-);
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// ─── SVG Icons ────────────────────────────────────────────────────────────────
+function HomeIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" /></svg>; }
+function UserIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>; }
+function TrophyIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 15l-2 5h4l-2-5zm0 0a5 5 0 005-5V4H7v6a5 5 0 005 5zM7 4H4v3a3 3 0 003 3m10-6h3v3a3 3 0 01-3 3" /></svg>; }
+function UsersIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2m22 0v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75M9 11a4 4 0 100-8 4 4 0 000 8z" /></svg>; }
+function PlusIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" /></svg>; }
+function HeartIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>; }
+function SearchIcon() { return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>; }
+function LogOutIcon() { return <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9" /></svg>; }
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 const getInitials = (name) =>
   name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 
-// Sidebar Component
-// ─────────────────────────────────────────────────────────────────────────────
-
-function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }) {
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+function DashboardSidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }) {
   const navItems = [
     { id: 'feed', label: 'Activity Feed', icon: HomeIcon },
     { id: 'my-shoutouts', label: 'My Shout-outs', icon: UserIcon },
@@ -81,6 +37,7 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
       height: '100vh', display: 'flex', flexDirection: 'column',
       position: 'fixed', left: 0, top: 0, zIndex: 20, boxShadow: '2px 0 8px rgba(0,0,0,0.04)'
     }}>
+      {/* Logo */}
       <div style={{ padding: '24px', borderBottom: '1px solid #F3F4F6' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
           <div style={{
@@ -94,6 +51,7 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
           </span>
         </div>
 
+        {/* Give Shoutout Button */}
         <button
           onClick={onCreateShoutout}
           style={{
@@ -111,6 +69,7 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
         </button>
       </div>
 
+      {/* Nav */}
       <nav style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
         <p style={{ fontSize: '11px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.8px', padding: '0 12px', marginBottom: '8px' }}>
           Menu
@@ -129,8 +88,8 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
                 color: active ? '#4F46E5' : '#6B7280',
                 transition: 'all 0.15s ease'
               }}
-              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#1F2937'; }}}
-              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B7280'; }}}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#1F2937'; } }}
+              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B7280'; } }}
             >
               <Icon />
               {label}
@@ -139,6 +98,7 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
         })}
       </nav>
 
+      {/* User Profile */}
       <div style={{ padding: '16px', borderTop: '1px solid #F3F4F6', background: 'rgba(249,250,251,0.5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <div style={{
@@ -166,7 +126,7 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
               color: '#EF4444', padding: '4px', borderRadius: '6px', display: 'flex',
               transition: 'all 0.15s ease'
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
+            onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             <LogOutIcon />
@@ -177,170 +137,7 @@ function Sidebar({ currentView, onViewChange, onLogout, user, onCreateShoutout }
   );
 }
 
-// Feed View Component
-function FeedView({ user }) {
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [shoutouts, setShoutouts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const loadShoutouts = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/shoutouts/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (!res.ok) throw new Error('Failed to load shoutouts');
-      
-      const data = await res.json();
-      setShoutouts(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Load error:', err);
-      setError('Could not load shoutouts. Please refresh the page.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadShoutouts(); }, []);
-
-  const filtered = shoutouts.filter(s => {
-    const tagList = s.tags ? s.tags.split(',').map(t => t.trim()) : [];
-    const matchFilter = filter === 'all' || tagList.some(t => t.toLowerCase() === filter.toLowerCase());
-    const matchSearch = search === '' ||
-      s.message?.toLowerCase().includes(search.toLowerCase()) ||
-      s.sender?.name?.toLowerCase().includes(search.toLowerCase());
-    return matchFilter && matchSearch;
-  });
-
-  return (
-    <div>
-      {/* Welcome Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #06B6D4 100%)',
-        borderRadius: '18px', padding: '28px 32px', marginBottom: '20px', color: '#fff',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{ position:'absolute',top:-40,right:-40,width:180,height:180,borderRadius:'50%',background:'rgba(255,255,255,0.07)' }}/>
-        <div style={{ position:'absolute',bottom:-30,right:120,width:120,height:120,borderRadius:'50%',background:'rgba(255,255,255,0.05)' }}/>
-        <div style={{ position:'relative',zIndex:1 }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 6px 0' }}>
-            Welcome back, {user?.name?.split(' ')[0] || 'there'}! 👋
-          </h2>
-          <p style={{ fontSize: '14px', margin: 0, opacity: 0.85 }}>
-            Ready to celebrate your team's achievements today? Give someone a shout-out!
-          </p>
-        </div>
-      </div>
-
-      {/* Quick stats strip */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:24 }}>
-        {[
-          { icon:'🎉', label:'Total Shout-outs', value: shoutouts.length, color:'#4F46E5', bg:'#EEF2FF' },
-          { icon:'❤️', label:'Total Likes', value: shoutouts.reduce((a,s)=>a+(s.likes||0),0), color:'#EF4444', bg:'#FEF2F2' },
-          { icon:'🏷️', label:'Tagged People', value: [...new Set(shoutouts.flatMap(s=>(s.recipients||[]).map(r=>r.recipient?.id)).filter(Boolean))].length, color:'#10B981', bg:'#F0FDF4' },
-        ].map((stat,i)=>(
-          <div key={i} style={{ background:'#fff', borderRadius:14, padding:'16px 18px', border:'1px solid #E5E7EB', display:'flex', alignItems:'center', gap:12 }}>
-            <div style={{ width:42,height:42,borderRadius:10,background:stat.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0 }}>{stat.icon}</div>
-            <div>
-              <p style={{ fontSize:22,fontWeight:800,color:stat.color,margin:'0 0 1px' }}>{stat.value}</p>
-              <p style={{ fontSize:11,color:'#9CA3AF',margin:0,fontWeight:500 }}>{stat.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Feed Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: '0 0 2px 0' }}>Recognition Feed</h3>
-          <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>Celebrating your team's achievements</p>
-        </div>
-      </div>
-
-      {/* Search & Filter */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}>
-            <SearchIcon />
-          </div>
-          <input
-            value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search shoutouts..."
-            style={{
-              width: '100%', padding: '10px 12px 10px 36px', border: '1px solid #E5E7EB',
-              borderRadius: '8px', fontSize: '14px', background: '#fff', outline: 'none', boxSizing: 'border-box'
-            }}
-          />
-        </div>
-        <select
-          value={filter} onChange={e => setFilter(e.target.value)}
-          style={{
-            padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px',
-            fontSize: '14px', background: '#fff', outline: 'none', cursor: 'pointer'
-          }}
-        >
-          <option value="all">All Tags</option>
-          <option value="Teamwork">Teamwork</option>
-          <option value="Innovation">Innovation</option>
-          <option value="Leadership">Leadership</option>
-          <option value="Bug Hunter">Bug Hunter</option>
-          <option value="Problem Solving">Problem Solving</option>
-        </select>
-      </div>
-
-      {/* Error State */}
-      {error && (
-        <div style={{
-          background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '8px',
-          padding: '12px 16px', marginBottom: '16px', color: '#991B1B'
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Loading State */}
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#9CA3AF' }}>
-          <div className="animate-spin" style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
-          <p>Loading shoutouts...</p>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && filtered.length === 0 && (
-        <div style={{
-          textAlign: 'center', padding: '48px', background: '#F9FAFB',
-          borderRadius: '12px', border: '1px dashed #E5E7EB'
-        }}>
-          <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>🎉</p>
-          <p style={{ fontSize: '16px', fontWeight: 600, color: '#374151', margin: '0 0 6px 0' }}>
-            {search || filter !== 'all' ? 'No matching shoutouts' : 'No shoutouts yet'}
-          </p>
-          <p style={{ fontSize: '13px', color: '#9CA3AF' }}>
-            {search || filter !== 'all' ? 'Try adjusting your filters' : 'Be the first to recognize someone!'}
-          </p>
-        </div>
-      )}
-
-      {/* Shoutouts List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {filtered.map(shoutout => (
-          <ShoutoutCard key={shoutout.id} shoutout={shoutout} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Centralised API base — single source of truth for the whole file
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-// Shoutout Card Component
+// ─── Shoutout Card ────────────────────────────────────────────────────────────
 function ShoutoutCard({ shoutout }) {
   // Get current user from AuthContext
   const { user: currentUser } = useAuth();
@@ -540,26 +337,27 @@ function ShoutoutCard({ shoutout }) {
           </div>
         </div>
 
-        {/* 3-dot menu */}
+        {/* ── Three-dot menu ── */}
         <div style={{ position: 'relative' }}>
-          <button onClick={() => setMenuOpen(o => !o)}
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: '4px 8px', borderRadius: '6px', fontSize: '18px', lineHeight: 1, fontWeight: 700, transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#374151'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}>
-            ···
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '18px', padding: '4px 8px', borderRadius: '6px', transition: 'all 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#F3F4F6'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            ⋮
           </button>
           {menuOpen && (
-            <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(false)} />
-              <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: '4px', background: '#fff', border: '1px solid #E5E7EB', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 100, minWidth: '160px', overflow: 'hidden' }}>
-                <button onClick={() => { setMenuOpen(false); setReportModal(true); }}
-                  style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: '#DC2626', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.1s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  🚩 Report
-                </button>
-              </div>
-            </>
+            <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: '4px', background: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 30, overflow: 'hidden', minWidth: '140px' }}>
+              <button
+                onClick={() => { setMenuOpen(false); setReportModal(true); }}
+                style={{ width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#DC2626', fontWeight: 500, textAlign: 'left', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.1s' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#FEF2F2'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                🚩 Report
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -621,28 +419,28 @@ function ShoutoutCard({ shoutout }) {
         </button>
 
         {/* Clap */}
-{reactionBtn('clap', '👏', 'Clap')}
+        {reactionBtn('clap', '👏', 'Clap')}
 
-{/* Star */}
-{reactionBtn('star', '⭐', 'Star')}
+        {/* Star */}
+        {reactionBtn('star', '⭐', 'Star')}
 
-{/* Heart */}
-{reactionBtn('heart', '❤️', 'Heart')}
+        {/* Heart */}
+        {reactionBtn('heart', '❤️', 'Heart')}
 
-{/* Fire */}
-{reactionBtn('fire', '🔥', 'Fire')}
+        {/* Fire */}
+        {reactionBtn('fire', '🔥', 'Fire')}
 
-{/* Celebrate */}
-{reactionBtn('celebrate', '🎉', 'Celebrate')}
+        {/* Celebrate */}
+        {reactionBtn('celebrate', '🎉', 'Celebrate')}
 
-{/* Wow */}
-{reactionBtn('wow', '😮', 'Wow')}
+        {/* Wow */}
+        {reactionBtn('wow', '😮', 'Wow')}
 
-{/* Thumbs Up */}
-{reactionBtn('thumbsup', '👍', 'Thumbs Up')}
+        {/* Thumbs Up */}
+        {reactionBtn('thumbsup', '👍', 'Thumbs Up')}
 
-{/* Rocket */}
-{reactionBtn('rocket', '🚀', 'Rocket')}
+        {/* Rocket */}
+        {reactionBtn('rocket', '🚀', 'Rocket')}
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
@@ -835,72 +633,211 @@ function ShoutoutCard({ shoutout }) {
   );
 }
 
-
-// My Shoutouts View (keeping existing implementation)
-function MyShoutoutsView({ user }) {
+// ─── Feed View ────────────────────────────────────────────────────────────────
+function FeedView({ user }) {
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [showModal, setShowModal] = useState(false);
   const [shoutouts, setShoutouts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (user?.id) {
-      fetch(`${API_URL}/shoutouts/my/${user.id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      })
-        .then(res => res.json())
-        .then(data => { setShoutouts(Array.isArray(data) ? data : []); setLoading(false); })
-        .catch(() => { setShoutouts([]); setLoading(false); });
-    }
-  }, [user]);
+  const loadShoutouts = () => {
+    fetch(`${API_URL}/shoutouts/`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(res => res.json())
+      .then(data => { setShoutouts(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => { setShoutouts([]); setLoading(false); setError('Failed to load shoutouts'); });
+  };
+
+  useEffect(() => { loadShoutouts(); }, []);
+
+  const filtered = shoutouts.filter(s => {
+    const tagList = s.tags ? (Array.isArray(s.tags) ? s.tags : s.tags.split(',').map(t => t.trim())) : [];
+    const matchFilter = filter === 'all' || tagList.some(t => t.toLowerCase() === filter.toLowerCase());
+    const matchSearch = search === '' ||
+      s.message?.toLowerCase().includes(search.toLowerCase()) ||
+      s.sender?.name?.toLowerCase().includes(search.toLowerCase());
+    return matchFilter && matchSearch;
+  });
 
   return (
     <div>
-      <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>My Shout-outs</h3>
-      <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Shoutouts you've given and received</p>
+      {/* Welcome Banner */}
+      <div style={{
+        background: 'linear-gradient(135deg, #4F46E5 0%, #10B981 100%)',
+        borderRadius: '16px', padding: '28px 32px', marginBottom: '28px', color: '#fff'
+      }}>
+        <h2 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 6px 0' }}>
+          Welcome back, {user?.name?.split(' ')[0] || 'there'}! 👋
+        </h2>
+        <p style={{ fontSize: '15px', margin: 0, opacity: 0.9 }}>
+          Ready to celebrate your team's achievements today?
+        </p>
+      </div>
 
-      {loading && <p style={{ textAlign: 'center', color: '#9CA3AF' }}>Loading...</p>}
+      {/* Feed Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div>
+          <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 2px 0' }}>Recognition Feed</h3>
+          <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>Celebrate your team's achievements</p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          style={{
+            padding: '10px 20px', background: '#4F46E5', color: '#fff', border: 'none',
+            borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: '6px',
+            boxShadow: '0 2px 8px rgba(79,70,229,0.25)', transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#4338CA'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#4F46E5'; e.currentTarget.style.transform = 'translateY(0)'; }}
+        >
+          <PlusIcon /> Create Shoutout
+        </button>
+      </div>
 
+      {/* Search & Filter */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}>
+            <SearchIcon />
+          </div>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search shoutouts..."
+            style={{
+              width: '100%', padding: '10px 12px 10px 36px', border: '1px solid #E5E7EB',
+              borderRadius: '8px', fontSize: '14px', background: '#fff', outline: 'none', boxSizing: 'border-box'
+            }}
+          />
+        </div>
+        <select
+          value={filter} onChange={e => setFilter(e.target.value)}
+          style={{
+            padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px',
+            fontSize: '14px', background: '#fff', color: '#374151', cursor: 'pointer', outline: 'none', minWidth: '160px'
+          }}
+        >
+          <option value="all">All Categories</option>
+          <option value="Teamwork">Teamwork</option>
+          <option value="Leadership">Leadership</option>
+          <option value="Problem Solving">Problem Solving</option>
+          <option value="Mentorship">Mentorship</option>
+          <option value="Communication">Communication</option>
+        </select>
+      </div>
+
+      {/* Error State */}
+      {error && (
+        <div style={{
+          background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '8px',
+          padding: '12px 16px', marginBottom: '16px', color: '#991B1B'
+        }}>
+          {error}
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '48px', color: '#9CA3AF' }}>
+          <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+          <p>Loading shoutouts...</p>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && filtered.length === 0 && (
+        <div style={{
+          textAlign: 'center', padding: '48px', background: '#F9FAFB',
+          borderRadius: '12px', border: '1px dashed #E5E7EB'
+        }}>
+          <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>🎉</p>
+          <p style={{ fontSize: '16px', fontWeight: 600, color: '#374151', margin: '0 0 6px 0' }}>
+            {search || filter !== 'all' ? 'No matching shoutouts' : 'No shoutouts yet'}
+          </p>
+          <p style={{ fontSize: '13px', color: '#9CA3AF' }}>
+            {search || filter !== 'all' ? 'Try adjusting your filters' : 'Be the first to recognize someone!'}
+          </p>
+        </div>
+      )}
+
+      {/* Shoutouts List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {!loading && shoutouts.map(shoutout => (
+        {filtered.map(shoutout => (
           <ShoutoutCard key={shoutout.id} shoutout={shoutout} />
         ))}
       </div>
 
-      {!loading && shoutouts.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '48px', background: '#F9FAFB', borderRadius: '12px' }}>
-          <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>🏆</p>
-          <p style={{ fontSize: '16px', fontWeight: 600, color: '#374151', margin: '0 0 6px 0' }}>No shoutouts yet</p>
-          <p style={{ fontSize: '13px', color: '#9CA3AF' }}>Shoutouts you've given and received will appear here</p>
-        </div>
+      {showModal && (
+        <CreateShoutoutModal
+          isOpen={true}
+          onClose={() => setShowModal(false)}
+          currentUser={user}
+          onSuccess={loadShoutouts}
+        />
       )}
     </div>
   );
 }
 
-// Leaderboard View (keeping existing)
+// ─── My Shoutouts View ────────────────────────────────────────────────────────
+function MyShoutoutsView({ user }) {
+  const [shoutouts, setShoutouts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch(`${API_URL}/shoutouts/my/${user.id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(res => res.json())
+      .then(data => { setShoutouts(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => { setShoutouts([]); setLoading(false); });
+  }, [user]);
+
+  return (
+    <div>
+      <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>My Shout-outs</h3>
+      <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Recognitions you've sent and received</p>
+      {loading && <p style={{ textAlign: 'center', color: '#9CA3AF', padding: '40px 0' }}>Loading...</p>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {!loading && shoutouts.map(s => <ShoutoutCard key={s.id} shoutout={s} />)}
+        {!loading && shoutouts.length === 0 && (
+          <div style={{ background: '#fff', borderRadius: '14px', padding: '48px 24px', textAlign: 'center', border: '1px solid #E5E7EB' }}>
+            <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>🏆</p>
+            <p style={{ fontSize: '16px', fontWeight: 600, color: '#374151', margin: '0 0 6px 0' }}>No shoutouts yet</p>
+            <p style={{ fontSize: '13px', color: '#9CA3AF' }}>Shoutouts you've given and received will appear here</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Leaderboard View ─────────────────────────────────────────────────────────
 function LeaderboardView() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
   const medals = ['🥇', '🥈', '🥉'];
 
   useEffect(() => {
-    fetch(`${API_URL}/leaderboard/most-appreciated`, { 
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } 
-    })
+    fetch(`${API_URL}/leaderboard/most-appreciated`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
       .then(res => res.json())
-      .then(data => { 
-        setLeaders(Array.isArray(data) ? data : []); 
-        setLoading(false); 
-      })
-      .catch(() => setLoading(false));
+      .then(data => { setLeaders(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(err => { console.error('Leaderboard fetch failed:', err); setLoading(false); });
   }, []);
 
   return (
     <div>
       <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>Leaderboard</h3>
       <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Most appreciated employees</p>
-      
       <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-        {loading && <p style={{ padding: '32px', textAlign: 'center', color: '#9CA3AF' }}>Loading...</p>}
+        {loading && (
+          <p style={{ padding: '32px', textAlign: 'center', color: '#9CA3AF' }}>Loading...</p>
+        )}
         {!loading && leaders.length === 0 && (
           <p style={{ padding: '32px', textAlign: 'center', color: '#9CA3AF' }}>
             🏆 No shoutouts yet — be the first to recognise someone!
@@ -913,7 +850,7 @@ function LeaderboardView() {
             background: i === 0 ? 'linear-gradient(90deg, #FFFBEB, #fff)' : '#fff'
           }}>
             <span style={{ fontSize: '20px', width: '28px', textAlign: 'center' }}>
-              {medals[i] || `#${i + 1}`}
+              {medals[i] || `#${l.rank}`}
             </span>
             <div style={{
               width: '40px', height: '40px', borderRadius: '50%',
@@ -931,7 +868,7 @@ function LeaderboardView() {
               background: '#EEF2FF', color: '#4F46E5', fontWeight: 700, fontSize: '13px',
               padding: '4px 12px', borderRadius: '20px'
             }}>
-              {l.score} shoutouts
+              {l.count} shoutouts
             </span>
           </div>
         ))}
@@ -940,7 +877,7 @@ function LeaderboardView() {
   );
 }
 
-// Departments View (keeping existing)
+// ─── Departments View ─────────────────────────────────────────────────────────
 function DepartmentsView() {
   const [depts, setDepts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -952,19 +889,17 @@ function DepartmentsView() {
     })
       .then(res => res.json())
       .then(data => { setDepts(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(err => { console.error('Departments fetch failed:', err); setLoading(false); });
   }, []);
 
   return (
     <div>
       <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>Departments</h3>
       <p style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '24px' }}>Recognition breakdown by department</p>
-      
       {loading && <p style={{ textAlign: 'center', color: '#9CA3AF' }}>Loading...</p>}
       {!loading && depts.length === 0 && (
         <p style={{ textAlign: 'center', color: '#9CA3AF' }}>No department data yet.</p>
       )}
-      
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' }}>
         {!loading && depts.map(d => (
           <div key={d.name} style={{
@@ -988,23 +923,16 @@ function DepartmentsView() {
   );
 }
 
-// Main Dashboard Component
-// Main Dashboard Component
+// ─── Main Dashboard ───────────────────────────────────────────────────────────
 function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [currentView, setCurrentView] = useState('feed');
   const [showModal, setShowModal] = useState(false);
 
-  const handleLogout = () => { logout(); navigate('/login'); };
-
-  const handleModalSuccess = () => {
-    setShowModal(false);
-    // Refresh the feed by switching views
-    if (currentView === 'feed') {
-      setCurrentView('my-shoutouts');
-      setTimeout(() => setCurrentView('feed'), 100);
-    }
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   const renderView = () => {
@@ -1018,8 +946,8 @@ function Dashboard() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F1F5F9', display: 'flex' }}>
-      <Sidebar
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
+      <DashboardSidebar
         currentView={currentView}
         onViewChange={setCurrentView}
         onLogout={handleLogout}
@@ -1030,7 +958,7 @@ function Dashboard() {
       <main style={{ paddingLeft: '256px', flex: 1, minHeight: '100vh' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 32px' }}>
           
-          {/* THIS IS THE NEW PART: The notification bar */}
+          {/* Notification bar */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
             <NotificationBell />
           </div>
@@ -1039,13 +967,17 @@ function Dashboard() {
         </div>
       </main>
 
-      {/* Modal */}
-      <CreateShoutoutModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onSuccess={handleModalSuccess}
-        currentUser={user}
-      />
+      {showModal && (
+        <CreateShoutoutModal
+          isOpen={true}
+          onClose={() => setShowModal(false)}
+          currentUser={user}
+          onSuccess={() => {
+            setShowModal(false);
+            setCurrentView('feed');
+          }}
+        />
+      )}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');

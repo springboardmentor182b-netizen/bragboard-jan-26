@@ -183,8 +183,9 @@ const CreateShoutoutModal = ({ isOpen, onClose, onSuccess, currentUser }) => {
   };
 
   const handleSubmit = async () => {
-    if (selectedRecipients.length === 0) return setError('Select at least one colleague!');
-    if (!message.trim()) return setError('Please write a message!');
+    if (selectedRecipients.length === 0) return setError("Please select at least one colleague!");
+    if (!message.trim()) return setError("Please write a message!");
+
     setSubmitting(true);
     setError('');
 
@@ -237,6 +238,10 @@ const CreateShoutoutModal = ({ isOpen, onClose, onSuccess, currentUser }) => {
 
   const availableTags = ['Teamwork', 'Innovation', 'Leadership', 'Bug Hunter', 'Problem Solving'];
   const selectedUsers = users.filter(u => selectedRecipients.includes(u.id));
+
+  const toggleTag = (tag) => {
+    setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
 
   return (
     <div style={styles.overlay}>
@@ -445,7 +450,7 @@ const CreateShoutoutModal = ({ isOpen, onClose, onSuccess, currentUser }) => {
               {availableTags.map(tag => (
                 <button
                   key={tag}
-                  onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                  onClick={() => toggleTag(tag)}
                   style={{ padding: '6px 14px', borderRadius: '50px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '2px solid', borderColor: selectedTags.includes(tag) ? '#4F46E5' : '#E5E7EB', backgroundColor: selectedTags.includes(tag) ? '#EEF2FF' : '#fff', color: selectedTags.includes(tag) ? '#4F46E5' : '#6B7280', transition: 'all 0.15s' }}
                 >
                   {tag}
@@ -499,5 +504,4 @@ const CreateShoutoutModal = ({ isOpen, onClose, onSuccess, currentUser }) => {
     </div>
   );
 };
-
 export default CreateShoutoutModal;

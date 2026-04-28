@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
-from src.database.connection import Base
+
+from src.database.core import Base
 
 
 class Reaction(Base):
@@ -14,9 +15,11 @@ class Reaction(Base):
     # Options: "like", "clap", "star", "heart", "fire", "celebrate", "wow", "thumbsup", "rocket"
     type = Column(String, nullable=False)
 
+    # One reaction type per user per shoutout
     __table_args__ = (
         UniqueConstraint("shoutout_id", "user_id", "type", name="uq_reaction_user_shoutout_type"),
     )
 
-    shoutout = relationship("Shoutout", foreign_keys=[shoutout_id])
-    user = relationship("User", foreign_keys=[user_id])
+    # Relationships
+    shoutout = relationship("Shoutout", back_populates="reactions")
+    user = relationship("User", back_populates="reactions")

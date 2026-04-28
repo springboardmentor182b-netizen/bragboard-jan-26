@@ -1,21 +1,21 @@
-from datetime import datetime
 import enum
+from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
-# ✅ FIXED: Use connection.py
-from src.database.connection import Base
+from src.database.core import Base
 
 class UserRole(str, enum.Enum):
     """User role types."""
-    employee = "employee"
     admin = "admin"
+    employee = "employee"
+    user = "user"
 
 class UserStatus(str, enum.Enum):
     """User approval status."""
-    pending = "pending"
     approved = "approved"
+    pending = "pending"
     rejected = "rejected"
     suspended = "suspended"
 
@@ -48,8 +48,14 @@ class User(Base):
         foreign_keys=[approved_by],
     )
 
+    # Relationships from HEAD
+    sent_shoutouts = relationship("Shoutout", back_populates="sender")
+    comments = relationship("Comment", back_populates="user")
+    reactions = relationship("Reaction", back_populates="user")
+
     # Reports submitted by this user
     reports = relationship("Report", foreign_keys="Report.reported_by", back_populates="reporter")
 
-    # ✅ FIXED: Indented correctly and "Add to..." text removed
+    admin_logs = relationship("AdminLog", back_populates="admin")
+
     notifications = relationship("Notification", back_populates="user", foreign_keys="Notification.user_id")

@@ -1,9 +1,9 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
-from src.database.connection import Base
+from src.database.core import Base
 
 
 class Report(Base):
@@ -13,8 +13,8 @@ class Report(Base):
     shoutout_id = Column(Integer, ForeignKey("shoutouts.id", ondelete="CASCADE"), nullable=False)
     reported_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     reason = Column(Text, nullable=False)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationships
     shoutout = relationship("Shoutout", back_populates="reports")
-    reporter = relationship("User", foreign_keys=[reported_by], back_populates="reports")
+    reporter = relationship("User", back_populates="reports")

@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional, List
 
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 
-from src.entities.user import User, UserRole, UserStatus
+from src.entities.user import User, UserRole
 from src.entities.shoutout import Shoutout, ShoutoutRecipient
 from src.entities.admin_log import AdminLog
 
@@ -29,12 +29,13 @@ def log_admin_action(
             action=action,
             target_id=target_id,
             target_type=target_type,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.utcnow(),
         )
         db.add(entry)
         db.commit()
     except Exception:
-        db.rollback()   # ✅ FIXED: rollback so the session stays usable
+        # Table/entity not yet migrated — safe to skip
+        pass
 
 
 def get_all_admin_logs(db: Session) -> List[AdminLog]:
@@ -68,7 +69,7 @@ def get_platform_stats(db: Session) -> dict:
     total_shoutouts = db.query(func.count(Shoutout.id)).scalar() or 0
     total_likes = db.query(func.coalesce(func.sum(Shoutout.likes), 0)).scalar() or 0
 
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    one_week_ago = datetime.utcnow() - timedelta(days=7)
     active_this_week = (
         db.query(func.count(Shoutout.id))
         .filter(Shoutout.created_at >= one_week_ago)
@@ -187,7 +188,6 @@ def list_all_users(db: Session) -> list[dict]:
             "email": u.email,
             "department": u.department or "—",
             "role": u.role.value if u.role else "employee",
-            "status": u.status.value if u.status else "approved",
             "joined_at": u.joined_at.isoformat() if u.joined_at else None,
         }
         for u in users
@@ -212,126 +212,6 @@ def change_user_role(db: Session, target_user_id: int, new_role: str) -> dict:
         "name": user.name,
         "email": user.email,
         "role": user.role.value,
-    }
-
-
-# ─── User Approval Workflow ───────────────────────────────────────────────────
-# ✅ ADDED: These 4 functions were missing — admin_controller.py calls all of
-#    them. Without them every approval endpoint returned a 500 AttributeError.
-
-def get_pending_users(db: Session) -> list[dict]:
-    """Return all users whose status is 'pending', newest first."""
-    users = (
-        db.query(User)
-        .filter(User.status == UserStatus.pending)
-        .order_by(User.joined_at.desc())
-        .all()
-    )
-    return [
-        {
-            "id": u.id,
-            "name": u.name,
-            "email": u.email,
-            "department": u.department or "Not Specified",
-            "joined_at": u.joined_at.isoformat() if u.joined_at else None,
-            "status": u.status.value,
-        }
-        for u in users
-    ]
-
-
-def approve_user(db: Session, user_id: int, admin_id: int) -> dict:
-    """
-    Approve a pending user so they can log in.
-
-    Raises:
-        LookupError  – user not found
-        ValueError   – user is not in pending status
-    """
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise LookupError(f"User {user_id} not found")
-
-    if user.status != UserStatus.pending:
-        raise ValueError(
-            f"User is already '{user.status.value}'. Only pending users can be approved."
-        )
-
-    user.status = UserStatus.approved
-    user.approved_by = admin_id
-    user.approved_at = datetime.now(timezone.utc)
-    user.rejection_reason = None
-    db.commit()
-    db.refresh(user)
-
-    return {
-        "message": f"User '{user.name}' ({user.email}) approved successfully.",
-        "user": {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "status": user.status.value,
-            "approved_by": user.approved_by,
-            "approved_at": user.approved_at.isoformat(),
-        },
-    }
-
-
-def reject_user(db: Session, user_id: int, admin_id: int) -> dict:
-    """
-    Reject a pending user registration.
-
-    Raises:
-        LookupError – user not found
-    """
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise LookupError(f"User {user_id} not found")
-
-    user.status = UserStatus.rejected
-    user.approved_by = None
-    user.approved_at = None
-    db.commit()
-    db.refresh(user)
-
-    return {
-        "message": f"User '{user.name}' ({user.email}) has been rejected.",
-        "user": {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "status": user.status.value,
-        },
-    }
-
-
-def suspend_user(db: Session, user_id: int, admin_id: int) -> dict:
-    """
-    Suspend an approved user so they can no longer log in.
-
-    Raises:
-        LookupError – user not found
-        ValueError  – user is already suspended
-    """
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise LookupError(f"User {user_id} not found")
-
-    if user.status == UserStatus.suspended:
-        raise ValueError(f"User '{user.name}' is already suspended.")
-
-    user.status = UserStatus.suspended
-    db.commit()
-    db.refresh(user)
-
-    return {
-        "message": f"User '{user.name}' ({user.email}) has been suspended.",
-        "user": {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "status": user.status.value,
-        },
     }
 
 
@@ -377,65 +257,6 @@ def delete_shoutout(db: Session, shoutout_id: int) -> dict:
     return {"message": "Shoutout deleted successfully", "shoutout_id": shoutout_id}
 
 
-# ─── Reported Shoutouts ───────────────────────────────────────────────────────
-
-def get_reported_shoutouts(db: Session) -> list[dict]:
-    """Return all shoutouts that have at least one report, with report details."""
-    from src.entities.report import Report
-
-    reports = db.query(Report).order_by(Report.created_at.desc()).all()
-
-    # Group reports by shoutout_id
-    shoutout_map: dict[int, dict] = {}
-    for r in reports:
-        sid = r.shoutout_id
-        if sid not in shoutout_map:
-            shoutout = db.query(Shoutout).filter(Shoutout.id == sid).first()
-            if not shoutout:
-                continue
-            recipient_names = [rec.recipient.name for rec in shoutout.recipients if rec.recipient]
-            shoutout_map[sid] = {
-                "shoutout_id": sid,
-                "sender_name": shoutout.sender.name if shoutout.sender else "Unknown",
-                "sender_email": shoutout.sender.email if shoutout.sender else "",
-                "message": shoutout.message,
-                "tags": shoutout.tags,
-                "likes": shoutout.likes or 0,
-                "created_at": shoutout.created_at.isoformat() if shoutout.created_at else None,
-                "recipient_names": recipient_names,
-                "reports": [],
-            }
-        reporter = db.query(User).filter(User.id == r.reported_by).first()
-        shoutout_map[sid]["reports"].append({
-            "report_id": r.id,
-            "reason": r.reason,
-            "reported_by_name": reporter.name if reporter else "Unknown",
-            "reported_at": r.created_at.isoformat() if r.created_at else None,
-        })
-
-    # Sort by report count descending
-    result = list(shoutout_map.values())
-    result.sort(key=lambda x: len(x["reports"]), reverse=True)
-    return result
-
-
-def dismiss_report(db: Session, report_id: int) -> dict:
-    """Dismiss (delete) a single report without removing the shoutout."""
-    from src.entities.report import Report
-
-    report = db.query(Report).filter(Report.id == report_id).first()
-    if not report:
-        raise LookupError(f"Report {report_id} not found")
-    db.delete(report)
-    db.commit()
-    return {"message": "Report dismissed", "report_id": report_id}
-
-
-def delete_reported_shoutout(db: Session, shoutout_id: int) -> dict:
-    """Delete a shoutout and all its reports (admin moderation via reports view)."""
-    return delete_shoutout(db, shoutout_id)
-
-
 # ─── Admin Logs ──────────────────────────────────────────────────────────────
 
 def get_admin_logs(db: Session, limit: int = 50) -> list[dict]:
@@ -450,7 +271,6 @@ def get_admin_logs(db: Session, limit: int = 50) -> list[dict]:
 
         result = []
         for log in logs:
-            # ✅ Safe manual lookup — no ORM relationship on AdminLog
             admin = db.query(User).filter(User.id == log.admin_id).first()
             result.append(
                 {

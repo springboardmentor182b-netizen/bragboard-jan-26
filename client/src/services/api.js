@@ -1,13 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
 });
 
 // Attach JWT token to every request automatically
@@ -18,19 +15,6 @@ api.interceptors.request.use((cfg) => {
   }
   return cfg;
 });
-
-// Handle auth errors globally
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
 
 // ── Auth endpoints ──────────────────────────────────────────────────────────
 export const authAPI = {
@@ -52,22 +36,6 @@ export const shoutoutsAPI = {
   getMine: (userId) => api.get(`/shoutouts/my/${userId}`),
   create: (data) => api.post('/shoutouts/', data),
   like: (id) => api.put(`/shoutouts/${id}/like`),
-  report: (shoutoutId, reason) => api.post('/reports/', { shoutout_id: shoutoutId, reason }),
-};
-
-// ── Reactions endpoints ──────────────────────────────────────────────────────
-export const reactionsAPI = {
-  toggle: (shoutoutId, type) => api.post(`/reactions/${shoutoutId}/toggle`, { type }),
-  getCounts: (shoutoutId) => api.get(`/reactions/${shoutoutId}`),
-};
-
-// ── Comments endpoints ───────────────────────────────────────────────────────
-export const commentsAPI = {
-  getAll: (shoutoutId) => api.get(`/comments/${shoutoutId}`),
-  // parentId: pass the top-level comment's id to post a reply; omit for top-level
-  post: (shoutoutId, content, parentId = null) =>
-    api.post(`/comments/${shoutoutId}`, { content, parent_id: parentId }),
-  delete: (commentId) => api.delete(`/comments/${commentId}`),
 };
 
 // ── Leaderboard endpoints ───────────────────────────────────────────────────
@@ -75,6 +43,19 @@ export const leaderboardAPI = {
   mostAppreciated: (limit = 10) => api.get(`/leaderboard/most-appreciated?limit=${limit}`),
   topContributors: (limit = 10) => api.get(`/leaderboard/top-contributors?limit=${limit}`),
   departments: () => api.get('/leaderboard/departments'),
+};
+
+// ── Reactions endpoints ─────────────────────────────────────────────────────
+export const reactionsAPI = {
+  getCounts: (shoutoutId) => api.get(`/shoutouts/${shoutoutId}/reactions`),
+  toggle: (shoutoutId, type) => api.post(`/shoutouts/${shoutoutId}/reactions`, { type }),
+};
+
+// ── Comments endpoints ──────────────────────────────────────────────────────
+export const commentsAPI = {
+  getAll: (shoutoutId) => api.get(`/shoutouts/${shoutoutId}/comments`),
+  post: (shoutoutId, content, parentId = null) => api.post(`/shoutouts/${shoutoutId}/comments`, { content, parent_id: parentId }),
+  delete: (commentId) => api.delete(`/comments/${commentId}`),
 };
 
 export default api;

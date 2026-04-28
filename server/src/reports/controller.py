@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.database.connection import get_db
-from src.auth.dependencies import get_current_user
+from src.auth.service import get_current_user
 from src.entities.user import User
 from src.reports.models import ReportCreate, ReportResponse
 from src.reports import service
@@ -18,7 +18,7 @@ def create_report(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Report a shoutout for admin review."""
+    """Report a shoutout."""
     return service.create_report(db, current_user.id, data.shoutout_id, data.reason)
 
 
@@ -27,7 +27,7 @@ def list_reports(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List all reports — admin only."""
+    """List all reports (admin only)."""
     if current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return service.get_all_reports(db)
@@ -39,7 +39,7 @@ def delete_report(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Dismiss/resolve a report — admin only."""
+    """Resolve/delete a report (admin only)."""
     if current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     service.delete_report(db, report_id)

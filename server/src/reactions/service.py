@@ -1,5 +1,6 @@
+from typing import List, Optional
+
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
 from src.entities.reaction import Reaction
 
@@ -37,33 +38,16 @@ def toggle_reaction(db: Session, shoutout_id: int, user_id: int, reaction_type: 
         )
         .first()
     )
-
     if existing:
         db.delete(existing)
         db.commit()
         return {"added": False, "type": reaction_type}
-    else:
-        reaction = Reaction(shoutout_id=shoutout_id, user_id=user_id, type=reaction_type)
-        db.add(reaction)
-        try:
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-            # Race condition — already exists, so treat as toggle-off
-            existing = (
-                db.query(Reaction)
-                .filter(
-                    Reaction.shoutout_id == shoutout_id,
-                    Reaction.user_id == user_id,
-                    Reaction.type == reaction_type,
-                )
-                .first()
-            )
-            if existing:
-                db.delete(existing)
-                db.commit()
-            return {"added": False, "type": reaction_type}
-        return {"added": True, "type": reaction_type}
+
+    reaction = Reaction(shoutout_id=shoutout_id, user_id=user_id, type=reaction_type)
+    db.add(reaction)
+    db.commit()
+    db.refresh(reaction)
+    return {"added": True, "type": reaction_type}
 
 
 def get_reaction_counts(db: Session, shoutout_id: int, user_id: int) -> dict:

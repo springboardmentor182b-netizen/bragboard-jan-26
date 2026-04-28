@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from src.database.connection import get_db
-from src.auth.dependencies import get_current_user  # ← FIXED: Import from dependencies
+from src.auth.service import get_current_user
 from src.entities.user import User, UserRole
 from src.admin import service
 from src.admin.models import AdminLogResponse, ChangeRoleRequest
@@ -96,112 +96,6 @@ def change_role(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-# ─── User Approval Endpoints ──────────────────────────────────────────────────
-# NEW: These endpoints replace the backend create_admin.py script
-
-@router.get("/users/pending")
-def get_pending_users(
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    """
-    Get all users awaiting approval.
-    Returns list of users with status='pending'
-    """
-    return service.get_pending_users(db)
-
-
-@router.patch("/users/{user_id}/approve")
-def approve_user_request(
-    user_id: int,
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    """
-    Approve a pending user registration.
-    User will be able to login after approval.
-    """
-    try:
-        result = service.approve_user(db, user_id, admin.id)
-        service.log_admin_action(
-            db,
-            admin.id,
-            f"Approved user registration",
-            user_id,
-            "user"
-        )
-        return result
-    except LookupError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-
-
-@router.patch("/users/{user_id}/reject")
-def reject_user_request(
-    user_id: int,
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    """
-    Reject a pending user registration.
-    User will not be able to login.
-    """
-    try:
-        result = service.reject_user(db, user_id, admin.id)
-        service.log_admin_action(
-            db,
-            admin.id,
-            f"Rejected user registration",
-            user_id,
-            "user"
-        )
-        return result
-    except LookupError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
-
-
-@router.patch("/users/{user_id}/suspend")
-def suspend_user_account(
-    user_id: int,
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db)
-):
-    """
-    Suspend an approved user account.
-    User will not be able to login while suspended.
-    """
-    try:
-        result = service.suspend_user(db, user_id, admin.id)
-        service.log_admin_action(
-            db,
-            admin.id,
-            f"Suspended user account",
-            user_id,
-            "user"
-        )
-        return result
-    except LookupError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-
-
 # ─── Moderation Endpoints ────────────────────────────────────────────────────
 
 @router.get("/shoutouts")
@@ -224,47 +118,6 @@ def delete_shoutout(
     try:
         result = service.delete_shoutout(db, shoutout_id)
         service.log_admin_action(db, admin.id, "Deleted shoutout", shoutout_id, "shoutout")
-        return result
-    except LookupError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-# ─── Reported Shoutouts Endpoints ─────────────────────────────────────────────
-
-@router.get("/reported-shoutouts")
-def list_reported_shoutouts(
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Return all shoutouts that have been reported, with report details."""
-    return service.get_reported_shoutouts(db)
-
-
-@router.delete("/reports/{report_id}")
-def dismiss_report(
-    report_id: int,
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Dismiss a report without deleting the shoutout."""
-    try:
-        result = service.dismiss_report(db, report_id)
-        service.log_admin_action(db, admin.id, "Dismissed report", report_id, "report")
-        return result
-    except LookupError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.delete("/reported-shoutouts/{shoutout_id}")
-def delete_reported_shoutout(
-    shoutout_id: int,
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Delete a reported shoutout and clear all its reports."""
-    try:
-        result = service.delete_reported_shoutout(db, shoutout_id)
-        service.log_admin_action(db, admin.id, "Removed reported shoutout", shoutout_id, "shoutout")
         return result
     except LookupError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
